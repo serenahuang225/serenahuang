@@ -1,0 +1,15 @@
+.hero-section {
+  text-align: center;
+  color: white;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.scroll-arrow {
+  font-size: 2rem;
+  color: #b3b3ff;
+}
+  
