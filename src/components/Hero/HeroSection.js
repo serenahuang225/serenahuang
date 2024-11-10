@@ -19,19 +19,6 @@ const HeroSection = () => {
       >
         I'm Serena.
       </motion.h2>
-      <motion.div
-        className="scroll-arrow"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1, y: [0, 10, 0] }}
-        transition={{
-          delay: 1,
-          repeat: Infinity,
-          repeatType: 'loop',
-          duration: 1,
-        }}
-      >
-        ↓
-      </motion.div>
     </div>
   );
 };

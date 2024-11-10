@@ -4,21 +4,14 @@
   color: white;
 }
 
-.home {
-  background: linear-gradient(180deg, #8a2be2, #4b0082, #1f1b3f);
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+body {
+  background-color: black;
 }
 
 .section {
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
-  padding: 20px;
-  margin: 20px;
-  width: 80%;
+  height: 100vh;
+  width: 100vw;
+  padding: 5rem 10rem;
 }
 
 button {
