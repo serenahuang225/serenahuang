@@ -14,7 +14,7 @@ function App() {
       element: <Resume />
     },
     {
-      path:"/home",
+      path:"/resume",
       element: <Resume />
     }
   ])
