@@ -2,7 +2,7 @@ import React from 'react'
 
 const Resume = () => {
   return (
-    <div>
+    <div className='maxWidth'>
       <h1>Serena Huang</h1>
       <p>St. Louis, MO | (314) 901-1516 | <a href="mailto:serenahuang225@gmail.com">serenahuang225@gmail.com</a> | <a href="https://github.com/serenahuang225">GitHub</a> | <a href="https://www.linkedin.com/in/serenahuang225/">LinkedIn</a></p>
 
@@ -26,14 +26,14 @@ const Resume = () => {
         <li>Earned 1st Place in the 2022-23 Congressional App Challenge with app achieving 700+ downloads and 10K+ monthly interactions</li>
       </ul>
 
-      <h3>NASA & UT Austin’s Center for Space Research, Austin, TX</h3>
+      <h3>NASA & UT Austin's Center for Space Research, Austin, TX</h3>
       <p>Aerospace Engineer Intern, May 2024 - Aug 2024</p>
       <ul>
         <li>Chosen as 1 of 50 rising juniors in the nation for the STEM Enhancement in Earth Science (SEES) internship</li>
-        <li>Developed an in-situ resource utilization system for lunar exploration and resource mining, including a solar-powered winch-pulley system, wireless power transfer, and in-situ toboggan creation, advancing NASA’s Artemis mission</li>
+        <li>Developed an in-situ resource utilization system for lunar exploration and resource mining, including a solar-powered winch-pulley system, wireless power transfer, and in-situ toboggan creation, advancing NASA's Artemis mission</li>
         <li>Utilized the ZQube system and machine learning (k-means clustering and cosine similarity) to analyze regolith in microgravity, exploring the potential of various regoliths to be used as building materials</li>
         <li>Authored a research proposal studying the effects of astronaut drugs on brain organoids in Zero-G on a parabolic flight</li>
-        <li>Applied data analysis techniques to NASA satellite data, determining star radial velocities after redshifts, creating histogram distributions, detailed surface temperature trends, and dispersion maps of the Andromeda Galaxy’s star types</li>
+        <li>Applied data analysis techniques to NASA satellite data, determining star radial velocities after redshifts, creating histogram distributions, detailed surface temperature trends, and dispersion maps of the Andromeda Galaxy's star types</li>
       </ul>
 
       <h3>Ariel Premium Supply, St. Louis, MO</h3>
@@ -87,7 +87,7 @@ const Resume = () => {
       <h3>Parkway Swim Club & Parkway Central High School Varsity Swim Team, Chesterfield, MO</h3>
       <p>All-State & Varsity, Aug 2013 - Present</p>
       <ul>
-        <li>Competed as part of the Parkway Swim Club, a nationally competitive swim team, and achieved All-State honors, 2x finalist recognition, and 2nd Place in the 200 Free Relay at the Missouri State High School Girls’ Swimming & Diving Championships</li>
+        <li>Competed as part of the Parkway Swim Club, a nationally competitive swim team, and achieved All-State honors, 2x finalist recognition, and 2nd Place in the 200 Free Relay at the Missouri State High School Girls' Swimming & Diving Championships</li>
         <li>Qualified for Speedo Sectionals and placed 5th at the COMO Invitational at the Mizzou Aquatic Center</li>
       </ul>
 
@@ -103,7 +103,7 @@ const Resume = () => {
       <ul>
         <li>Languages: Python, Java, JavaScript, TypeScript, C++, SQL, HTML/CSS</li>
         <li>Frameworks & Technologies: PyTorch, TensorFlow, Scikit-Learn, Matplotlib, Pandas, NumPy, React, Flask, Tableau, Git, Figma</li>
-        <li>Certifications: Machine Learning (Stanford & DeepLearning.AI), CS50’s Introduction to Computer Science (HarvardX)</li>
+        <li>Certifications: <a href='https://coursera.org/share/d8236540e5ddde532d7bda0ac8ef51ff'>Machine Learning (Stanford & DeepLearning.AI)</a>, <a href='https://courses.edx.org/certificates/abeae55c189948ea9e7764c918df1640'>CS50's Introduction to Computer Science (HarvardX)</a></li>
       </ul>
     </div>
   )
