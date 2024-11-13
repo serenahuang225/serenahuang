@@ -7,7 +7,7 @@ const Resume = () => {
       <div className='maxWidth'>
         <Switch />
         <h1>Serena Huang</h1>
-        <p>St. Louis, MO | (314) 901-1516 | <a href="mailto:serenahuang225@gmail.com">serenahuang225@gmail.com</a> | <a href="https://github.com/serenahuang225">GitHub</a> | <a href="https://www.linkedin.com/in/serenahuang225/">LinkedIn</a></p>
+        <p>St. Louis, MO | (314) 901-1516 | <a rel="noreferrer noopener" target="_blank" href="mailto:serenahuang225@gmail.com">serenahuang225@gmail.com</a> | <a rel="noreferrer noopener" target="_blank" href="https://github.com/serenahuang225">GitHub</a> | <a rel="noreferrer noopener" target="_blank" href="https://www.linkedin.com/in/serenahuang225/">LinkedIn</a></p>
 
         <h2>EDUCATION</h2>
         <h3>Parkway Central High School, Chesterfield, MO</h3>
@@ -106,7 +106,7 @@ const Resume = () => {
         <ul>
           <li>Languages: Python, Java, JavaScript, TypeScript, C++, SQL, HTML/CSS</li>
           <li>Frameworks & Technologies: PyTorch, TensorFlow, Scikit-Learn, Matplotlib, Pandas, NumPy, React, Flask, Tableau, Git, Figma</li>
-          <li>Certifications: <a href='https://coursera.org/share/d8236540e5ddde532d7bda0ac8ef51ff'>Machine Learning (Stanford & DeepLearning.AI)</a>, <a href='https://courses.edx.org/certificates/abeae55c189948ea9e7764c918df1640'>CS50's Introduction to Computer Science (HarvardX)</a></li>
+          <li>Certifications: <a rel="noreferrer noopener" target="_blank" href='https://coursera.org/share/d8236540e5ddde532d7bda0ac8ef51ff'>Machine Learning (Stanford & DeepLearning.AI)</a>, <a rel="noreferrer noopener" target="_blank" href='https://courses.edx.org/certificates/abeae55c189948ea9e7764c918df1640'>CS50's Introduction to Computer Science (HarvardX)</a></li>
         </ul>
       </div>
     </div>
