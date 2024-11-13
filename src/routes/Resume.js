@@ -22,7 +22,6 @@ const Resume = () => {
         <h3>Bubbly Studios, St. Louis, MO</h3>
         <p>Co-Founder & Lead Software Developer, Feb 2022 - Present</p>
         <ul>
-          {/* <li>Created an iOS productivity app featuring dynamic calendars, mood tracking, and social event planning</li> */}
           <li>Created Lively, an iOS app for productivity and social interaction that allows users to connect with friends and create personalized calendars, to-do lists, and journal entries</li>
           <li>Developed custom UI components (infinite pager, bottom sheet) with React Native Gesture Handler and Reanimated</li>
           <li>Implemented real-time notifications and friend syncing via Firebase on an Express.js server hosted on Render</li>
