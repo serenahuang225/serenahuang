@@ -10,14 +10,20 @@ const Intro = () => (
     transition={{ duration: 1 }}
     className="intro-container"
   >
-    <h1 className="greeting">{introData.greeting}</h1>
+    <h1 className="greeting">Hello there!</h1>
     <motion.h2
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 1, duration: 1 }}
-      className="message shimmer"
     >
-      {introData.message}
+      I'm Serena,
+    </motion.h2>
+    <motion.h2
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 2, duration: 1 }}
+    >
+      and I like to <span className='message'>build</span>
     </motion.h2>
   </motion.div>
 );

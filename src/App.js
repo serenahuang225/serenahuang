@@ -5,16 +5,17 @@ import Home from "./routes/Home";
 import Navbar from "./components/Nav/Navbar";
 import ParticlesBackground from "./components/ParticlesBackground";
 import RotatingShapes from "./components/RotatingShapes";
+import Resume from "./routes/Resume";
 
 function App() {
   const element = useRoutes([
     {
       path:"/",
-      element: <Home />
+      element: <Resume />
     },
     {
       path:"/home",
-      element: <Home />
+      element: <Resume />
     }
   ])
 

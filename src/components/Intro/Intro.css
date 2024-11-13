@@ -15,6 +15,6 @@
 
 @keyframes shimmer {
   0% { color: #fff; }
-  50% { color: #e0e0e0; }
+  50% { color: #ff0000; }
   100% { color: #fff; }
 }
