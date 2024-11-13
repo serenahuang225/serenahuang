@@ -1,14 +1,53 @@
-* {
-  margin: 0;
-  font-family: system-ui, sans-serif, Helvetica, Arial, sans-serif;
-  color: white;
+:root{
+  font-family: "Host Grotesk", sans-serif;
+  line-height: 1.5;
+  font-size: 18px;
+  font-weight: 400;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  --primary-background-color: #fff;
+  --secondary-background-color:#f7f7f7;
+  
+  --primary-text-color:#000;
+  --secondary-text-color:#4b4c53;
+
+  --primary-border-color:#4b4c53;
+
+  --button-solid-background-color:#000;
+  --button-solid-text-color:#fff;
+
+  --button-outlined-background-color:transparent;
+  --button-outlined-text-color:#000;
+
+  --alert-color:#FFF9E7;
+  --alert-border-color:#FFBF00;
+  --alert-text-color:#b8952f;
+
+  --link-color: #1a8dff;
 }
 
-body {
-  background-color: black;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+[data-theme="dark"]{
+  --primary-text-color: #fff;
+  --secondary-text-color:#f7f7f7;
+  
+  --primary-background-color:#000;
+  --secondary-background-color:#4b4c53;
+
+  --primary-border-color:#4b4c53;
+
+  --button-solid-background-color:#fff;
+  --button-solid-text-color:#000;
+
+  --button-outlined-background-color:transparent;
+  --button-outlined-text-color:#fff;
+}
+
+
+* {
+  margin: 0;
 }
 
 .section {
@@ -39,10 +78,26 @@ h2 {
   margin-top: 2rem;
 }
 h3 {
-  margin: 0.75rem 0 0.5rem 0;
+  margin: 1rem 0 0.5rem 0;
 }
 
 .maxWidth {
   max-width: 800px;
   padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+#app {
+  height: 100%;
+  background-color: var(--primary-background-color);
+  color: var(--primary-text-color);
+  transition: background-color 0.5s ease, color 0.5s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+a {
+  color: var(--link-color);
 }
