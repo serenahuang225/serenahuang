@@ -1,0 +1,93 @@
+.vinyl-player {
+  position: relative;
+  width: 100px; /* Adjusted smaller width */
+  height: 100px; /* Adjusted smaller height */
+  margin: auto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vinyl {
+  width: 70px; /* Smaller vinyl size */
+  height: 70px;
+  background: radial-gradient(circle, #000 60%, #555 90%);
+  border-radius: 50%;
+  border: 3px solid #222;
+  position: relative;
+  overflow: hidden; /* Ensures the shine stays within the vinyl */
+}
+
+.vinyl::before {
+  content: "";
+  width: 8px; /* Scaled down center circle */
+  height: 8px;
+  background-color: #999;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2; /* Keeps the center circle above the shine */
+}
+
+.vinyl::after {
+  content: "";
+  position: absolute;
+  width: 100%; /* Matches the vinyl size */
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+  border-radius: 50%;
+  top: 0;
+  left: 0;
+  z-index: 1; /* Behind the center circle but above the vinyl */
+}
+
+.vinyl.spinning::after {
+  animation: shine-spin 3s linear infinite;
+}
+
+@keyframes shine-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+
+.tonearm {
+  z-index: 3;
+  width: 40px; /* Scaled down tonearm */
+  height: 6px;
+  background-color: #333;
+  position: absolute;
+  top: 10%;
+  right: -30px;
+  border-radius: 5px;
+  transform-origin: top left;
+  transform: rotate(60deg);
+  transition: transform 0.3s ease;
+}
+
+.tonearm::before {
+  content: "";
+  width: 10px; /* Smaller tonearm base */
+  height: 10px;
+  background-color: #555;
+  border-radius: 50%;
+  position: absolute;
+  top: -2px;
+  right: -6px;
+}
+
+.tonearm.playing {
+  transform: rotate(100deg);
+}
