@@ -9,9 +9,9 @@
 .vinyl {
   width: 70px;
   height: 70px;
-  background: radial-gradient(circle, #000 60%, #555 90%);
+  background: radial-gradient(circle, #000 60%, #282828 90%);
   border-radius: 50%;
-  border: 3px solid #222;
+  border: 1px solid #282828;
   position: relative;
   overflow: hidden; /* Ensures the shine stays within the vinyl */
 }
@@ -40,7 +40,7 @@
     rgba(255, 255, 255, 0.2) 50%,
     rgba(0, 0, 0, 0.2) 100%
   ); */
-  background: linear-gradient(to bottom right, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0.2)) 
+  background: linear-gradient(to bottom right, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.2)) 
     no-repeat 0 0, 
     linear-gradient(to bottom left, rgba(0, 0, 0, 0.7), rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.7)) 
     no-repeat 0 0;
@@ -68,7 +68,7 @@
   z-index: 3;
   width: 40px; /* Scaled down tonearm */
   height: 6px;
-  background-color: #333;
+  background-color: #626262;
   position: absolute;
   top: 5%;
   right: -25px;
@@ -82,7 +82,7 @@
   content: "";
   width: 10px; /* Smaller tonearm base */
   height: 10px;
-  background-color: #555;
+  background-color: #787878;
   border-radius: 50%;
   position: absolute;
   top: -2px;
