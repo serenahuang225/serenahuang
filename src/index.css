@@ -47,6 +47,7 @@
 
 * {
   margin: 0;
+  padding: 0;
 }
 
 button {
@@ -67,18 +68,45 @@ button {
   z-index: -1;
 }
 
-h2 {
+.resume h2 {
   margin-top: 2rem;
 }
-h3 {
+.resume h3 {
   margin: 1rem 0 0.5rem 0;
 }
 
 .maxWidth {
   max-width: 800px;
-  padding: 2rem;
+}
+
+.widthBig {
+  width: 1000px;
+}
+
+.flexCol {
   display: flex;
   flex-direction: column;
+}
+
+.flexRow {
+  display: flex;
+  flex-direction: row;
+}
+
+.justifySpaceBetween {
+  justify-content: space-between;
+}
+
+.alignItemCenter {
+  align-items: center;
+}
+
+.pad2 {
+  padding: 2rem;
+}
+
+.nobold {
+  font-weight: 400;
 }
 
 #app {
@@ -102,8 +130,9 @@ a {
   scroll-snap-type: y mandatory;
 }
 
-.scrollSnap .maxWidth {
+.scrollSnap .snapDiv {
   scroll-snap-align: start;
   height: 100vh;
   width: 100%;
+  background-color: #1a8dff;
 }

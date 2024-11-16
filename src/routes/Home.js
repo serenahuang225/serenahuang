@@ -8,24 +8,18 @@ import Intro from '../components/Intro/Intro';
 import AudioButton from '../components/AudioButton/AudioButton';
 
 const Home = () => {
-  const sections = ['Intro', 'Projects', 'Skills', 'Contact'];
-  
+  const sections = ['intro', 'projects', 'skills', 'contact'];
+
   return (
     <div id="app" data-theme="dark">
       <div className='scrollSnap'>
-        <div className='maxWidth'>
-          <div>
-            <AudioButton />
-          </div>
+        <HeroSection />
+        <div className='maxWidth snapDiv'>
         </div>
         {sections.map((title, index) => (
           <Section key={index} title={title} index={index} />
         ))}
       </div>
-      <section>
-        <img src={blob} style={{height: 300, width: 300}} />
-      </section>
-
     </div>
   );
 };

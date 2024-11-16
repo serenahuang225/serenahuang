@@ -5,7 +5,7 @@ import AudioButton from '../components/AudioButton/AudioButton'
 const Resume = () => {
   return (
     <div id="app" data-theme="dark">
-      <div className='maxWidth'>
+      <div className='maxWidth flexCol pad2 resume'>
         <AudioButton />
         <Switch />
         <h1>Serena Huang</h1>
