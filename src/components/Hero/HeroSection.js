@@ -26,7 +26,13 @@ const HeroSection = () => {
           >
             I like to <b>build cool stuff!</b>
           </motion.h2>
-          <div className='flexRow alignCenter' style={{gap: '1rem'}}>
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }} 
+            className='flexRow alignCenter'
+            style={{gap: '1rem'}}
+          >
             <AnimatedButton />
             <motion.a initial={{scale:1}} whileHover={{scale: 1.05}} whileTap={{scale:0.95}} style={{marginLeft: '1rem'}} className='noLink' href="https://www.linkedin.com/in/serenahuang225/" rel="noreferrer noopener" target="_blank">
               <FaLinkedin size={36} />
@@ -34,9 +40,13 @@ const HeroSection = () => {
             <motion.a initial={{scale:1}} whileHover={{scale: 1.05}} whileTap={{scale:0.95}} className='noLink' href="https://github.com/serenahuang225" rel="noreferrer noopener" target="_blank">
               <FaGithub size={36} />
             </motion.a>
-          </div>
+          </motion.div>
         </div>
-        <img src={blob} style={{height: 300, width: 300}} />
+        <motion.img 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.4, duration: 0.6 }} 
+          src={blob} style={{height: 300, width: 300}} />
       </div>
     </div>
   );

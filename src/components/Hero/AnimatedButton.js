@@ -7,9 +7,6 @@ const AnimatedButton = () => {
     <motion.a
       href="mailto:serenahuang225@gmail.com"
       style={{textDecoration: 'none', width: 'fit-content'}}
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 1, duration: 0.6 }}
     >
       <motion.button
         initial={{ scale: 1 }}
