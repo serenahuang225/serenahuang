@@ -2,8 +2,7 @@ import React, { useState, useRef } from "react";
 import "./AudioButton.css";
 import sound from "./Mendelssohn Symphony 4 mvt 1.mp3"
 
-const AudioButton = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
+const AudioButton = ({isBig=false, isPlaying, setIsPlaying}) => {
   const audioRef = useRef(new Audio(sound));
 
   const toggleAudio = () => {
@@ -18,10 +17,19 @@ const AudioButton = () => {
   };
 
   return (
-    <div className="vinyl-player" onClick={toggleAudio}>
-      <div className={`vinyl ${isPlaying ? "spinning" : ""}`}></div>
-      <div className={`tonearm ${isPlaying ? "playing" : ""}`}></div>
-    </div>
+    <>
+    {
+      isBig ?
+      <div className="vinyl-player-big" onClick={toggleAudio}>
+        <div className={`vinyl-big ${isPlaying ? "spinning" : ""}`}></div>
+        <div className={`tonearm-big ${isPlaying ? "playing" : ""}`}></div>
+      </div> :
+      <div className="vinyl-player" onClick={toggleAudio}>
+        <div className={`vinyl ${isPlaying ? "spinning" : ""}`}></div>
+        <div className={`tonearm ${isPlaying ? "playing" : ""}`}></div>
+      </div>
+    }
+    </>
   );
 };
 

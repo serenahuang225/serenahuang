@@ -46,7 +46,8 @@ const AnimatedButton = () => {
               position: "relative",
               color: 'white',
               fontSize: '1rem',
-              fontFamily: "Host Grotesk"
+              fontFamily: "Host Grotesk",
+              fontWeight: '700'
             }}
             className="linear-mask"
           >

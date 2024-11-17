@@ -3,22 +3,20 @@ import { motion } from 'framer-motion';
 import Section from '../components/Section';
 import Navbar from '../components/Nav/Navbar';
 import HeroSection from '../components/Hero/HeroSection';
-import blob from './blob.gif'
-import Intro from '../components/Intro/Intro';
-import AudioButton from '../components/AudioButton/AudioButton';
+import ExperiencesSection from '../components/Experiences/ExperiencesSection';
+import ListeningSection from '../components/Listening/ListeningSection';
+import ProjectsSection from '../components/Projects/ProjectsSection';
+import SkillsSection from '../components/Skills/SkillsSection';
 
 const Home = () => {
-  const sections = ['intro', 'projects', 'skills', 'contact'];
-
   return (
     <div id="app" data-theme="dark">
       <div className='scrollSnap'>
         <HeroSection />
-        <div className='maxWidth snapDiv'>
-        </div>
-        {sections.map((title, index) => (
-          <Section key={index} title={title} index={index} />
-        ))}
+        <ExperiencesSection />
+        <ProjectsSection />
+        <SkillsSection />
+        <ListeningSection />
       </div>
     </div>
   );

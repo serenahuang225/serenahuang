@@ -4,9 +4,17 @@
   margin: auto;
   cursor: pointer;
   align-self: flex-start;
+  transform: rotate(9deg);
 }
 
-.vinyl {
+.vinyl-player-big {
+  position: relative;
+  width: 230px;
+  cursor: pointer;
+  transform: rotate(29deg);
+}
+
+.vinyl, .vinyl-big {
   width: 70px;
   height: 70px;
   background: radial-gradient(circle, #000 60%, #282828 90%);
@@ -16,7 +24,12 @@
   overflow: hidden; /* makes sure shine stays in the vinyl */
 }
 
-.vinyl::before {
+.vinyl-big {
+  width: 200px;
+  height: 200px;
+}
+
+.vinyl::before, .vinyl-big::before {
   content: "";
   width: 8px;
   height: 8px;
@@ -29,7 +42,12 @@
   z-index: 2; /* keeps center circle above the shine */
 }
 
-.vinyl::after {
+.vinyl-big::before {
+  width: 32px;
+  height: 32px;
+}
+
+.vinyl::after, .vinyl-big::after {
   content: "";
   position: absolute;
   width: 100%;
@@ -50,7 +68,7 @@
   z-index: 1; /* behind the center circle but above the vinyl */
 }
 
-.vinyl.spinning::after {
+.vinyl.spinning::after, .vinyl-big.spinning::after {
   animation: shine-spin 3s linear infinite;
 }
 
@@ -64,7 +82,7 @@
 }
 
 
-.tonearm {
+.tonearm, .tonearm-big {
   z-index: 3;
   width: 40px;
   height: 6px;
@@ -78,7 +96,15 @@
   transition: transform 0.3s ease;
 }
 
-.tonearm::before {
+.tonearm-big {
+  width: 100px;
+  height: 8px;
+  right: -55px;
+  top: 0;
+  transform: rotate(60deg);
+}
+
+.tonearm::before, .tonearm-big::before {
   content: "";
   width: 10px;
   height: 10px;
@@ -89,6 +115,16 @@
   right: -6px;
 }
 
+.tonearm-big::before {
+  width: 16px;
+  height: 16px;
+  top: -4px;
+}
+
 .tonearm.playing {
   transform: rotate(120deg);
+}
+
+.tonearm-big.playing {
+  transform: rotate(100deg);
 }
