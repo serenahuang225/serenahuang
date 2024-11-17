@@ -29,8 +29,18 @@
   padding: 1rem;
   overflow-y: scroll;
   font-weight: 200;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
 }
 
+.rightTabContent.notAtBottomOfContent {
+  box-shadow: 0 16px 8px -8px rgba(255, 255, 255, 0.10);
+}
+
+.rightTabContent::-webkit-scrollbar { /* WebKit */
+  width: 0;
+  height: 0;
+}
 
 .rightTabContent h2 {
   font-weight: 400;

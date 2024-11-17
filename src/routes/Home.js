@@ -1,6 +1,4 @@
 import React, { useEffect } from 'react';
-import { motion } from 'framer-motion';
-import Section from '../components/Section';
 import Navbar from '../components/Nav/Navbar';
 import HeroSection from '../components/Hero/HeroSection';
 import ExperiencesSection from '../components/Experiences/ExperiencesSection';

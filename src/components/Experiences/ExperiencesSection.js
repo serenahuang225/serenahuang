@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion';
 import "./ExperiencesSection.css"
 
@@ -34,6 +34,16 @@ const ExperiencesSection = () => {
   ];
 
   const [selectedTab, setSelectedTab] = useState(tabs[0]);
+  const [scrolledToBottom, setScrolledToBottom] = useState(true)
+
+  const handleScroll = e => {
+    const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
+    if (bottom) {
+      setScrolledToBottom(true)
+    } else {
+      setScrolledToBottom(false)
+    }
+  }
 
   return (
     <div className="experiences-section snapDiv" id="hero">
@@ -63,12 +73,13 @@ const ExperiencesSection = () => {
           </div>
 
           <AnimatePresence mode="wait">
-            <motion.div className='rightTabContent'
+            <motion.div className={`rightTabContent ${!scrolledToBottom && 'notAtBottomOfContent'}`}
               key={selectedTab ? selectedTab.label : "empty"}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
+              onScroll={handleScroll}
             >
               <h2>{selectedTab.title}</h2>
               <p>{selectedTab.date}</p>

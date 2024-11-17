@@ -9,7 +9,7 @@ function App() {
   const element = useRoutes([
     {
       path:"/",
-      element: <Resume />
+      element: <Home />
     },
     {
       path:"/resume",
