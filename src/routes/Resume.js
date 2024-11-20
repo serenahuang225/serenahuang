@@ -1,12 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Switch from '../components/Switch/Switch'
 import AudioButton from '../components/AudioButton/AudioButton'
 
 const Resume = () => {
+  const [isPlaying, setIsPlaying] = useState(false);
+
   return (
     <div id="app" data-theme="dark">
       <div className='maxWidth flexCol pad2 resume'>
-        <AudioButton />
+        <AudioButton isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
         <Switch />
         <h1>Serena Huang</h1>
         <p>St. Louis, MO | (314) 901-1516 | <a rel="noreferrer noopener" target="_blank" href="mailto:serenahuang225@gmail.com">serenahuang225@gmail.com</a> | <a rel="noreferrer noopener" target="_blank" href="https://github.com/serenahuang225">GitHub</a> | <a rel="noreferrer noopener" target="_blank" href="https://www.linkedin.com/in/serenahuang225/">LinkedIn</a></p>
