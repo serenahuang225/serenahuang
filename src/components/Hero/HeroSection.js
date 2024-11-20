@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import './HeroSection.css';
-import blob from './blob3.gif'
+import blob from './blob.gif'
 import AnimatedButton from './AnimatedButton';
 import { FaGithub, FaLinkedin } from 'react-icons/fa';
 

@@ -5,14 +5,14 @@ import sound from "./Mendelssohn Symphony 4 mvt 1.mp3"
 const AudioButton = ({isBig=false, isPlaying, setIsPlaying}) => {
   const audioRef = useRef(new Audio(sound));
 
-  const toggleAudio = () => {
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
+  const toggleAudio = (play) => {
+    if (play) {
       setIsPlaying(true);
       audioRef.current.play();
       audioRef.current.loop = true;
+    } else {
+      audioRef.current.pause();
+      setIsPlaying(false);
     }
   };
 
@@ -20,11 +20,11 @@ const AudioButton = ({isBig=false, isPlaying, setIsPlaying}) => {
     <>
     {
       isBig ?
-      <div className="vinyl-player-big" onClick={toggleAudio}>
+      <div className="vinyl-player-big" onClick={() => toggleAudio(!isPlaying)} onMouseEnter={() => toggleAudio(true)} onMouseLeave={() => toggleAudio(false)}>
         <div className={`vinyl-big ${isPlaying ? "spinning" : ""}`}></div>
         <div className={`tonearm-big ${isPlaying ? "playing" : ""}`}></div>
       </div> :
-      <div className="vinyl-player" onClick={toggleAudio}>
+      <div className="vinyl-player" onClick={() => toggleAudio(!isPlaying)} onMouseEnter={() => toggleAudio(true)} onMouseLeave={() => toggleAudio(false)}>
         <div className={`vinyl ${isPlaying ? "spinning" : ""}`}></div>
         <div className={`tonearm ${isPlaying ? "playing" : ""}`}></div>
       </div>
