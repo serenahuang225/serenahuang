@@ -76,7 +76,7 @@ button {
 }
 
 .maxWidth {
-  max-width: 800px;
+  width: 800px;
 }
 
 .widthBig {
@@ -141,6 +141,10 @@ button {
 
 a {
   color: var(--link-color);
+}
+
+p {
+  font-size: 1rem;
 }
 
 .noLink {

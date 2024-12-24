@@ -14,10 +14,10 @@ const ExperiencesSection = () => {
     { label: "NASA SEES", icon: "🚀", title: 'Aerospace Engineer Intern', date: 'May 2024 - Aug 2024',
       description: [
       "Chosen as 1 of 50 rising juniors in the nation for the STEM Enhancement in Earth Science (SEES) internship",
-      "Developed an in-situ resource utilization system for lunar exploration and resource mining, including a solar-powered winch-pulley system, wireless power transfer, and in-situ toboggan creation, advancing NASA's Artemis mission",
+      "Developed an in-situ resource utilization system for lunar exploration and resource mining, including a solar-powered winch-pulley system, wireless power transfer, and in-situ toboggan creation",
       "Utilized the ZQube system and machine learning (k-means clustering and cosine similarity) to analyze regolith in microgravity, exploring the potential of various regoliths to be used as building materials",
       "Authored a research proposal studying the effects of astronaut drugs on brain organoids in Zero-G on a parabolic flight",
-      "Applied data analysis techniques to NASA satellite data, determining star radial velocities after redshifts, creating histogram distributions, detailed surface temperature trends, and dispersion maps of the Andromeda Galaxy's star types"
+      "Applied data analysis techniques to NASA satellite data, determining star radial velocities after redshifts, creating histogram distributions, surface temperature trends, and dispersion maps of the Andromeda Galaxy"
     ] },
     { label: "FBLA President", icon: "💼", title: 'Chapter President', date: 'Aug 2022 - Present',
       description: [
@@ -38,9 +38,9 @@ const ExperiencesSection = () => {
   return (
     <div className="experiences-section snapDiv" id="hero">
       <div className='widthBig flexCol'>
+        <motion.h1>Experiences</motion.h1>
         <div className='flexRow alignTop'>
           <div className='leftTabs flexCol'>
-            <motion.h1>Experiences</motion.h1>
             <ul style={{ listStyle: "none" }}>
               {tabs.map((item) => (
                 <motion.li

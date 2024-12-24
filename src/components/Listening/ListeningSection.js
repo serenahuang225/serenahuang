@@ -19,15 +19,14 @@ const ListeningSection = () => {
       <div class={`noot noot-9 ${isPlaying && 'playing'}`}>&#9838; &#9839;</div>
       <div class={`noot noot-10 ${isPlaying && 'playing'}`}>&#9834; &#9833;</div>
 
-
-      <div className='listening-card-wrapper widthBig'>
-        <div className='listening-card flexRow justifySpaceBetween alignCenter'>
-          <motion.h1>What I'm Listening to <p>(at the moment)</p></motion.h1>
+      <motion.h1>What I'm Listening to</motion.h1>
+      <div className='listening-card-wrapper'>
+        <div className='listening-card flexRow alignCenter'>
           <div className='flexCol alignCenter'>
             <AudioButton isBig={true} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
             <div>
               <motion.h2>Mendelssohn: Symphony<br></br> No. 4 in A Major</motion.h2>
-              <motion.p>as featured in Barbie in the 12 Dancing Princesses 😉</motion.p>
+              <motion.p>As featured in Barbie in the 12 Dancing Princesses</motion.p>
             </div>
           </div>
         </div>
