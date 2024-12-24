@@ -27,7 +27,7 @@
   width: 70%;
   height: 300px;
   padding: 1rem;
-  overflow-y: scroll;
+  overflow-y: visible;
   font-weight: 200;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none;  /* Internet Explorer 10+ */

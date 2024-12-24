@@ -80,7 +80,23 @@ button {
 }
 
 .widthBig {
-  width: 1000px;
+  width: 1050px;
+}
+
+@media only screen and (min-width: 600px) {
+  .widthBig {
+    width: 550px;
+  }
+}
+@media only screen and (min-width: 900px) {
+  .widthBig {
+    width: 850px;
+  }
+}
+@media only screen and (min-width: 1100px) {
+  .widthBig {
+    width: 1050px;
+  }
 }
 
 .flexCol {
@@ -99,6 +115,10 @@ button {
 
 .alignCenter {
   align-items: center;
+}
+
+.alignTop {
+  align-items: flex-start;
 }
 
 .pad2 {

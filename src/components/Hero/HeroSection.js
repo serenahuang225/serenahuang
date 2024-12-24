@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import './HeroSection.css';
-import blob from './blob.gif'
 import AnimatedButton from './AnimatedButton';
 import { FaGithub, FaLinkedin } from 'react-icons/fa';
 
@@ -45,8 +44,8 @@ const HeroSection = () => {
         <motion.img 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.4, duration: 0.6 }} 
-          src={blob} style={{height: 300, width: 300}} />
+          transition={{ delay: 1.2, duration: 0.6 }} 
+          src={'/profile.jpg'} style={{height: 500, width: 500, borderRadius: 250}} />
       </div>
     </div>
   );
