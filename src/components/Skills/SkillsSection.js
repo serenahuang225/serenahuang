@@ -68,7 +68,7 @@ const SkillsSection = () => {
               fmntData.map(item => <li className='skillBlock flexRow alignCenter' key={item.name}>{item.icon} {item.name}</li>)
             }
           </ul>
-          <h3 style={{marginBottom: '0.5rem'}}>Certifications</h3>
+          <h3>Certifications</h3>
           <ul className='flexRow' style={{listStyleType: 'none'}}>
             {
               certifications.map(item => <li className='certContainer'><a style={{gap: "0.5rem"}} className='flexRow noLink alignCenter' rel="noreferrer noopener" target="_blank" href={item.link} key={item.name}>{item.imagey}
