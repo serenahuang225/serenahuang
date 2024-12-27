@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion';
 import "./ExperiencesSection.css"
 
@@ -19,6 +19,14 @@ const ExperiencesSection = () => {
       "Authored a research proposal studying the effects of astronaut drugs on brain organoids in Zero-G on a parabolic flight",
       "Applied data analysis techniques to NASA satellite data, determining star radial velocities after redshifts, creating histogram distributions, surface temperature trends, and dispersion maps of the Andromeda Galaxy"
     ] },
+    { label: "Ariel", icon: "🖨️", title: 'Software Engineer Intern', date: 'Jun 2022 - Aug 2022 and Jun 2023 - Aug 2023',
+      description: [
+      "Created a React Native iOS app to scan misprinted and discarded promotional products with OCR (optical character recognition) and USPTO's Trademark API",
+      "Developed neural network clustering in PyTorch using EfficientNet transfer learning with a trademark dataset of over 10K self-collected data points",
+      "Designed a data collection and processing system using Google Maps API, SERP API, Selenium, Pandas, and SQL, collecting 600+ daily data entries",
+      "Automated program execution and email notifications using Python and Linux cron jobs, saving 15 hours/week and $12K/year",
+      "Developed a business industry search tool by programming a web interface with a React.js frontend and PHP backend containing product order data cleaned using SQL and Pandas, then implementing visualization tools and market trend reports for Ariel's marketing department",
+    ] },
     { label: "FBLA President", icon: "💼", title: 'Chapter President', date: 'Aug 2022 - Present',
       description: [
       "Directed chapter activities, resulting in achieving Champion Chapter of the Year status for 2 consecutive seasons",
@@ -30,7 +38,7 @@ const ExperiencesSection = () => {
       "Spearheaded fundraising initiatives that raised a total of $34K, providing critical support to cancer patients in local hospitals",
       "Managed logistics and coordination of food catering for the final 4-hour event with over 200 attendees",
       "Led outreach efforts to 200 local businesses, securing 56 sponsorships that bolstered event funding and community engagement"
-    ] },
+    ] }
   ];
 
   const [selectedTab, setSelectedTab] = useState(tabs[0]);

@@ -23,7 +23,7 @@ const HeroSection = () => {
             transition={{ delay: 0.4, duration: 0.6 }}
             className='nobold' style={{margin: '2rem 0 2rem 0'}}
           >
-            I like to <b>build cool stuff!</b>
+            I like to build cool stuff. *🐛🔨*
           </motion.h2>
           <motion.div 
             initial={{ opacity: 0, y: -20 }}

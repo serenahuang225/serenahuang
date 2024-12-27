@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import "./SkillsSection.css"
 import { FaPython, FaJava, FaHtml5, FaCss3Alt, FaSwift, FaPhp, FaReact, FaGitAlt, FaLinux, FaAws } from "react-icons/fa";
 import { SiJavascript, SiTypescript, SiPytorch, SiTensorflow, SiScikitlearn, SiPandas, SiNumpy, SiNextdotjs, SiTailwindcss, SiStreamlit, SiFlask, SiSelenium, SiBlender, SiTableau } from "react-icons/si";
@@ -28,8 +28,8 @@ const SkillsSection = () => {
   const fmntData = [
     {name: "PyTorch", icon: <SiPytorch size={36} />},
     {name: "TensorFlow", icon: <SiTensorflow size={36} />},
-    {name: "scikit-learn", icon: <SiScikitlearn size={36} />},
-    {name: "pandas", icon: <SiPandas size={36} />},
+    {name: "Scikit-Learn", icon: <SiScikitlearn size={36} />},
+    {name: "Pandas", icon: <SiPandas size={36} />},
     {name: "NumPy", icon: <SiNumpy size={36} />},
     {name: "React.js", icon: <FaReact size={36} />},
     {name: "React Native", icon: <FaReact size={36} />},
@@ -49,7 +49,6 @@ const SkillsSection = () => {
   const certifications = [
     {name: "Machine Learning",provider:"Stanford Online & DeepLearning.AI",link:"https://coursera.org/share/d8236540e5ddde532d7bda0ac8ef51ff", imagey: <img className='certImg' src={ml} alt="cs50 certificate" />},
     {name: "CS50's Intro to Computer Science",provider:"HarvardX",link:"https://courses.edx.org/certificates/abeae55c189948ea9e7764c918df1640", imagey: <img className='certImg' src={csfifty} alt="cs50 certificate" />},
-
   ]
 
   return (
@@ -69,7 +68,7 @@ const SkillsSection = () => {
               fmntData.map(item => <li className='skillBlock flexRow alignCenter' key={item.name}>{item.icon} {item.name}</li>)
             }
           </ul>
-          <h3>Certifications</h3>
+          <h3 style={{marginBottom: '0.5rem'}}>Certifications</h3>
           <ul className='flexRow' style={{listStyleType: 'none'}}>
             {
               certifications.map(item => <li className='certContainer'><a style={{gap: "0.5rem"}} className='flexRow noLink alignCenter' rel="noreferrer noopener" target="_blank" href={item.link} key={item.name}>{item.imagey}

@@ -2,10 +2,10 @@ import React from "react";
 import { motion } from "framer-motion";
 import "./AnimatedButton.css"
 
-const AnimatedButton = () => {
+const AnimatedButton = ({link="mailto:serenahuang225@gmail.com", message="WORK WITH ME" }) => {
   return (
     <motion.a
-      href="mailto:serenahuang225@gmail.com"
+      href={link} rel="noopener noreferrer" target="_blank"
       style={{textDecoration: 'none', width: 'fit-content'}}
     >
       <motion.button
@@ -51,7 +51,7 @@ const AnimatedButton = () => {
             }} 
             className="linear-mask"
           >
-            WORK WITH ME
+            {message}
           </span>
 
           <span

@@ -2,7 +2,6 @@ import { useLocation, useRoutes } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { cloneElement } from "react";
 import Home from "./routes/Home";
-import Navbar from "./components/Nav/Navbar";
 import Resume from "./routes/Resume";
 
 function App() {
