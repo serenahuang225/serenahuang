@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { motion } from 'framer-motion';
 import "./SkillsSection.css"
@@ -10,40 +10,49 @@ import { IoLogoFirebase } from 'react-icons/io5';
 
 import ml from './ml.png'
 import csfifty from './cs50.png'
+import useDimensions from '../../utils/useDimensions';
 
 const SkillsSection = () => {
+  const [itemSize, setItemSize] = useState(36)
+  const {width, _} = useDimensions()
+  useEffect(()=>{
+    if (width<800) {
+      setItemSize(24)
+    }
+  }, [width])
+
   const languagesData = [
-    {name: "Python", icon: <FaPython size={36} /> },
-    {name: "Java", icon: <FaJava size={36} /> },
-    {name: "JavaScript", icon: <SiJavascript size={36} /> },
-    {name: "TypeScript", icon: <SiTypescript size={36} /> },
-    {name: "C++", icon: <TbBrandCpp size={36} /> },
-    {name: "SQL", icon: <GrMysql size={36} /> },
-    {name: "HTML", icon: <FaHtml5 size={36} /> },
-    {name: "CSS", icon: <FaCss3Alt size={36} /> },
-    {name: "Swift", icon: <FaSwift size={36} /> },
-    {name: "PHP", icon: <FaPhp size={36} /> },
+    {name: "Python", icon: <FaPython size={itemSize} /> },
+    {name: "Java", icon: <FaJava size={itemSize} /> },
+    {name: "JavaScript", icon: <SiJavascript size={itemSize} /> },
+    {name: "TypeScript", icon: <SiTypescript size={itemSize} /> },
+    {name: "C++", icon: <TbBrandCpp size={itemSize} /> },
+    {name: "SQL", icon: <GrMysql size={itemSize} /> },
+    {name: "HTML", icon: <FaHtml5 size={itemSize} /> },
+    {name: "CSS", icon: <FaCss3Alt size={itemSize} /> },
+    {name: "Swift", icon: <FaSwift size={itemSize} /> },
+    {name: "PHP", icon: <FaPhp size={itemSize} /> },
   ]
 
   const fmntData = [
-    {name: "PyTorch", icon: <SiPytorch size={36} />},
-    {name: "TensorFlow", icon: <SiTensorflow size={36} />},
-    {name: "Scikit-Learn", icon: <SiScikitlearn size={36} />},
-    {name: "Pandas", icon: <SiPandas size={36} />},
-    {name: "NumPy", icon: <SiNumpy size={36} />},
-    {name: "React.js", icon: <FaReact size={36} />},
-    {name: "React Native", icon: <FaReact size={36} />},
-    {name: "Next.js", icon: <SiNextdotjs size={36} />},
-    {name: "TailwindCSS", icon: <SiTailwindcss size={36} />},
-    {name: "Git", icon: <FaGitAlt size={36} />},
-    {name: "Linux", icon: <FaLinux size={36} />},
-    {name: "Firebase", icon: <IoLogoFirebase size={36} />},
-    {name: "AWS", icon: <FaAws size={36} />},
-    {name: "Streamlit", icon: <SiStreamlit size={36} />},
-    {name: "Flask", icon: <SiFlask size={36} />},
-    {name: "Selenium", icon: <SiSelenium size={36} />},
-    {name: "Blender", icon: <SiBlender size={36} />},
-    {name: "Tableau", icon: <SiTableau size={36} />},
+    {name: "PyTorch", icon: <SiPytorch size={itemSize} />},
+    {name: "TensorFlow", icon: <SiTensorflow size={itemSize} />},
+    {name: "Scikit-Learn", icon: <SiScikitlearn size={itemSize} />},
+    {name: "Pandas", icon: <SiPandas size={itemSize} />},
+    {name: "NumPy", icon: <SiNumpy size={itemSize} />},
+    {name: "React.js", icon: <FaReact size={itemSize} />},
+    {name: "React Native", icon: <FaReact size={itemSize} />},
+    {name: "Next.js", icon: <SiNextdotjs size={itemSize} />},
+    {name: "TailwindCSS", icon: <SiTailwindcss size={itemSize} />},
+    {name: "Git", icon: <FaGitAlt size={itemSize} />},
+    {name: "Linux", icon: <FaLinux size={itemSize} />},
+    {name: "Firebase", icon: <IoLogoFirebase size={itemSize} />},
+    {name: "AWS", icon: <FaAws size={itemSize} />},
+    {name: "Streamlit", icon: <SiStreamlit size={itemSize} />},
+    {name: "Flask", icon: <SiFlask size={itemSize} />},
+    {name: "Selenium", icon: <SiSelenium size={itemSize} />},
+    {name: "Blender", icon: <SiBlender size={itemSize} />},
+    {name: "Tableau", icon: <SiTableau size={itemSize} />},
   ]
 
   const certifications = [
@@ -71,8 +80,11 @@ const SkillsSection = () => {
           <h3>Certifications</h3>
           <ul className='flexRow' style={{listStyleType: 'none'}}>
             {
-              certifications.map(item => <li className='certContainer'><a style={{gap: "0.5rem"}} className='flexRow noLink alignCenter' rel="noreferrer noopener" target="_blank" href={item.link} key={item.name}>{item.imagey}
-              <p><b>{item.name}</b>: <br></br> {item.provider}</p></a></li>)
+              certifications.map(item => <li className='certContainer'>
+                <a style={{gap: "0.5rem"}} className='flexRow noLink alignCenter' rel="noreferrer noopener" target="_blank" href={item.link} key={item.name}>
+                  {width>800 && item.imagey}
+                <p><b>{item.name}</b>: <br></br> {item.provider}</p>
+              </a></li>)
             }
           </ul>
         </div>

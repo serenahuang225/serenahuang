@@ -10,13 +10,22 @@
 .skills-section h1 {
   font-size: 2.5rem;
   text-align: center;
+  @media only screen and (max-width: 600px) {
+    font-size: 2rem;
+    margin-top: 2rem;
+  }
 }
 
 .skills-section h3 {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 400;
   margin-top: 2rem;
   margin-bottom: 0.5rem;
+  @media only screen and (max-width: 600px) {
+    font-size: 1.25rem;
+    margin-top: 1rem;
+    margin-bottom: 0;
+  }
 }
 
 .skills-section ul {
@@ -25,11 +34,23 @@
   justify-content: center;
 }
 
+ul .flexRow p {
+  @media only screen and (max-width: 600px) {
+    font-size: 0.8rem;
+    text-align: center;
+  }
+}
+
 .skillBlock, .certContainer {
   gap: 0.5rem;
   margin: 0.2rem 0.5rem;
   padding: 0.4rem 0.6rem;
   transition: 0.5s ease;
+  @media only screen and (max-width: 600px) {
+    padding: 0.2rem 0.3rem;
+    margin: 0.2rem 0.3rem;
+    font-size: 0.8rem;
+  }
 }
 
 .skillBlock:hover, .certContainer:hover {

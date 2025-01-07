@@ -9,6 +9,10 @@
 
 .projects-section h1 {
   font-size: 2.5rem;
+  @media only screen and (max-width: 600px) {
+    font-size: 2rem;
+    margin-top: 2rem;
+  }
 }
 
 .projImage {
@@ -16,6 +20,11 @@
   width: 360px;
   object-fit: cover;
   background-color: black;
+
+  @media only screen and (max-width: 800px) {
+    height: 120px;
+    width: 240px;
+  }
 }
 
 .experienceGrid {
@@ -23,4 +32,9 @@
   grid-template-columns: repeat(2, 1fr);
   row-gap: 1rem;
   column-gap: 1rem;
+
+  @media only screen and (max-width: 800px) {
+    grid-template-columns: repeat(1, 1fr);
+    row-gap: 0.5rem;
+  }
 }

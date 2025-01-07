@@ -1,14 +1,24 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 
-const useDimensions = ref => {
-  const dimensions = useRef({ width: 0, height: 0 });
+const useDimensions = () => {
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
 
   useEffect(() => {
-    dimensions.current.width = ref.current.offsetWidth;
-    dimensions.current.height = ref.current.offsetHeight;
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return dimensions.current;
+  return windowSize;
 };
 
 export default useDimensions;
