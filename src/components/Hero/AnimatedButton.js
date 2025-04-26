@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import "./AnimatedButton.css"
 
-const AnimatedButton = ({link="mailto:serenahuang225@gmail.com", message="WORK WITH ME" }) => {
+const AnimatedButton = ({link="mailto:serenahuang225@gmail.com", message="LETS WORK TOGETHER" }) => {
   return (
     <motion.a
       href={link} rel="noopener noreferrer" target="_blank"
