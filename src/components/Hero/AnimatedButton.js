@@ -45,8 +45,8 @@ const AnimatedButton = ({link="mailto:serenahuang225@gmail.com", message="LETS W
               display: "block",
               position: "relative",
               color: 'white',
-              fontSize: '1rem',
-              fontFamily: "Host Grotesk",
+              fontSize: '1.2rem',
+              fontFamily: "Outfit",
               fontWeight: '700'
             }} 
             className="linear-mask"

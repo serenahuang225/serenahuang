@@ -7,7 +7,7 @@ const Resume = () => {
 
   return (
     <div id="app" data-theme="dark">
-      <div className='maxWidth flexCol pad2 resume'>
+      <div className='widthBig flexCol pad2 resume'>
         <AudioButton isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
         <Switch />
         <h1>Serena Huang</h1>

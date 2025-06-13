@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion';
 import "./ExperiencesSection.css"
 
@@ -42,24 +42,48 @@ const ExperiencesSection = () => {
   ];
 
   const [selectedTab, setSelectedTab] = useState(tabs[0]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
-    <div className="experiences-section snapDiv" id="hero">
+    <div className="experiences-section" id="about">
       <div className='widthBig flexCol'>
-        <motion.h1>Experiences</motion.h1>
-        <div className='flexRow alignTop'>
+        <motion.h1
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          Experiences
+        </motion.h1>
+        <motion.div 
+          className='flexRow alignTop'
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
           <div className='leftTabs flexCol'>
             <ul style={{ listStyle: "none" }}>
-              {tabs.map((item) => (
+              {tabs.map((item, index) => (
                 <motion.li
-                  initial={{scale: 1}}
-                  whileHover={{scale: 1.02}}
-                  whileTap={{scale: 0.98}}
-                  key={item.label} className='singleTab'
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 + (index * 0.1), duration: 0.5 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  key={item.label} 
+                  className={`singleTab ${item.icon === selectedTab.icon ? 'active' : ''}`}
                   onClick={() => setSelectedTab(item)}
                 >
                   <span style={{ marginRight: "8px" }}>{item.icon}</span> {item.label}
-                  {item.icon === selectedTab.icon ? (
+                  {!isMobile && item.icon === selectedTab.icon ? (
                     <motion.div
                       layoutId="underline"
                       className='selectedBorder'
@@ -71,21 +95,47 @@ const ExperiencesSection = () => {
           </div>
 
           <AnimatePresence mode="wait">
-            <motion.div className={`rightTabContent`}
+            <motion.div 
+              className='rightTabContent'
               key={selectedTab ? selectedTab.label : "empty"}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <h2>{selectedTab.title}</h2>
-              <p>{selectedTab.date}</p>
-              <ul>
-                {selectedTab.description.map(text => <li id={text}>{text}</li>)}
-              </ul>
+              <motion.h2
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
+              >
+                {selectedTab.title}
+              </motion.h2>
+              <motion.p
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
+              >
+                {selectedTab.date}
+              </motion.p>
+              <motion.ul
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.3 }}
+              >
+                {selectedTab.description.map((text, index) => (
+                  <motion.li 
+                    key={text}
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.4 + (index * 0.1), duration: 0.3 }}
+                  >
+                    {text}
+                  </motion.li>
+                ))}
+              </motion.ul>
             </motion.div>
           </AnimatePresence>
-        </div>
+        </motion.div>
       </div>
     </div>
   )

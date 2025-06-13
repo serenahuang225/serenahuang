@@ -1,13 +1,14 @@
 .clickMe {
   position: absolute;
   height: 50px;
-  width: 50px;
+  width: 75px;
   background-color: rgba(0, 0, 0, 0.763);
   z-index: 5;
   color: white;
   top: 0;
   left: 0;
   transform: rotate(-29deg);
+  font-family: "Outfit", sans-serif;
 }
 
 .vinyl-player {

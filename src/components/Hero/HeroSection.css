@@ -1,5 +1,5 @@
 .hero-section {
-  background: linear-gradient(180deg, #000, #14053f);
+  background: linear-gradient(180deg, #000, var(--purple-color-black));
   width: 100%;
   display: flex;
   flex-direction: column;

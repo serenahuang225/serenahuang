@@ -1,5 +1,5 @@
 .listening-section {
-  background: linear-gradient(180deg, #861CE2, #C9B8FF);
+  background: linear-gradient(180deg, var(--purple-color-light), var(--purple-color-lightest));
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -7,6 +7,7 @@
   align-items: center;
   position: relative;
   overflow: hidden;
+  padding-bottom: 6rem;
 }
 
 .listening-card-wrapper {

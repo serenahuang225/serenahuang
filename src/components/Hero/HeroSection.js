@@ -6,32 +6,40 @@ import { FaGithub, FaLinkedin } from 'react-icons/fa';
 
 const HeroSection = () => {
   return (
-    <div className="hero-section snapDiv" id="hero">
+    <div className="hero-section" id="hero">
       <div className='widthBig flexRowChange justifySpaceBetween alignCenter'>
         <div>
-          <motion.h1
+          <motion.p
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
             className='nobold'
           >
-            Hi, I'm Serena!
-          </motion.h1>
-          <motion.h2
+            👋 Hello there, I'm Serena!
+          </motion.p>
+          <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className='nobold' style={{margin: '2rem 0 2rem 0'}}
+            className='nobold' style={{margin: '1rem 0'}}
           >
-            I like to build cool stuff.
-          </motion.h2>
+            Engineer, developer, & learner
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className='nobold' style={{margin: '1rem 0'}}
+          >
+            Whether it's a website, app design, or a new AI model, I like to build cool stuff.
+          </motion.p>
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.6 }} 
             className='flexRow alignCenter gapChange'
           >
-            <AnimatedButton />
+            <AnimatedButton message="LET'S WORK TOGETHER" />
             <motion.a initial={{scale:1}} whileHover={{scale: 1.05}} whileTap={{scale:0.95}} style={{marginLeft: '1rem'}} className='noLink' href="https://www.linkedin.com/in/serenahuang225/" rel="noreferrer noopener" target="_blank">
               <FaLinkedin size={36} />
             </motion.a>
@@ -40,11 +48,6 @@ const HeroSection = () => {
             </motion.a>
           </motion.div>
         </div>
-        <motion.img 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 0.6 }} 
-          src={'/profile.jpg'} className='hero-img' />
       </div>
     </div>
   );

@@ -1,0 +1,85 @@
+.contact-section {
+  background: linear-gradient(180deg, var(--purple-color-lighter), var(--purple-color-light));
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.contact-section .widthBig {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+
+.contact-section .profile-picture {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.contact-section h2 {
+  font-size: 2.5rem;
+  margin: 0;
+  color: white;
+}
+
+.contact-section p {
+  font-size: 1.2rem;
+  max-width: 600px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.contact-section .flexSB {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.contact-section a {
+  color: white;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.contact-section a:hover {
+  color: var(--purple-color);
+}
+
+.contact-section .flexRow {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.contact-section .flexRow a {
+  color: white;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.contact-section .flexRow a:hover {
+  color: var(--purple-color);
+}
+
+@media only screen and (max-width: 600px) {
+  .contact-section {
+    padding: 0.5rem 0;
+  }
+
+  .contact-section .profile-picture {
+    width: 150px;
+    height: 150px;
+  }
+
+  .contact-section .flexSB {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

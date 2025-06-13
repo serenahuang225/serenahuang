@@ -15,7 +15,7 @@ const ProjectsSection = () => {
     {link: "https://github.com/serenahuang225/anchor", imagy: <motion.img initial={{scale:1}} whileHover={{scale:1.03}} className='projImage' src={anchor} alt="painting project" />},
   ]
   return (
-    <div className="projects-section snapDiv" id="projects">
+    <div className="projects-section" id="projects">
       <div className='widthBig flexCol alignCenter justifyCenter'>
         <motion.h1>Projects</motion.h1>
         <motion.p style={{marginBottom: '1.5rem'}}>Some of my best works</motion.p>

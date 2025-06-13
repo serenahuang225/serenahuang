@@ -5,17 +5,18 @@ import ExperiencesSection from '../components/Experiences/ExperiencesSection';
 import ListeningSection from '../components/Listening/ListeningSection';
 import ProjectsSection from '../components/Projects/ProjectsSection';
 import SkillsSection from '../components/Skills/SkillsSection';
+import ContactSection from '../components/Contact/ContactSection';
 
 const Home = () => {
   return (
     <div id="app" data-theme="dark">
-      <div className='scrollSnap'>
-        <HeroSection />
-        <ExperiencesSection />
-        <ProjectsSection />
-        <SkillsSection />
-        <ListeningSection />
-      </div>
+      <Navbar />
+      <HeroSection />
+      <ExperiencesSection />
+      <SkillsSection />
+      <ProjectsSection />
+      <ContactSection />
+      <ListeningSection />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 .skills-section {
-  background: linear-gradient(180deg, #4F068B, #6B0FB7, #861CE2);
+  background: linear-gradient(180deg, var(--purple-color-darker), var(--purple-color-dark), var(--purple-color));
   width: 100%;
   display: flex;
   flex-direction: column;

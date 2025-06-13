@@ -1,5 +1,5 @@
 .experiences-section {
-  background: linear-gradient(180deg, #14053f, #320665);
+  background: linear-gradient(180deg, var(--purple-color-black), var(--purple-color-darker));
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -9,7 +9,7 @@
 
 .experiences-section h1 {
   font-size: 2.5rem;
-  /* text-align: center; */
+  margin-bottom: 1rem;
 }
 
 .leftTabs {
@@ -21,20 +21,21 @@
   padding: 0.75rem 1rem;
   cursor: pointer;
   width: fit-content;
+  transition: color 0.3s ease;
+  position: relative;
+}
+
+.singleTab:hover {
+  color: var(--purple-color-lightest);
 }
 
 .rightTabContent {
   width: 70%;
-  height: 450px;
   padding: 1rem;
   overflow-y: visible;
   font-weight: 200;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
-}
-
-.rightTabContent.notAtBottomOfContent {
-  box-shadow: 0 16px 8px -8px rgba(255, 255, 255, 0.10);
 }
 
 .rightTabContent::-webkit-scrollbar { /* WebKit */
@@ -45,16 +46,124 @@
 .rightTabContent h2 {
   font-weight: 400;
   font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.rightTabContent p {
+  color: var(--purple-color-lightest);
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
 }
 
 .rightTabContent ul {
   padding-left: 2rem;
 }
 
+.rightTabContent li {
+  margin-bottom: 0.5rem;
+  line-height: 1.25;
+}
+
 .selectedBorder {
   height: 30px;
-  border: 2px white solid;
+  border: 2px solid var(--purple-color-lightest);
   margin-top: -30px;
   margin-left: -20px;
   width: min-content;
+}
+
+@media only screen and (max-width: 768px) {
+  .experiences-section {
+    padding: 2rem 1rem;
+  }
+
+  .experiences-section h1 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .flexRow.alignTop {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .leftTabs {
+    width: 100%;
+    padding: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .leftTabs ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0;
+  }
+
+  .singleTab {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    margin: 0.25rem;
+  }
+
+  .selectedBorder {
+    display: none;
+  }
+
+  .singleTab.active {
+    background: var(--purple-color-darker);
+    color: white;
+  }
+
+  .rightTabContent {
+    width: 100%;
+    padding: 0;
+  }
+
+  .rightTabContent h2 {
+    text-align: center;
+  }
+
+  .rightTabContent p {
+    text-align: center;
+  }
+
+  .rightTabContent ul {
+    padding-left: 1rem;
+  }
+
+  .rightTabContent li {
+    font-size: 0.9rem;
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  .experiences-section {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .experiences-section h1 {
+    font-size: 1.75rem;
+  }
+
+  .singleTab {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .rightTabContent h2 {
+    font-size: 1.1rem;
+  }
+
+  .rightTabContent p {
+    font-size: 0.85rem;
+  }
+
+  .rightTabContent li {
+    font-size: 0.85rem;
+  }
 }

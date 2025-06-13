@@ -61,7 +61,7 @@ const SkillsSection = () => {
   ]
 
   return (
-    <div className="skills-section snapDiv" id="projects">
+    <div className="skills-section" id="projects">
       <div className='widthBig flexCol'>
         <motion.h1>Skills</motion.h1>
         <div className='flexCol alignCenter'>
@@ -81,7 +81,7 @@ const SkillsSection = () => {
           <ul className='flexRow' style={{listStyleType: 'none'}}>
             {
               certifications.map(item => <li className='certContainer'>
-                <a style={{gap: "0.5rem"}} className='flexRow noLink alignCenter' rel="noreferrer noopener" target="_blank" href={item.link} key={item.name}>
+                <a style={{gap: "1rem"}} className='flexRow noLink alignCenter' rel="noreferrer noopener" target="_blank" href={item.link} key={item.name}>
                   {width>800 && item.imagey}
                 <p><b>{item.name}</b>: <br></br> {item.provider}</p>
               </a></li>)

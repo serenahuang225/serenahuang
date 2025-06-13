@@ -7,7 +7,7 @@ const ListeningSection = () => {
   const [isPlaying, setIsPlaying] = useState(false);
 
   return (
-    <div className="listening-section snapDiv" id="hero">
+    <div className="listening-section" id="music">
       <div class={`noot noot-1 ${isPlaying && 'playing'}`}>&#9835; &#9833;</div>
       <div class={`noot noot-2 ${isPlaying && 'playing'}`}>&#119070;</div>
       <div class={`noot noot-3 ${isPlaying && 'playing'}`}>&#119074;</div>

@@ -1,45 +1,51 @@
-import React, { useRef, useState } from 'react';
-import { motion, useCycle } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { FaHouse, FaUser, FaBriefcase, FaEnvelope, FaMusic } from 'react-icons/fa6';
 import './Navbar.css';
-import useDimensions from '../../utils/useDimensions';
-import { Navigation } from './Navigation';
-import { MenuToggle } from './MenuToggle';
-
-const sidebar = {
-  open: (height = 1000) => ({
-    clipPath: `circle(${height * 2 + 200}px at 40px 40px)`,
-    transition: {
-      type: "spring",
-      stiffness: 20,
-      restDelta: 2
-    }
-  }),
-  closed: {
-    clipPath: "circle(30px at 40px 40px)",
-    transition: {
-      delay: 0.5,
-      type: "spring",
-      stiffness: 400,
-      damping: 40
-    }
-  }
-};
 
 const Navbar = () => {
-  const [isOpen, toggleOpen] = useCycle(false, true);
-  const containerRef = useRef(null);
-  const { height } = useDimensions(containerRef);
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
-    <motion.nav
-      initial={false}
-      animate={isOpen ? "open" : "closed"}
-      custom={height}
-      ref={containerRef}
+    <motion.nav 
+      className="navbar"
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5 }}
     >
-      <motion.div className="background" variants={sidebar} />
-      <MenuToggle toggle={() => toggleOpen()} />
-      <Navigation />
+      <div className="navbar-content widthBig">
+        <div className="profile-part">
+          <img src="/profile.jpg" alt="Profile" className="profile-picture" />
+        </div>
+        
+        <div className="nav-links">
+          <button onClick={() => scrollToSection('hero')} className="nav-link">
+            <FaHouse size={24} />
+            <span>Home</span>
+          </button>
+          <button onClick={() => scrollToSection('about')} className="nav-link">
+            <FaUser size={24} />
+            <span>About</span>
+          </button>
+          <button onClick={() => scrollToSection('projects')} className="nav-link">
+            <FaBriefcase size={24} />
+            <span>Projects</span>
+          </button>
+          <button onClick={() => scrollToSection('contact')} className="nav-link">
+            <FaEnvelope size={24} />
+            <span>Contact</span>
+          </button>
+          <button onClick={() => scrollToSection('music')} className="nav-link">
+            <FaMusic size={24} />
+            <span>Music</span>
+          </button>
+        </div>
+      </div>
     </motion.nav>
   );
 };
