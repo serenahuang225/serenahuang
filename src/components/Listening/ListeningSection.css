@@ -16,42 +16,41 @@
   box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
   backdrop-filter: blur( 4px );
   -webkit-backdrop-filter: blur( 4px );
-  border: 1px solid rgba( 255, 255, 255, 0.18 );
+  border: 1px solid rgba( 255, 255, 255, 0.18 ); 
+  
   @media only screen and (max-width: 600px) {
     padding: 1rem;
   }
 }
 
+
 .listening-card {
   padding: 3rem;
   border: 1px solid rgba( 255, 255, 255, 0.36 );
   justify-content: space-around;
+
+  @media only screen and (max-width: 600px) {
+    padding: 2rem;
+  }
 }
 
-.listening-section h1 {
-  font-size: 2.5rem;
+.listening-section h2 {
   text-align: center;
   margin-bottom: 2rem;
   @media only screen and (max-width: 600px) {
-    font-size: 2rem;
     margin-top: 2rem;
     margin-bottom: 1rem;
   }
 }
 
-.listening-section h2 {
+.listening-section h4 {
   margin-top: 2rem;
-  font-size: 1.5rem;
   font-weight: 400;
   text-align: center;
-  @media only screen and (max-width: 600px) {
-    font-size: 1.25rem;
-  }
 }
 
 .listening-section p {
   margin-top: 1rem;
-  font-size: 0.9rem;
   font-weight: 300;
   text-align: center;
 }

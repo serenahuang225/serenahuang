@@ -23,7 +23,7 @@ const HeroSection = () => {
             transition={{ delay: 0.4, duration: 0.6 }}
             className='nobold' style={{margin: '1rem 0'}}
           >
-            Engineer, developer, & learner
+            Engineer, developer, and learner
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: -20 }}
@@ -31,7 +31,7 @@ const HeroSection = () => {
             transition={{ delay: 0.4, duration: 0.6 }}
             className='nobold' style={{margin: '1rem 0'}}
           >
-            Whether it's a website, app design, or a new AI model, I like to build cool stuff.
+            I like to build cool stuff.
           </motion.p>
           <motion.div 
             initial={{ opacity: 0, y: -20 }}

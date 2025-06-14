@@ -65,13 +65,13 @@ const SkillsSection = () => {
   return (
     <div className="skills-section" id="about">
       <div className='widthBig flexCol'>
-        <motion.h1
+        <motion.h2
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-        >
+        > 
           Skills
-        </motion.h1>
+        </motion.h2>
         {/* <motion.p
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -87,8 +87,8 @@ const SkillsSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
           >
-            <h3>AI & Data Science</h3>
-            <p>Skilled in machine learning frameworks and data analysis tools, creating intelligent solutions and visualizations.</p>
+            <h4>AI & Data Science</h4>
+            <p className='small'>Skilled in machine learning frameworks and data analysis tools, creating intelligent solutions and visualizations.</p>
             <ul className='flexRow' style={{listStyleType: 'none'}}>
               {dataScienceSkills.map(item => (
                 <motion.li 
@@ -112,8 +112,8 @@ const SkillsSection = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.6, duration: 0.6 }}
           >
-            <h3>Front-end Development</h3>
-            <p>Expert in modern web technologies, crafting responsive and high-performance websites with the latest frameworks and tools.</p>
+            <h4>Frontend Development</h4>
+            <p className='small'>Expert in modern web technologies, crafting responsive and high-performance websites with the latest frameworks and tools.</p>
             <ul className='flexRow' style={{listStyleType: 'none'}}>
               {frontendSkills.map(item => (
                 <motion.li 
@@ -137,8 +137,8 @@ const SkillsSection = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.8, duration: 0.6 }}
           >
-            <h3>Back-end Development</h3>
-            <p>Proficient in multiple programming languages and cloud services, building robust and scalable applications.</p>
+            <h4>Backend Development</h4>
+            <p className='small'>Proficient in multiple programming languages and cloud services, building robust and scalable applications.</p>
             <ul className='flexRow' style={{listStyleType: 'none'}}>
               {backendSkills.map(item => (
                 <motion.li 
@@ -163,7 +163,7 @@ const SkillsSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.6 }}
         >
-          <h3>Certifications</h3>
+          <h4>Certifications</h4>
           <ul className='flexRow' style={{listStyleType: 'none'}}>
             {certifications.map(item => (
               <motion.li 
@@ -174,7 +174,7 @@ const SkillsSection = () => {
               >
                 <a style={{gap: "1rem"}} className='flexRow noLink alignCenter' rel="noreferrer noopener" target="_blank" href={item.link}>
                   {width>800 && item.imagey}
-                  <p><b>{item.name}</b>: <br></br> {item.provider}</p>
+                  <p className='small italic'><b>{item.name}</b>: <br></br> <span className='normal-italic'>{item.provider}</span></p>
                 </a>
               </motion.li>
             ))}

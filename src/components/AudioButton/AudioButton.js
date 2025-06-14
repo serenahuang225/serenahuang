@@ -44,12 +44,10 @@ const AudioButton = ({isBig=false, isPlaying, setIsPlaying}) => {
     {
       isBig ?
       <div className="vinyl-player-big" onClick={toggleAudio} onMouseEnter={() => toggleHoverAudio(true)} onMouseLeave={() => toggleHoverAudio(false)}>
-        { !hasClicked && <button className="clickMe" onClick={() => setHasClicked(true)}>Click me<br/>or hover!</button> }
         <div className={`vinyl-big ${isPlaying ? "spinning" : ""}`}></div>
         <div className={`tonearm-big ${isPlaying ? "playing" : ""}`}></div>
       </div> :
       <div className="vinyl-player" onClick={toggleAudio} onMouseEnter={() => toggleHoverAudio(true)} onMouseLeave={() => toggleHoverAudio(false)}>
-        { !hasClicked && <button className="clickMe" onClick={() => setHasClicked(true)}>Click me<br/>or hover!</button> }
         <div className={`vinyl ${isPlaying ? "spinning" : ""}`}></div>
         <div className={`tonearm ${isPlaying ? "playing" : ""}`}></div>
       </div>

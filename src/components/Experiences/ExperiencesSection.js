@@ -56,13 +56,13 @@ const ExperiencesSection = () => {
   return (
     <div className="experiences-section" id="experience">
       <div className='widthBig flexCol'>
-        <motion.h1
+        <motion.h2
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
           Experience
-        </motion.h1>
+        </motion.h2>
         <motion.div 
           className='flexRow alignTop'
           initial={{ y: 20, opacity: 0 }}
@@ -103,13 +103,13 @@ const ExperiencesSection = () => {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <motion.h2
+              <motion.h4
                 initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1, duration: 0.3 }}
               >
                 {selectedTab.title}
-              </motion.h2>
+              </motion.h4>
               <motion.p
                 initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}

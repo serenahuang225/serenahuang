@@ -7,14 +7,6 @@
   align-items: center;
 }
 
-.projects-section h1 {
-  font-size: 2.5rem;
-  @media only screen and (max-width: 600px) {
-    font-size: 2rem;
-    margin-top: 2rem;
-  }
-}
-
 .projImage {
   height: 200px;
   width: 360px;

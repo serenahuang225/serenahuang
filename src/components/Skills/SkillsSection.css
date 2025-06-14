@@ -5,22 +5,11 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 4rem 0;
-}
-
-.skills-section h1 {
-  font-size: 2.5rem;
-  text-align: center;
-  margin-bottom: 1rem;
-  @media only screen and (max-width: 600px) {
-    font-size: 2rem;
-  }
 }
 
 .skills-section p {
   margin-top: 1rem;
   text-align: center;
-  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -29,12 +18,11 @@
   flex-wrap: wrap;
   gap: 2rem;
   margin-top: 3rem;
-  width: 100%;
+  /* width: 100%; */
   justify-content: center;
   @media only screen and (max-width: 800px) {
     flex-direction: column;
     gap: 1.5rem;
-    padding: 0 1rem;
   }
 }
 
@@ -48,7 +36,6 @@
   @media only screen and (max-width: 800px) {
     min-width: unset;
     max-width: unset;
-    width: 100%;
     padding: 1.5rem;
   }
 }
@@ -58,42 +45,24 @@
   width: 100%;
 }
 
-.skill-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, var(--purple-color), transparent) border-box;
-  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: destination-out;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
 .skill-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
 }
 
-.skill-card h3 {
-  font-size: 1.5rem;
+.skill-card h4 {
   font-weight: 500;
   margin-bottom: 1rem;
   text-align: center;
   @media only screen and (max-width: 800px) {
-    font-size: 1.3rem;
     margin-bottom: 0.8rem;
   }
 }
 
 .skill-card p {
-  font-size: 1rem;
   margin-bottom: 2rem;
   color: rgba(255, 255, 255, 0.8);
   @media only screen and (max-width: 800px) {
-    font-size: 0.9rem;
     margin-bottom: 1.5rem;
   }
 }
@@ -105,7 +74,6 @@
   @media only screen and (max-width: 600px) {
     padding: 0.2rem 0.3rem;
     margin: 0.2rem 0.3rem;
-    font-size: 0.8rem;
   }
   @media only screen and (max-width: 800px) {
     margin: 0.15rem 0.3rem;
@@ -130,7 +98,6 @@
   color: white;
   padding: 0.3rem 0.6rem;
   border-radius: 0.3rem;
-  font-size: 0.8rem;
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
@@ -138,7 +105,6 @@
   z-index: 10;
   margin-top: 0.5rem;
   @media only screen and (max-width: 800px) {
-    font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
   }
 }
@@ -169,8 +135,7 @@
   }
 }
 
-.certifications-container h3 {
-  font-size: 1.5rem;
+.certifications-container h4 {
   font-weight: 500;
   margin-bottom: 1.5rem;
   text-align: center;
@@ -195,19 +160,11 @@
   cursor: pointer;
 }
 
-.certContainer p {
-  font-size: 0.9rem;
-  @media only screen and (max-width: 800px) {
-    font-size: 0.8rem;
-  }
-}
-
 .skill-card ul, .certifications-container ul {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
-  padding: 0;
 }
 
 @media only screen and (max-width: 480px) {
@@ -215,20 +172,7 @@
     padding: 2rem 0;
   }
 
-  .skills-section h1 {
-    font-size: 1.8rem;
-  }
-
-  .skill-card {
-    padding: 1.2rem;
-  }
-
-  .skill-card h3 {
-    font-size: 1.2rem;
-  }
-
   .skill-card p {
-    font-size: 0.85rem;
     margin-bottom: 1.2rem;
   }
 
@@ -238,19 +182,10 @@
   }
 
   .skill-name {
-    font-size: 0.65rem;
     padding: 0.15rem 0.3rem;
-  }
-
-  .certifications-container h3 {
-    font-size: 1.2rem;
   }
 
   .certContainer {
     padding: 0.8rem;
-  }
-
-  .certContainer p {
-    font-size: 0.8rem;
   }
 }

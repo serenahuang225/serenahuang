@@ -22,13 +22,6 @@ const ContactSection = () => {
         >
           Serena Huang
         </motion.h2>
-        <motion.p
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
-          Engineer, developer, & learner. Please contact me because I'm always looking for new opportunities and collaborations!
-        </motion.p>
         
         <motion.div 
           className='flexSB'

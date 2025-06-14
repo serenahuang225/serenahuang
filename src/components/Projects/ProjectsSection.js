@@ -17,7 +17,7 @@ const ProjectsSection = () => {
   return (
     <div className="projects-section" id="projects">
       <div className='widthBig flexCol alignCenter justifyCenter'>
-        <motion.h1>Projects</motion.h1>
+        <motion.h2>Projects</motion.h2>
         <motion.p style={{marginBottom: '1.5rem'}}>Some of my best works</motion.p>
         <div style={{marginBottom: '1.5rem'}} className='experienceGrid'>
           {

@@ -4,8 +4,7 @@
   padding: 1rem 0;
   background-color: rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
-  z-index: 1000;
-  margin: 2rem 0;
+  z-index: 100;
   width: 100%;
   display: flex;
   justify-content: center;
