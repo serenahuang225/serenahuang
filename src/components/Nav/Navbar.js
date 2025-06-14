@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FaHouse, FaUser, FaBriefcase, FaEnvelope, FaMusic } from 'react-icons/fa6';
+import { FaHouse, FaUser, FaBriefcase, FaEnvelope, FaMusic, FaFolderClosed } from 'react-icons/fa6';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -35,6 +35,10 @@ const Navbar = () => {
           <button onClick={() => scrollToSection('projects')} className="nav-link">
             <FaBriefcase size={24} />
             <span>Projects</span>
+          </button>
+          <button onClick={() => scrollToSection('experience')} className="nav-link">
+            <FaFolderClosed size={24} />
+            <span>Experience</span>
           </button>
           <button onClick={() => scrollToSection('contact')} className="nav-link">
             <FaEnvelope size={24} />

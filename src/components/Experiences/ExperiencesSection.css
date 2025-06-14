@@ -1,5 +1,5 @@
 .experiences-section {
-  background: linear-gradient(180deg, var(--purple-color-black), var(--purple-color-darker));
+  background: linear-gradient(180deg, var(--purple-color-darker), var(--purple-color-dark));
   width: 100%;
   display: flex;
   flex-direction: column;

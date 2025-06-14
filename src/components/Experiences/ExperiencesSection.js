@@ -54,14 +54,14 @@ const ExperiencesSection = () => {
   }, []);
 
   return (
-    <div className="experiences-section" id="about">
+    <div className="experiences-section" id="experience">
       <div className='widthBig flexCol'>
         <motion.h1
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          Experiences
+          Experience
         </motion.h1>
         <motion.div 
           className='flexRow alignTop'

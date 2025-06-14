@@ -1,5 +1,5 @@
 .projects-section {
-  background: linear-gradient(180deg, var(--purple-color), var(--purple-color-lighter));
+  background: linear-gradient(180deg, var(--purple-color-dark), var(--purple-color), var(--purple-color-lighter));
   width: 100%;
   display: flex;
   flex-direction: column;

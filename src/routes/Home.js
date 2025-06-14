@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import Navbar from '../components/Nav/Navbar';
 import HeroSection from '../components/Hero/HeroSection';
 import ExperiencesSection from '../components/Experiences/ExperiencesSection';
@@ -12,8 +12,8 @@ const Home = () => {
     <div id="app" data-theme="dark">
       <Navbar />
       <HeroSection />
-      <ExperiencesSection />
       <SkillsSection />
+      <ExperiencesSection />
       <ProjectsSection />
       <ContactSection />
       <ListeningSection />
