@@ -70,17 +70,42 @@ const SkillsSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
         >
-          Who am I?
+          Skills
         </motion.h1>
-        <motion.p
+        {/* <motion.p
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
         >
           I'm a high school student who loves to build things that make a difference.
-        </motion.p>
+        </motion.p> */}
         
         <div className='skills-cards-container'>
+          <motion.div 
+            className='skill-card cardContainer'
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+          >
+            <h3>AI & Data Science</h3>
+            <p>Skilled in machine learning frameworks and data analysis tools, creating intelligent solutions and visualizations.</p>
+            <ul className='flexRow' style={{listStyleType: 'none'}}>
+              {dataScienceSkills.map(item => (
+                <motion.li 
+                  className='skillBlock flexRow alignCenter' 
+                  key={item.name}
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "easeInOut", stiffness: 400, damping: 10 }}
+                >
+                  <div className="skill-icon">
+                    {item.icon}
+                    <span className="skill-name">{item.name}</span>
+                  </div>
+                </motion.li>
+              ))}
+            </ul>
+          </motion.div>
+          
           <motion.div 
             className='skill-card cardContainer'
             initial={{ opacity: 0, x: -50 }}
@@ -116,31 +141,6 @@ const SkillsSection = () => {
             <p>Proficient in multiple programming languages and cloud services, building robust and scalable applications.</p>
             <ul className='flexRow' style={{listStyleType: 'none'}}>
               {backendSkills.map(item => (
-                <motion.li 
-                  className='skillBlock flexRow alignCenter' 
-                  key={item.name}
-                  whileHover={{ scale: 1.1 }}
-                  transition={{ type: "easeInOut", stiffness: 400, damping: 10 }}
-                >
-                  <div className="skill-icon">
-                    {item.icon}
-                    <span className="skill-name">{item.name}</span>
-                  </div>
-                </motion.li>
-              ))}
-            </ul>
-          </motion.div>
-
-          <motion.div 
-            className='skill-card cardContainer'
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1, duration: 0.6 }}
-          >
-            <h3>Data Science & AI</h3>
-            <p>Skilled in machine learning frameworks and data analysis tools, creating intelligent solutions and visualizations.</p>
-            <ul className='flexRow' style={{listStyleType: 'none'}}>
-              {dataScienceSkills.map(item => (
                 <motion.li 
                   className='skillBlock flexRow alignCenter' 
                   key={item.name}
