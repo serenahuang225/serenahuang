@@ -24,7 +24,7 @@ const Navbar = () => {
         </div>
         
         <div className="nav-links">
-          <button onClick={() => scrollToSection('hero')} className="nav-link">
+          <button onClick={() => scrollToSection('hero')} className="displayNone nav-link">
             <FaHouse size={24} />
             <span>Home</span>
           </button>

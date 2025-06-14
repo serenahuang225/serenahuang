@@ -66,7 +66,45 @@
   color: var(--purple-color);
 }
 
-@media only screen and (max-width: 600px) {
+.contact-cards {
+  display: flex;
+  gap: 2rem;
+  margin: 1rem 0;
+}
+
+.contact-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 1.5rem;
+  min-width: 250px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.contact-icon {
+  font-size: 2rem;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.contact-card h3 {
+  color: white;
+  margin: 0.5rem 0;
+}
+
+.contact-card a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  transition: color 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.contact-card a:hover {
+  color: var(--purple-color);
+}
+
+@media only screen and (max-width: 800px) {
   .contact-section {
     padding: 0.5rem 0;
   }
@@ -76,8 +114,31 @@
     height: 150px;
   }
 
-  .contact-section .flexSB {
+  .contact-cards {
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
+  }
+
+  .contact-card {
+    min-width: unset;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+    padding: 1rem;
+  }
+
+  .contact-card .contact-icon {
+    margin-bottom: 0;
+    font-size: 1.5rem;
+  }
+
+  .contact-card .bold {
+    margin: 0;
+  }
+
+  .contact-card .small {
+    margin: 0;
   }
 }

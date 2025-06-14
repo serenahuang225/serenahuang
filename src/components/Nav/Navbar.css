@@ -107,3 +107,9 @@
     font-size: 1rem;
   }
 }
+
+@media only screen and (max-width: 500px) {
+  .displayNone {
+    display: none;
+  }
+}

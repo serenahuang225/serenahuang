@@ -19,8 +19,18 @@ const ListeningSection = () => {
       <div class={`noot noot-9 ${isPlaying && 'playing'}`}>&#9838; &#9839;</div>
       <div class={`noot noot-10 ${isPlaying && 'playing'}`}>&#9834; &#9833;</div>
 
-      <motion.h2>What I'm Listening to</motion.h2>
-      <div className='listening-card-wrapper'>
+      <motion.h2 
+        initial={{ opacity: 0, y: -20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.2, duration: 0.6 }}
+      >What I'm Listening to</motion.h2>
+      <motion.div className='listening-card-wrapper'
+        initial={{ opacity: 0, y: -20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.4, duration: 0.6 }}
+      >
         <div className='listening-card flexRow alignCenter'>
           <div className='flexCol alignCenter'>
             <AudioButton isBig={true} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
@@ -30,7 +40,7 @@ const ListeningSection = () => {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

@@ -46,6 +46,17 @@
 
   @media only screen and (max-width: 800px) {
     gap: 0.5rem;
-    justify-content: center;
+    justify-content: space-between;
+  }
+}
+
+.gapChangeSmall {
+  gap: 1rem;
+
+  @media only screen and (max-width: 800px) {
+    gap: 0.5rem;
+  }
+  @media only screen and (max-width: 500px) {
+    gap: 0.25rem;
   }
 }

@@ -40,12 +40,14 @@ const HeroSection = () => {
             className='flexRow alignCenter gapChange'
           >
             <AnimatedButton message="LET'S WORK TOGETHER" />
-            <motion.a initial={{scale:1}} whileHover={{scale: 1.05}} whileTap={{scale:0.95}} style={{marginLeft: '1rem'}} className='noLink' href="https://www.linkedin.com/in/serenahuang225/" rel="noreferrer noopener" target="_blank">
-              <FaLinkedin size={36} />
-            </motion.a>
-            <motion.a initial={{scale:1}} whileHover={{scale: 1.05}} whileTap={{scale:0.95}} className='noLink' href="https://github.com/serenahuang225" rel="noreferrer noopener" target="_blank">
-              <FaGithub size={36} />
-            </motion.a>
+            <div className='flexRow alignCenter gapChangeSmall'>
+              <motion.a initial={{scale:1}} whileHover={{scale: 1.05}} whileTap={{scale:0.95}} style={{marginLeft: '1rem'}} className='noLink' href="https://www.linkedin.com/in/serenahuang225/" rel="noreferrer noopener" target="_blank">
+                <FaLinkedin size={36} />
+              </motion.a>
+              <motion.a initial={{scale:1}} whileHover={{scale: 1.05}} whileTap={{scale:0.95}} className='noLink' href="https://github.com/serenahuang225" rel="noreferrer noopener" target="_blank">
+                <FaGithub size={36} />
+              </motion.a>
+            </div>
           </motion.div>
         </div>
       </div>

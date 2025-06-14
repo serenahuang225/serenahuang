@@ -58,23 +58,26 @@ const ExperiencesSection = () => {
       <div className='widthBig flexCol'>
         <motion.h2
           initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
+          whileInView={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
+          viewport={{ once: true }}
         >
           Experience
         </motion.h2>
         <motion.div 
           className='flexRow alignTop'
           initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
+          whileInView={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
+          viewport={{ once: true }}
         >
           <div className='leftTabs flexCol'>
             <ul style={{ listStyle: "none" }}>
               {tabs.map((item, index) => (
                 <motion.li
                   initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
+                  whileInView={{ x: 0, opacity: 1 }}
+                  viewport={{ once: true }}
                   transition={{ delay: 0.3 + (index * 0.1), duration: 0.5 }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -99,34 +102,39 @@ const ExperiencesSection = () => {
               className='rightTabContent'
               key={selectedTab ? selectedTab.label : "empty"}
               initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <motion.h4
+              <motion.h5
                 initial={{ y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
                 transition={{ delay: 0.1, duration: 0.3 }}
               >
                 {selectedTab.title}
-              </motion.h4>
+              </motion.h5>
               <motion.p
                 initial={{ y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
                 transition={{ delay: 0.2, duration: 0.3 }}
               >
                 {selectedTab.date}
               </motion.p>
               <motion.ul
                 initial={{ y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
                 transition={{ delay: 0.3, duration: 0.3 }}
               >
                 {selectedTab.description.map((text, index) => (
                   <motion.li 
                     key={text}
                     initial={{ x: -10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
+                    whileInView={{ x: 0, opacity: 1 }}
+                    viewport={{ once: true }}
                     transition={{ delay: 0.4 + (index * 0.1), duration: 0.3 }}
                   >
                     {text}

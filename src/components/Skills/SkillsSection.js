@@ -67,8 +67,9 @@ const SkillsSection = () => {
       <div className='widthBig flexCol'>
         <motion.h2
           initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
+          whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
+          viewport={{ once: true }}
         > 
           Skills
         </motion.h2>
@@ -84,18 +85,19 @@ const SkillsSection = () => {
           <motion.div 
             className='skill-card cardContainer'
             initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ type: "tween", delay: 0.2, duration: 0.6 }}
           >
             <h4>AI & Data Science</h4>
-            <p className='small'>Skilled in machine learning frameworks and data analysis tools, creating intelligent solutions and visualizations.</p>
+            <p className='small'>Skilled in machine learning and data analysis tools, creating intelligent models and visualizations.</p>
             <ul className='flexRow' style={{listStyleType: 'none'}}>
               {dataScienceSkills.map(item => (
                 <motion.li 
                   className='skillBlock flexRow alignCenter' 
                   key={item.name}
                   whileHover={{ scale: 1.1 }}
-                  transition={{ type: "easeInOut", stiffness: 400, damping: 10 }}
+                  transition={{ type: "tween" }}
                 >
                   <div className="skill-icon">
                     {item.icon}
@@ -109,18 +111,19 @@ const SkillsSection = () => {
           <motion.div 
             className='skill-card cardContainer'
             initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ type: "tween", delay: 0.4, duration: 0.6 }}
           >
             <h4>Frontend Development</h4>
-            <p className='small'>Expert in modern web technologies, crafting responsive and high-performance websites with the latest frameworks and tools.</p>
+            <p className='small'>Expert in modern app and web development frameworks and tools.</p>
             <ul className='flexRow' style={{listStyleType: 'none'}}>
               {frontendSkills.map(item => (
                 <motion.li 
                   className='skillBlock flexRow alignCenter' 
                   key={item.name}
                   whileHover={{ scale: 1.1 }}
-                  transition={{ type: "easeInOut", stiffness: 400, damping: 10 }}
+                  transition={{ type: "tween" }}
                 >
                   <div className="skill-icon">
                     {item.icon}
@@ -134,8 +137,9 @@ const SkillsSection = () => {
           <motion.div 
             className='skill-card cardContainer'
             initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.8, duration: 0.6 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ type: "tween", delay: 0.6, duration: 0.6 }}
           >
             <h4>Backend Development</h4>
             <p className='small'>Proficient in multiple programming languages and cloud services, building robust and scalable applications.</p>
@@ -145,7 +149,7 @@ const SkillsSection = () => {
                   className='skillBlock flexRow alignCenter' 
                   key={item.name}
                   whileHover={{ scale: 1.1 }}
-                  transition={{ type: "easeInOut", stiffness: 400, damping: 10 }}
+                  transition={{ type: "tween" }}
                 >
                   <div className="skill-icon">
                     {item.icon}
@@ -160,8 +164,9 @@ const SkillsSection = () => {
         <motion.div 
           className='certifications-container'
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 0.6 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ type: "tween", delay: 0.8, duration: 0.6 }}
         >
           <h4>Certifications</h4>
           <ul className='flexRow' style={{listStyleType: 'none'}}>
@@ -169,8 +174,8 @@ const SkillsSection = () => {
               <motion.li 
                 className='cardContainer certCard'
                 key={item.name}
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "easeInOut", stiffness: 400, damping: 10 }}
+                whileHover={{ scale: 1.01 }}
+                transition={{ type: "tween" }}
               >
                 <a style={{gap: "1rem"}} className='flexRow noLink alignCenter' rel="noreferrer noopener" target="_blank" href={item.link}>
                   {width>800 && item.imagey}

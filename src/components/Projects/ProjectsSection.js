@@ -21,11 +21,15 @@ const ProjectsSection = () => {
         <motion.p style={{marginBottom: '1.5rem'}}>Some of my best works</motion.p>
         <div style={{marginBottom: '1.5rem'}} className='experienceGrid'>
           {
-            bests.map(item => <motion.a
+            bests.map((item, index) => <motion.a
               rel="noreferrer noopener"
               target="_blank" href={item.link}
-              initial={{opacity: 0.5}}
-              whileHover={{opacity: 1}}
+              initial={{opacity: 0, y: 20}}
+              whileInView={{opacity: 1, y: 0}}
+              viewport={{ once: true }}
+              whileHover={{skewY: 1.03}}
+              whileTap={{skewX: 1.03}}
+              transition={{type: "tween", delay: 0.2 * index, duration: 0.6}}
               className='noLink'>
               {item.imagy}
             </motion.a>)
