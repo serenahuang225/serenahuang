@@ -13,9 +13,9 @@ const Home = () => {
       <Navbar />
       <div className="normal-layout">
         <HeroSection />
-        <ExperiencesSection />
         <ProjectsSection />
         <SkillsSection />
+        <ExperiencesSection />
         <ListeningSection />
         <ContactSection />
       </div>

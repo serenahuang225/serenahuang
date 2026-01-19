@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaHouse, FaUser, FaBriefcase, FaEnvelope, FaMusic, FaFolderClosed } from 'react-icons/fa6';
+import { FaHouse, FaBook, FaBriefcase, FaEnvelope, FaMusic, FaFolderClosed } from 'react-icons/fa6';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -22,17 +22,17 @@ const Navbar = () => {
             <FaHouse size={24} color="#161616" />
             <span>Home</span>
           </button>
-          <button onClick={() => scrollToSection('experience')} className="nav-link">
-            <FaFolderClosed size={24} color="#161616" />
-            <span>Experience</span>
-          </button>
           <button onClick={() => scrollToSection('projects')} className="nav-link">
-            <FaBriefcase size={24} color="#161616" />
+            <FaFolderClosed size={24} color="#161616" />
             <span>Projects</span>
           </button>
           <button onClick={() => scrollToSection('about')} className="nav-link">
-            <FaUser size={24} color="#161616" />
-            <span>About</span>
+            <FaBook size={24} color="#161616" />
+            <span>Skills</span>
+          </button>
+          <button onClick={() => scrollToSection('experience')} className="nav-link">
+            <FaBriefcase size={24} color="#161616" />
+            <span>Experience</span>
           </button>
           <button onClick={() => scrollToSection('music')} className="nav-link">
             <FaMusic size={24} color="#161616" />
