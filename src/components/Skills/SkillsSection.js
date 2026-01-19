@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { motion } from 'framer-motion';
 import "./SkillsSection.css"
 import { FaPython, FaJava, FaHtml5, FaCss3Alt, FaSwift, FaPhp, FaReact, FaGitAlt, FaLinux, FaAws } from "react-icons/fa";
 import { SiJavascript, SiTypescript, SiPytorch, SiTensorflow, SiScikitlearn, SiPandas, SiNumpy, SiNextdotjs, SiTailwindcss, SiStreamlit, SiFlask, SiSelenium, SiBlender, SiTableau } from "react-icons/si";
@@ -21,40 +20,40 @@ const SkillsSection = () => {
   }, [width])
 
   const frontendSkills = [
-    {name: "JavaScript", icon: <SiJavascript size={itemSize} /> },
-    {name: "TypeScript", icon: <SiTypescript size={itemSize} /> },
-    {name: "React Native", icon: <FaReact size={itemSize} /> },
-    {name: "React.js", icon: <FaReact size={itemSize} /> },
-    {name: "Next.js", icon: <SiNextdotjs size={itemSize} /> },
-    {name: "HTML", icon: <FaHtml5 size={itemSize} /> },
-    {name: "CSS", icon: <FaCss3Alt size={itemSize} /> },
-    {name: "TailwindCSS", icon: <SiTailwindcss size={itemSize} /> },
-    {name: "Swift", icon: <FaSwift size={itemSize} /> },
+    {name: "JavaScript", icon: <SiJavascript size={itemSize} color="#161616" /> },
+    {name: "TypeScript", icon: <SiTypescript size={itemSize} color="#161616" /> },
+    {name: "React Native", icon: <FaReact size={itemSize} color="#161616" /> },
+    {name: "React.js", icon: <FaReact size={itemSize} color="#161616" /> },
+    {name: "Next.js", icon: <SiNextdotjs size={itemSize} color="#161616" /> },
+    {name: "HTML", icon: <FaHtml5 size={itemSize} color="#161616" /> },
+    {name: "CSS", icon: <FaCss3Alt size={itemSize} color="#161616" /> },
+    {name: "TailwindCSS", icon: <SiTailwindcss size={itemSize} color="#161616" /> },
+    {name: "Swift", icon: <FaSwift size={itemSize} color="#161616" /> },
   ]
 
   const backendSkills = [
-    {name: "Python", icon: <FaPython size={itemSize} /> },
-    {name: "Java", icon: <FaJava size={itemSize} /> },
-    {name: "C++", icon: <TbBrandCpp size={itemSize} /> },
-    {name: "SQL", icon: <GrMysql size={itemSize} /> },
-    {name: "PHP", icon: <FaPhp size={itemSize} /> },
-    {name: "Firebase", icon: <IoLogoFirebase size={itemSize} /> },
-    {name: "AWS", icon: <FaAws size={itemSize} /> },
-    {name: "Linux", icon: <FaLinux size={itemSize} /> },
-    {name: "Git", icon: <FaGitAlt size={itemSize} /> },
-    {name: "Flask", icon: <SiFlask size={itemSize} /> },
-    {name: "Streamlit", icon: <SiStreamlit size={itemSize} /> },
-    {name: "Selenium", icon: <SiSelenium size={itemSize} /> },
+    {name: "Python", icon: <FaPython size={itemSize} color="#161616" /> },
+    {name: "Java", icon: <FaJava size={itemSize} color="#161616" /> },
+    {name: "C++", icon: <TbBrandCpp size={itemSize} color="#161616" /> },
+    {name: "SQL", icon: <GrMysql size={itemSize} color="#161616" /> },
+    {name: "PHP", icon: <FaPhp size={itemSize} color="#161616" /> },
+    {name: "Firebase", icon: <IoLogoFirebase size={itemSize} color="#161616" /> },
+    {name: "AWS", icon: <FaAws size={itemSize} color="#161616" /> },
+    {name: "Linux", icon: <FaLinux size={itemSize} color="#161616" /> },
+    {name: "Git", icon: <FaGitAlt size={itemSize} color="#161616" /> },
+    {name: "Flask", icon: <SiFlask size={itemSize} color="#161616" /> },
+    {name: "Streamlit", icon: <SiStreamlit size={itemSize} color="#161616" /> },
+    {name: "Selenium", icon: <SiSelenium size={itemSize} color="#161616" /> },
   ]
 
   const dataScienceSkills = [
-    {name: "PyTorch", icon: <SiPytorch size={itemSize} />},
-    {name: "TensorFlow", icon: <SiTensorflow size={itemSize} />},
-    {name: "Scikit-Learn", icon: <SiScikitlearn size={itemSize} />},
-    {name: "Pandas", icon: <SiPandas size={itemSize} />},
-    {name: "NumPy", icon: <SiNumpy size={itemSize} />},
-    {name: "Tableau", icon: <SiTableau size={itemSize} />},
-    {name: "Blender", icon: <SiBlender size={itemSize} />},
+    {name: "PyTorch", icon: <SiPytorch size={itemSize} color="#161616" />},
+    {name: "TensorFlow", icon: <SiTensorflow size={itemSize} color="#161616" />},
+    {name: "Scikit-Learn", icon: <SiScikitlearn size={itemSize} color="#161616" />},
+    {name: "Pandas", icon: <SiPandas size={itemSize} color="#161616" />},
+    {name: "NumPy", icon: <SiNumpy size={itemSize} color="#161616" />},
+    {name: "Tableau", icon: <SiTableau size={itemSize} color="#161616" />},
+    {name: "Blender", icon: <SiBlender size={itemSize} color="#161616" />},
   ]
 
   const certifications = [
@@ -65,126 +64,82 @@ const SkillsSection = () => {
   return (
     <div className="skills-section" id="about">
       <div className='widthBig flexCol'>
-        <motion.h2
-          initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          viewport={{ once: true }}
-        > 
+        <h2> 
           Skills
-        </motion.h2>
-        {/* <motion.p
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-        >
-          I'm a high school student who loves to build things that make a difference.
-        </motion.p> */}
+        </h2>
         
         <div className='skills-cards-container'>
-          <motion.div 
-            className='skill-card cardContainer'
-            initial={{ opacity: 0, y: -50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ type: "tween", delay: 0.2, duration: 0.6 }}
-          >
+          <div className='skill-card cardContainer'>
             <h4>AI & Data Science</h4>
             <p className='small'>Skilled in machine learning and data analysis tools, creating intelligent models and visualizations.</p>
             <ul className='flexRow' style={{listStyleType: 'none'}}>
               {dataScienceSkills.map(item => (
-                <motion.li 
+                <li 
                   className='skillBlock flexRow alignCenter' 
                   key={item.name}
-                  whileHover={{ scale: 1.1 }}
-                  transition={{ type: "tween" }}
                 >
                   <div className="skill-icon">
                     {item.icon}
                     <span className="skill-name">{item.name}</span>
                   </div>
-                </motion.li>
+                </li>
               ))}
             </ul>
-          </motion.div>
+          </div>
           
-          <motion.div 
-            className='skill-card cardContainer'
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ type: "tween", delay: 0.4, duration: 0.6 }}
-          >
+          <div className='skill-card cardContainer'>
             <h4>Frontend Development</h4>
             <p className='small'>Expert in modern app and web development frameworks and tools.</p>
             <ul className='flexRow' style={{listStyleType: 'none'}}>
               {frontendSkills.map(item => (
-                <motion.li 
+                <li 
                   className='skillBlock flexRow alignCenter' 
                   key={item.name}
-                  whileHover={{ scale: 1.1 }}
-                  transition={{ type: "tween" }}
                 >
                   <div className="skill-icon">
                     {item.icon}
                     <span className="skill-name">{item.name}</span>
                   </div>
-                </motion.li>
+                </li>
               ))}
             </ul>
-          </motion.div>
+          </div>
 
-          <motion.div 
-            className='skill-card cardContainer'
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ type: "tween", delay: 0.6, duration: 0.6 }}
-          >
+          <div className='skill-card cardContainer'>
             <h4>Backend Development</h4>
-            <p className='small'>Proficient in multiple programming languages and cloud services, building robust and scalable applications.</p>
+            <p className='small'>Proficient in multiple coding languages and cloud services.</p>
             <ul className='flexRow' style={{listStyleType: 'none'}}>
               {backendSkills.map(item => (
-                <motion.li 
+                <li 
                   className='skillBlock flexRow alignCenter' 
                   key={item.name}
-                  whileHover={{ scale: 1.1 }}
-                  transition={{ type: "tween" }}
                 >
                   <div className="skill-icon">
                     {item.icon}
                     <span className="skill-name">{item.name}</span>
                   </div>
-                </motion.li>
+                </li>
               ))}
             </ul>
-          </motion.div>
+          </div>
         </div>
 
-        <motion.div 
-          className='certifications-container'
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ type: "tween", delay: 0.8, duration: 0.6 }}
-        >
+        <div className='certifications-container'>
           <h4>Certifications</h4>
           <ul className='flexRow' style={{listStyleType: 'none'}}>
             {certifications.map(item => (
-              <motion.li 
+              <li 
                 className='cardContainer certCard'
                 key={item.name}
-                whileHover={{ scale: 1.01 }}
-                transition={{ type: "tween" }}
               >
                 <a style={{gap: "1rem"}} className='flexRow noLink alignCenter' rel="noreferrer noopener" target="_blank" href={item.link}>
-                  {width>800 && item.imagey}
+                  {/* {width>800 && item.imagey} */}
                   <p className='small italic'><b>{item.name}</b>: <br></br> <span className='normal-italic'>{item.provider}</span></p>
                 </a>
-              </motion.li>
+              </li>
             ))}
           </ul>
-        </motion.div>
+        </div>
       </div>
     </div>
   )

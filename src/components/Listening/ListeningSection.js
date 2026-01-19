@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion';
 import './ListeningSection.css'
 import AudioButton from '../AudioButton/AudioButton'
 
@@ -8,39 +7,18 @@ const ListeningSection = () => {
 
   return (
     <div className="listening-section" id="music">
-      <div class={`noot noot-1 ${isPlaying && 'playing'}`}>&#9835; &#9833;</div>
-      <div class={`noot noot-2 ${isPlaying && 'playing'}`}>&#119070;</div>
-      <div class={`noot noot-3 ${isPlaying && 'playing'}`}>&#119074;</div>
-      <div class={`noot noot-4 ${isPlaying && 'playing'}`}>&#9833;</div>
-      <div class={`noot noot-5 ${isPlaying && 'playing'}`}>&#9839; &#9834;</div>
-      <div class={`noot noot-6 ${isPlaying && 'playing'}`}>&#9834;</div>
-      <div class={`noot noot-7 ${isPlaying && 'playing'}`}>&#9836; &#9835;</div>
-      <div class={`noot noot-8 ${isPlaying && 'playing'}`}>&#9839; &#9835;</div>
-      <div class={`noot noot-9 ${isPlaying && 'playing'}`}>&#9838; &#9839;</div>
-      <div class={`noot noot-10 ${isPlaying && 'playing'}`}>&#9834; &#9833;</div>
-
-      <motion.h2 
-        initial={{ opacity: 0, y: -20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.2, duration: 0.6 }}
-      >What I'm Listening to</motion.h2>
-      <motion.div className='listening-card-wrapper'
-        initial={{ opacity: 0, y: -20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.4, duration: 0.6 }}
-      >
+      <h2>What I'm Listening to</h2>
+      <div className='listening-card-wrapper'>
         <div className='listening-card flexRow alignCenter'>
           <div className='flexCol alignCenter'>
             <AudioButton isBig={true} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
             <div>
-              <motion.h4>Mendelssohn: Symphony<br></br> No. 4 in A Major</motion.h4>
-              <motion.p className='small italic'>As featured in Barbie in the 12 Dancing Princesses</motion.p>
+              <h4>Mendelssohn: Symphony<br></br> No. 4 in A Major</h4>
+              <p className='small italic'>As featured in Barbie in the 12 Dancing Princesses</p>
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

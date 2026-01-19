@@ -1,32 +1,107 @@
 .projects-section {
-  background: linear-gradient(180deg, var(--purple-color-dark), var(--purple-color), var(--purple-color-lighter));
+  background: #ffffff;
   width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  border: none;
+  border-bottom: 1px solid #161616;
+}
+
+.projects-list {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+  padding: 1rem 0;
+}
+
+.project-card {
+  border: 1px solid #161616;
+  padding: 0;
+  margin-bottom: 0;
+  break-inside: avoid;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 .projImage {
-  height: 200px;
-  width: 360px;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
   object-fit: cover;
-  background-color: black;
+  background-color: #ffffff;
+  border: none;
+  border-bottom: 1px solid #161616;
+  display: block;
 
   @media only screen and (max-width: 800px) {
-    height: 120px;
-    width: 240px;
+    min-height: 150px;
   }
 }
 
-.experienceGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  row-gap: 1rem;
-  column-gap: 1rem;
+.project-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+}
 
-  @media only screen and (max-width: 800px) {
-    grid-template-columns: repeat(1, 1fr);
-    row-gap: 0.5rem;
+.project-title {
+  margin: 0;
+  padding: 0.25rem 0;
+  font-weight: 400;
+  font-size: 1.5rem;
+}
+
+.project-title a {
+  color: #161616;
+  text-decoration: none;
+}
+
+.project-description {
+  margin: 0;
+  padding: 0.25rem 0;
+  line-height: 1.5;
+  color: #161616;
+  font-size: 1rem;
+}
+
+.project-link {
+  color: #161616;
+  text-decoration: underline;
+  font-size: 1rem;
+  margin-top: 0.25rem;
+  font-family: "Outfit", sans-serif;
+}
+
+.projects-section .widthBig {
+  border: none;
+  padding: 1rem 0;
+  width: 100%;
+}
+
+.projects-section h2 {
+  border: none;
+  padding: 0.5rem 0;
+  margin: 0.75rem 0;
+}
+
+.projects-section p {
+  border: none;
+  padding: 0.25rem 0;
+  margin: 0.25rem 0;
+}
+
+@media only screen and (max-width: 800px) {
+  .projects-list {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
   }
 }

@@ -2,9 +2,9 @@
   position: absolute;
   height: 50px;
   width: 75px;
-  background-color: rgba(0, 0, 0, 0.763);
+  background-color: #161616;
   z-index: 5;
-  color: white;
+  color: #f7f7f7;
   top: 0;
   left: 0;
   transform: rotate(-29deg);
@@ -81,18 +81,6 @@
   z-index: 1; /* behind the center circle but above the vinyl */
 }
 
-.vinyl.spinning::after, .vinyl-big.spinning::after {
-  animation: shine-spin 3s linear infinite;
-}
-
-@keyframes shine-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
 
 
 .tonearm, .tonearm-big {
@@ -106,7 +94,6 @@
   border-radius: 5px;
   transform-origin: top left;
   transform: rotate(80deg);
-  transition: transform 0.3s ease;
 }
 
 .tonearm-big {

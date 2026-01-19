@@ -1,5 +1,5 @@
 .listening-section {
-  background: linear-gradient(180deg, var(--purple-color-light), var(--purple-color-lightest));
+  background: #ffffff;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -7,16 +7,19 @@
   align-items: center;
   position: relative;
   overflow: hidden;
-  padding-bottom: 6rem;
+  padding: 2rem 0;
+  padding-bottom: 2.5rem;
+  border: none;
+  border-bottom: 1px solid var(--primary-border-color);
 }
 
 .listening-card-wrapper {
-  padding: 2rem;
-  background: rgba( 255, 255, 255, 0.25 );
-  box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
-  backdrop-filter: blur( 4px );
-  -webkit-backdrop-filter: blur( 4px );
-  border: 1px solid rgba( 255, 255, 255, 0.18 ); 
+  background: #ffffff;
+  width: 100%;
+  max-width: 100%;
+  break-inside: avoid;
+  display: flex;
+  justify-content: center;
   
   @media only screen and (max-width: 600px) {
     padding: 1rem;
@@ -25,46 +28,56 @@
 
 
 .listening-card {
-  padding: 3rem;
-  border: 1px solid rgba( 255, 255, 255, 0.36 );
-  justify-content: space-around;
+  padding: 0;
+  border: none;
+  justify-content: flex-start;
+  padding: 1.5rem;
+  padding-top: 2rem;
+  border: 1px solid var(--primary-border-color);
 
   @media only screen and (max-width: 600px) {
-    padding: 2rem;
+    padding: 0;
   }
 }
 
 .listening-section h2 {
   text-align: center;
-  margin-bottom: 2rem;
+  margin: 0;
+  border: none;
+  border-bottom: none !important;
+  padding: 1rem 0;
+  width: 100%;
   @media only screen and (max-width: 600px) {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
+    margin: 0;
+    padding: 0.75rem 0;
   }
 }
 
 .listening-section h4 {
-  margin-top: 2rem;
+  margin: 0.75rem 0;
   font-weight: 400;
   text-align: center;
+  border: none;
+  padding: 0.5rem 0;
 }
 
 .listening-section p {
-  margin-top: 1rem;
+  margin: 0.5rem 0;
   font-weight: 300;
   text-align: center;
+  border: none;
+  padding: 0.25rem 0;
 }
 
 .noot {
   position: absolute;
   font-size: 2rem;
-  color: #ffd7fc;
+  color: #161616;
   display: none;
 }
 
 .noot.playing {
   display: block;
-  animation: notes 3s infinite linear;
 }
 
 .noot-1 {
@@ -125,23 +138,4 @@
   top: 40%;
   left: 55%;
   animation-delay: 1.1s;
-}
-
-@keyframes notes {
-  0% {
-    transform: scale(1) translate(0, 0);
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.5) translate(50%, -50%);
-  }
-  80% {
-    opacity: 0;
-    transform: scale(1.5) translate(100%, -100%);
-  }
-  100% {
-    transform: scale(1.5) translate(100%, -100%);
-    opacity: 0;
-  }
 }

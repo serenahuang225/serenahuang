@@ -9,14 +9,16 @@ import ContactSection from '../components/Contact/ContactSection';
 
 const Home = () => {
   return (
-    <div id="app" data-theme="dark">
+    <div id="app">
       <Navbar />
-      <HeroSection />
-      <SkillsSection />
-      <ExperiencesSection />
-      <ProjectsSection />
-      <ContactSection />
-      <ListeningSection />
+      <div className="normal-layout">
+        <HeroSection />
+        <ExperiencesSection />
+        <ProjectsSection />
+        <SkillsSection />
+        <ListeningSection />
+        <ContactSection />
+      </div>
     </div>
   );
 };

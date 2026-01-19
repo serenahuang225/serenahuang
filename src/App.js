@@ -1,6 +1,4 @@
-import { useLocation, useRoutes } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
-import { cloneElement } from "react";
+import { useRoutes } from "react-router-dom";
 import Home from "./routes/Home";
 import Resume from "./routes/Resume";
 
@@ -16,13 +14,7 @@ function App() {
     }
   ])
 
-  const location = useLocation();
-
-  return (
-    <AnimatePresence mode='wait'>
-      {cloneElement(element, { key: location.pathname })}
-    </AnimatePresence>
-  );
+  return element;
 }
 
 export default App;

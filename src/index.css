@@ -3,55 +3,34 @@
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  --primary-background-color: #fff;
-  --secondary-background-color:#f7f7f7;
+  --primary-background-color: #ffffff;
+  --secondary-background-color: #161616;
   
-  --primary-text-color:#000;
-  --secondary-text-color:#4b4c53;
+  --primary-text-color: #161616;
+  --secondary-text-color: #161616;
 
-  --primary-border-color:#4b4c53;
+  --primary-border-color: #161616;
 
-  --button-solid-background-color:#000;
-  --button-solid-text-color:#fff;
+  --button-solid-background-color: #161616;
+  --button-solid-text-color: #f7f7f7;
 
-  --button-outlined-background-color:transparent;
-  --button-outlined-text-color:#000;
+  --button-outlined-background-color: transparent;
+  --button-outlined-text-color: #161616;
 
-  --alert-color:#FFF9E7;
-  --alert-border-color:#FFBF00;
-  --alert-text-color:#b8952f;
-
-  --link-color: #1a8dff;
-
-  --purple-color-lightest: #C9B8FF;
-  --purple-color-light: #b582de;
-  --purple-color-lighter: #861CE2;
-  --purple-color: #6B0FB7;
-  --purple-color-dark: #610ea5;
-  --purple-color-darker: #4F068B;
-  --purple-color-darkest: #320665;
-  --purple-color-black: #14053f;
-}
-
-[data-theme="dark"]{
-  --primary-text-color: #fff;
-  --secondary-text-color:#f7f7f7;
-  
-  --primary-background-color:#000;
-  --secondary-background-color:#4b4c53;
-
-  --primary-border-color:#4b4c53;
-
-  --button-solid-background-color:#fff;
-  --button-solid-text-color:#000;
-
-  --button-outlined-background-color:transparent;
-  --button-outlined-text-color:#fff;
+  --link-color: #161616;
 }
 
 * {
   margin: 0;
   padding: 0;
+}
+
+body {
+  background-color: #ffffff;
+}
+
+html {
+  background-color: #ffffff;
 }
 
 button {
@@ -120,10 +99,24 @@ button {
   height: 100%;
   background-color: var(--primary-background-color);
   color: var(--primary-text-color);
-  transition: background-color 0.5s ease, color 0.5s ease;
+  max-width: 8.5in;
+  margin: 0 auto;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  text-transform: lowercase;
+}
+
+#app svg {
+  display: inline-block;
+  vertical-align: middle;
+  text-transform: none;
+}
+
+.normal-layout {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 a {
@@ -132,7 +125,7 @@ a {
 }
 
 .noLink {
-  color: white;
+  color: #161616;
   text-decoration: none;
   :hover {
     cursor: pointer;
@@ -141,54 +134,81 @@ a {
 
 h1 {
   font-family: "Outfit", serif;
-  font-size: 3rem;
+  font-size: 2.5rem;
+  font-weight: 400;
   color: var(--primary-text-color);
+  text-transform: lowercase;
+  letter-spacing: normal;
+  break-inside: avoid;
+  padding: 0.5rem 0;
+  margin: 1rem 0;
 }
 
 h2 {
   font-family: "Outfit", serif;
-  font-size: 2.5rem;
-  font-weight: 500;
+  font-size: 2rem;
+  font-weight: 400;
   color: var(--primary-text-color);
-  text-align: center;
+  text-align: left;
+  text-transform: lowercase;
+  letter-spacing: normal;
+  padding: 1rem 0 0.75rem 0;
+  margin: 1.5rem 0 1rem 0;
+  break-inside: avoid;
 }
 
 h3 {
   font-family: "Outfit", serif;
   font-size: 2rem;
-  font-weight: 500;
+  font-weight: 400;
   text-align: center;
   color: var(--primary-text-color);
+  border-bottom: 1px solid #161616;
+  padding: 0.75rem 0;
+  margin: 1rem 0;
 }
 
 h4 {
   font-family: "Outfit", serif;
-  font-size: 1.75rem;
+  font-size: 1.25rem;
   color: var(--primary-text-color);
+  border-bottom: 1px solid #161616;
+  padding: 0.75rem 0;
+  margin: 1rem 0;
 }
 
 h5 {
   font-family: "Outfit", serif;
   font-size: 1.5rem;
   color: var(--primary-text-color);
+  border-bottom: 1px solid #161616;
+  padding: 0.75rem 0;
+  margin: 1rem 0;
 }
 
 h6 {
   font-family: "Outfit", serif;
   font-size: 1.25rem;
   color: var(--primary-text-color);
+  border-bottom: 1px solid #161616;
+  padding: 0.75rem 0;
+  margin: 1rem 0;
 }
 
 p {
   font-family: "Outfit", sans-serif;
   font-size: 1.2rem;
   color: var(--primary-text-color);
+  padding: 0.25rem 0;
+  margin: 0.5rem 0;
 }
 
 ul {
   font-family: "Outfit", sans-serif;
   font-size: 1rem;
   color: var(--primary-text-color);
+  padding: 0.5rem 0;
+  margin: 0.75rem 0;
 }
 
 p.small {
@@ -266,7 +286,11 @@ p.large {
 }
 
 *[class*="section"] {
-  padding: 4.5rem 0;
+  padding: 2rem 0;
+  margin-bottom: 0;
+  border-bottom: 1px solid #161616 !important;
+  padding-bottom: 2.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .italic {

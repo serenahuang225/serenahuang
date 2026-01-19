@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { FaHouse, FaUser, FaBriefcase, FaEnvelope, FaMusic, FaFolderClosed } from 'react-icons/fa6';
 import './Navbar.css';
 
@@ -12,12 +11,7 @@ const Navbar = () => {
   };
 
   return (
-    <motion.nav 
-      className="navbar"
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <nav className="navbar">
       <div className="navbar-content widthBig">
         <div className="profile-part">
           <img src="/profile.jpg" alt="Profile" className="profile-picture" />
@@ -25,32 +19,32 @@ const Navbar = () => {
         
         <div className="nav-links">
           <button onClick={() => scrollToSection('hero')} className="displayNone nav-link">
-            <FaHouse size={24} />
+            <FaHouse size={24} color="#161616" />
             <span>Home</span>
           </button>
-          <button onClick={() => scrollToSection('about')} className="nav-link">
-            <FaUser size={24} />
-            <span>About</span>
-          </button>
-          <button onClick={() => scrollToSection('projects')} className="nav-link">
-            <FaBriefcase size={24} />
-            <span>Projects</span>
-          </button>
           <button onClick={() => scrollToSection('experience')} className="nav-link">
-            <FaFolderClosed size={24} />
+            <FaFolderClosed size={24} color="#161616" />
             <span>Experience</span>
           </button>
-          <button onClick={() => scrollToSection('contact')} className="nav-link">
-            <FaEnvelope size={24} />
-            <span>Contact</span>
+          <button onClick={() => scrollToSection('projects')} className="nav-link">
+            <FaBriefcase size={24} color="#161616" />
+            <span>Projects</span>
+          </button>
+          <button onClick={() => scrollToSection('about')} className="nav-link">
+            <FaUser size={24} color="#161616" />
+            <span>About</span>
           </button>
           <button onClick={() => scrollToSection('music')} className="nav-link">
-            <FaMusic size={24} />
+            <FaMusic size={24} color="#161616" />
             <span>Music</span>
+          </button>
+          <button onClick={() => scrollToSection('contact')} className="nav-link">
+            <FaEnvelope size={24} color="#161616" />
+            <span>Contact</span>
           </button>
         </div>
       </div>
-    </motion.nav>
+    </nav>
   );
 };
 

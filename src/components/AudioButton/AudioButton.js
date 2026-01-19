@@ -9,7 +9,12 @@ const AudioButton = ({isBig=false, isPlaying, setIsPlaying}) => {
 
   const toggleAudio = () => {
     if (!hasClicked) {
-      return
+      setHasClicked(true);
+      setIsPlaying(true);
+      audioRef.current.play();
+      audioRef.current.loop = true;
+      setDidClick(true);
+      return;
     }
     if (didClick) {
       audioRef.current.pause();
