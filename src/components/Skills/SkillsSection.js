@@ -12,7 +12,7 @@ import useDimensions from '../../utils/useDimensions';
 
 const SkillsSection = () => {
   const [itemSize, setItemSize] = useState(30)
-  const {width, _} = useDimensions()
+  const {width} = useDimensions()
   useEffect(()=>{
     if (width<800) {
       setItemSize(20)
