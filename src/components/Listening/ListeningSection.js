@@ -13,21 +13,23 @@ const ListeningSection = () => {
           <div className='flexCol alignCenter'>
             <AudioButton isBig={true} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
             <div>
-              <h4>Mendelssohn: Symphony<br></br> No. 4 in A Major</h4>
-              <p className='small italic'>As featured in Barbie in the 12 Dancing Princesses</p>
-              <p style={{ marginTop: '1rem' }}>
-                <a 
+              <h4>Golden</h4>
+              <p className='small italic'>As featured in KPOP Demon Hunters</p>
+              <p style={{ 
+                  color: 'var(--primary-text-color)', 
+                  fontSize: '0.9rem',
+                  fontWeight: 400,
+                  marginTop: '1rem',
+                  lineHeight: '1.2rem',
+                }}>
+                  Click the record player to listen <br />
+                  <a 
                   href="/golden-lyrics.html" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  style={{ 
-                    color: 'var(--primary-text-color)', 
-                    textDecoration: 'underline',
-                    fontSize: '0.9rem',
-                    fontWeight: 400
-                  }}
+                  style={{ textDecoration: 'underline', }}
                 >
-                  Or view "Golden" lyrics →
+                  Or view lyrics here →
                 </a>
               </p>
             </div>

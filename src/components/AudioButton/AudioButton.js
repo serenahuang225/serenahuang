@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import "./AudioButton.css";
-import sound from "./Mendelssohn Symphony 4 mvt 1.mp3"
+import sound from "./Golden.mp3"
 
 const AudioButton = ({isBig=false, isPlaying, setIsPlaying}) => {
   const audioRef = useRef(new Audio(sound));
