@@ -6,7 +6,7 @@
   justify-content: center;
   align-items: center;
   border: none;
-  border-bottom: 1px solid #161616;
+  border-bottom: 1px solid var(--primary-border-color);
 }
 
 .skills-section p {
@@ -35,7 +35,7 @@
 
 .skills-section h4 {
   border: none;
-  border-bottom: 1px solid #161616;
+  border-bottom: 1px solid var(--primary-border-color);
   padding: 0.75rem 0;
   margin: 1rem 0;
   font-weight: 400;
@@ -62,7 +62,7 @@
   max-width: 100%;
   padding: 1.5rem 3.5rem;
   position: relative;
-  border: 1px solid #161616;
+  border: 1px solid var(--primary-border-color);
   margin-bottom: 0.75rem;
   break-inside: avoid;
   @media only screen and (max-width: 800px) {
@@ -97,7 +97,7 @@
 
 .skill-card p {
   margin-bottom: 2rem;
-  color: #161616;
+  color: var(--primary-text-color);
   text-align: center;
   @media only screen and (max-width: 800px) {
     margin-bottom: 1.5rem;
@@ -126,7 +126,7 @@
   transform: translateX(-50%);
   background: #ffffff;
   color: var(--primary-text-color);
-  border: 1px solid #161616;
+  border: 1px solid var(--primary-border-color);
   padding: 0.3rem 0.6rem;
   white-space: nowrap;
   opacity: 0;
@@ -147,7 +147,7 @@
   transform: translateX(-50%);
   border-width: 5px;
   border-style: solid;
-  border-color: transparent transparent #161616 transparent;
+  border-color: transparent transparent var(--primary-border-color) transparent;
 }
 
 .skillBlock:hover .skill-name {
@@ -180,7 +180,7 @@
 
 .cardContainer {
   background: #ffffff;
-  border: 1px solid #161616;
+  border: 1px solid var(--primary-border-color);
   padding: 0 1rem;
 }
 

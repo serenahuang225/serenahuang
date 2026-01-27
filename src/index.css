@@ -5,6 +5,7 @@
 
   --primary-background-color: #ffffff;
   --secondary-background-color: #161616;
+  --tertiary-background-color: #f7f7f7;
   
   --primary-text-color: #161616;
   --secondary-text-color: #161616;
@@ -23,14 +24,19 @@
 * {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
 body {
   background-color: #ffffff;
+  overflow: hidden;
+  height: 100vh;
 }
 
 html {
   background-color: #ffffff;
+  overflow: hidden;
+  height: 100%;
 }
 
 button {
@@ -110,15 +116,22 @@ button {
 }
 
 #app {
-  height: 100%;
+  height: calc(100vh - 4rem);
+  max-height: calc(100vh - 4rem);
   background-color: var(--primary-background-color);
   color: var(--primary-text-color);
   max-width: 8.5in;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
+  margin: 2rem auto;
+  padding: 0 2rem 2rem 2rem;
   display: flex;
   flex-direction: column;
   text-transform: lowercase;
+  border: 1px solid var(--primary-border-color);
+  overflow-y: auto;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--secondary-background-color) var(--tertiary-background-color);
 }
 
 #app svg {
@@ -139,7 +152,7 @@ a {
 }
 
 .noLink {
-  color: #161616;
+  color: var(--primary-text-color);
   text-decoration: none;
   :hover {
     cursor: pointer;
@@ -177,7 +190,7 @@ h3 {
   font-weight: 400;
   text-align: center;
   color: var(--primary-text-color);
-  border-bottom: 1px solid #161616;
+  border-bottom: 1px solid var(--primary-border-color);
   padding: 0.75rem 0;
   margin: 1rem 0;
 }
@@ -186,7 +199,7 @@ h4 {
   font-family: "Outfit", serif;
   font-size: 1.25rem;
   color: var(--primary-text-color);
-  border-bottom: 1px solid #161616;
+  border-bottom: 1px solid var(--primary-border-color);
   padding: 0.75rem 0;
   margin: 1rem 0;
 }
@@ -195,7 +208,7 @@ h5 {
   font-family: "Outfit", serif;
   font-size: 1.5rem;
   color: var(--primary-text-color);
-  border-bottom: 1px solid #161616;
+  border-bottom: 1px solid var(--primary-border-color);
   padding: 0.75rem 0;
   margin: 1rem 0;
 }
@@ -204,7 +217,7 @@ h6 {
   font-family: "Outfit", serif;
   font-size: 1.25rem;
   color: var(--primary-text-color);
-  border-bottom: 1px solid #161616;
+  border-bottom: 1px solid var(--primary-border-color);
   padding: 0.75rem 0;
   margin: 1rem 0;
 }
@@ -306,7 +319,7 @@ p.large {
 *[class*="section"] {
   padding: 2rem 0;
   margin-bottom: 0;
-  border-bottom: 1px solid #161616 !important;
+  border-bottom: 1px solid var(--primary-border-color) !important;
   padding-bottom: 2.5rem;
   margin-bottom: 2.5rem;
 }

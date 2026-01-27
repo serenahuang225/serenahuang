@@ -72,7 +72,7 @@
 .noot {
   position: absolute;
   font-size: 2rem;
-  color: #161616;
+  color: var(--primary-text-color);
   display: none;
 }
 

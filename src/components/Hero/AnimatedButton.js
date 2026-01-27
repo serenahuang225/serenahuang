@@ -14,7 +14,7 @@ const AnimatedButton = ({link="mailto:serenahuang225@gmail.com", message="LETS W
             position: "relative",
             width: 'fit-content',
             backgroundColor: '#ffffff',
-            border: '1px solid #161616'
+            border: '1px solid var(--primary-border-color)'
           }}
         >
           <span
@@ -23,7 +23,7 @@ const AnimatedButton = ({link="mailto:serenahuang225@gmail.com", message="LETS W
               width: "100%",
               display: "block",
               position: "relative",
-              color: '#161616',
+              color: 'var(--primary-text-color)',
               fontSize: '1.2rem',
               fontFamily: "Outfit, sans-serif",
               fontWeight: '400'

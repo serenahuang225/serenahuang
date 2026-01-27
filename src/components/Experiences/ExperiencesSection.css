@@ -51,7 +51,7 @@
 }
 
 .experience-item {
-  border-bottom: 1px solid #161616;
+  border-bottom: 1px solid var(--primary-border-color);
   padding: 0.5rem 0 0.75rem 0;
   margin-bottom: 0.75rem;
   break-inside: avoid;
@@ -79,19 +79,19 @@
 .experience-header h5 {
   font-weight: 400;
   margin: 0 0 0.25rem 0;
-  border-bottom: 1px solid #161616;
+  border-bottom: 1px solid var(--primary-border-color);
   padding-bottom: 0.5rem;
 }
 
 .experience-label {
-  color: #161616;
+  color: var(--primary-text-color);
   margin: 0 0 0.25rem 0;
   font-weight: 400;
   font-size: 1.1rem;
 }
 
 .experience-date {
-  color: #161616;
+  color: var(--primary-text-color);
   margin: 0;
   font-style: italic;
 }

@@ -1,0 +1,416 @@
+<!-- image used: https://gizmodo.com/holy-crap-so-many-people-watched-kpop-demon-hunters-last-year-2000712204 -->
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Golden by HUNTR/X | Emily Huang</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/blanka" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-size: 1rem;
+        font-family: "DM Sans", sans-serif;
+      }
+
+      body {
+        color: #ffffff;
+        line-height: 1.6;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      header {
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        background-image:
+          linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+          url("./golden-lyrics-background.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      h1 {
+        font-family: "Blanka", sans-serif;
+        letter-spacing: 0.3rem;
+        font-size: 3.5rem;
+        margin-bottom: 0.625rem;
+        text-shadow: 0 0 2rem #ffffff;
+      }
+
+      .header-content {
+        text-align: center;
+        padding: 2.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(0.5rem);
+        border-radius: 1.25rem;
+        box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        max-width: 35rem;
+      }
+
+      .scroll-hint {
+        margin-top: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        color: #ffffff;
+        letter-spacing: 0.1rem;
+      }
+
+      .scroll-hint .chevron {
+        font-size: 1.5rem;
+        animation: scroll-bounce 2s ease-in-out infinite;
+      }
+
+      @keyframes scroll-bounce {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(0.5rem);
+        }
+      }
+
+      .container {
+        position: absolute;
+        top: 100vh;
+        left: 0;
+        right: 0;
+        z-index: 2;
+        background: linear-gradient(135deg, #879bf4, #6ba0db, #c6b7f1, #99a2e9);
+        background-size: 200% 200%;
+        min-height: 200vh;
+      }
+
+      .container > * {
+        max-width: 68rem;
+        margin: 0 auto;
+        padding: 1.25rem;
+      }
+
+      .content {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 2.5rem;
+        margin-bottom: 2.5rem;
+      }
+
+      .artists {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1.25rem;
+      }
+
+      .artist {
+        background-color: rgba(255, 255, 255, 0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 3rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #ffffff;
+      }
+
+      .lyrics-section {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(0.5rem);
+        border-radius: 1rem;
+        padding: 2rem;
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .lyrics-header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .color-key {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        font-weight: bold;
+      }
+
+      .lyrics-container {
+        line-height: 1.8;
+      }
+
+      .section-label {
+        font-weight: 600;
+        letter-spacing: 0.12rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 0.5rem;
+        margin-top: 1.5rem;
+      }
+
+      .verse {
+        margin-bottom: 2rem;
+        position: relative;
+        padding: 1.25rem;
+        border-left: 0.25rem solid rgba(255, 255, 255, 0.5);
+      }
+
+      .chorus,
+      .post-chorus {
+        background-color: rgba(255, 255, 255, 0.2);
+        padding: 1.25rem;
+        margin-bottom: 2rem;
+        border-left: 0.25rem solid rgba(255, 255, 255, 0.8);
+      }
+
+      .rumi {
+        color: #6600ff;
+      }
+
+      .zoey {
+        color: #1151ff;
+      }
+
+      .mira {
+        color: #9d174d;
+      }
+
+      .translation {
+        font-style: italic;
+      }
+
+      .highlight {
+        color: #ffffbb;
+        font-weight: bold;
+        text-shadow: 0 0 1.25rem #ffffbb80;
+      }
+
+      footer {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        text-align: center;
+        padding: 1.25rem;
+        margin-top: 2.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      footer p {
+        max-width: 40rem;
+      }
+
+      a {
+        color: #ffffff;
+        font-size: 1.5rem;
+        transition:
+          transform 0.3s,
+          text-shadow 0.3s;
+        text-shadow: 0 0 0.5rem rgba(255, 255, 255, 0.5);
+      }
+
+      a:hover {
+        transform: scale(1.2);
+        text-shadow: 0 0 1.25rem rgba(255, 255, 255, 0.9);
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="header-content">
+        <h1>GOLDEN</h1>
+        <div class="artists">
+          <div class="artist">HUNTR/X</div>
+          <div class="artist">EJAE</div>
+          <div class="artist">AUDREY NUNA</div>
+          <div class="artist">REI AMI</div>
+          <div class="artist">KPop Demon Hunters Cast</div>
+        </div>
+        <div class="scroll-hint">
+          Scroll for Lyrics
+          <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <main class="content">
+        <iframe
+          src="https://open.spotify.com/embed/track/1CPZ5BxNNd0n0nF4Orb9JS?utm_source=generator"
+          width="100%"
+          height="353"
+          frameborder="0"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+          style="border-radius: 1rem; box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.4);"
+        ></iframe>
+
+        <section class="lyrics-section">
+          <div class="lyrics-header">
+            <h1>Lyrics</h1>
+            <div class="color-key">
+              <span>Singer:</span>
+              <div class="artist rumi">
+                <span>Rumi</span>
+              </div>
+              <div class="artist zoey">
+                <span>Zoey</span>
+              </div>
+              <div class="artist mira">
+                <span>Mira</span>
+              </div>
+              <div class="artist">
+                <span>All</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="lyrics-container">
+            <div class="section-label">[Verse 1]</div>
+            <div class="verse rumi">
+              <p>I was a ghost, I was alone</p>
+              <p>어두워진 앞길 속에 <span class="translation">(My future hid in the shadows)</span></p>
+              <p>Given the throne, I didn't know how to believe</p>
+              <p>I was the queen that I'm meant to be</p>
+            </div>
+
+            <div class="verse zoey">
+              <p>I lived two lives, tried to play both sides</p>
+              <p>But I couldn't find my own place</p>
+            </div>
+
+            <div class="verse mira">
+              <p>Called a problem child 'cause I got too wild</p>
+              <p>
+                But now that's how I'm getting paid, 끝없이 <span class="translation">(endlessly)</span> on
+                stage
+              </p>
+            </div>
+
+            <div class="section-label">[Pre-Chorus]</div>
+            <div class="verse">
+              <p class="rumi">
+                I'm done hidin', now I'm <span class="highlight">shinin'</span> like I'm born to be
+              </p>
+              <p><span class="rumi">We</span> dreamin' hard, we came so far, now I believe</p>
+            </div>
+
+            <div class="section-label">[Chorus]</div>
+            <div class="chorus">
+              <p>
+                <span class="rumi">We're goin'</span> <span class="highlight">up, up, up</span>, it's our
+                moment
+              </p>
+              <p>You know together we're <span class="highlight">glowin'</span></p>
+              <p>Gonna be, gonna be <span class="highlight">golden</span></p>
+              <p>Oh-oh-oh, <span class="highlight">up, up, up</span> with our voices</p>
+              <p>영원히 깨질 수 없는 <span class="translation">(We are eternally unbreakable)</span></p>
+              <p>Gonna be, gonna be <span class="highlight">golden</span></p>
+            </div>
+
+            <div class="section-label">[Post-Chorus]</div>
+            <div class="post-chorus">
+              <p>
+                Oh-oh-oh, I'm done hidin', now I'm <span class="highlight">shinin'</span> like I'm born to be
+              </p>
+              <p>Oh, our time, no fears, no lies</p>
+              <p>That's who we're born to be</p>
+            </div>
+
+            <div class="section-label">[Verse 2]</div>
+            <div class="verse rumi">
+              <p>Waited so long to break these walls down</p>
+              <p>To wake up and feel like me</p>
+              <p>Put these patterns all in the past now</p>
+              <p>And finally live like the girl they all see</p>
+            </div>
+
+            <div class="section-label">[Pre-Chorus]</div>
+            <div class="verse rumi">
+              <p>No more hiding, I'll be <span class="highlight">shinin'</span> like I'm born to be</p>
+              <p>'Cause we are hunters, voices strong, and I know I believe</p>
+            </div>
+
+            <div class="section-label">[Chorus]</div>
+            <div class="chorus">
+              <p>
+                <span class="rumi">We're goin'</span> <span class="highlight">up, up, up</span>, it's our
+                moment
+              </p>
+              <p>You know together we're <span class="highlight">glowin'</span></p>
+              <p>Gonna be, gonna be <span class="highlight">golden</span></p>
+              <p>Oh-oh-oh, <span class="highlight">up, up, up</span> with our voices</p>
+              <p>영원히 깨질 수 없는 <span class="translation">(We are eternally unbreakable)</span></p>
+              <p>Gonna be, gonna be <span class="highlight">golden</span></p>
+            </div>
+
+            <div class="section-label">[Post-Chorus]</div>
+            <div class="post-chorus">
+              <p>
+                Oh-oh-oh, I'm done hidin', now I'm <span class="highlight">shinin'</span> like I'm born to be
+              </p>
+              <p>Oh, our time, no fears, no lies</p>
+              <p>That's who we're born to be</p>
+            </div>
+
+            <div class="section-label">[Bridge]</div>
+            <div class="verse">
+              <p class="rumi">You know we're gonna be, gonna be <span class="highlight">golden</span></p>
+              <p class="rumi">We're gonna be, gonna be</p>
+              <p class="rumi">Born to be, born to be <span class="highlight">glowin'</span></p>
+              <p class="rumi">
+                밝게 빛나는 우린 <span class="translation">(We are shining so brilliantly)</span>
+              </p>
+            </div>
+
+            <div class="section-label">[Outro / Final Chorus]</div>
+            <div class="verse">
+              <p>You know that it's our time, no fears, no lies</p>
+              <p>That's who we're born to be</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <p>
+          Songwriters: Eun Jae Phoebe Kim / Hee Dong Nam / Hong Jun Park / Jeong Hun Seo / Joong Gyu Kwak /
+          Mark Sonnenblick / Yoo Han Lee
+        </p>
+        <p>Golden Lyrics © Universal Music Publishing Group</p>
+        <a href="https://open.spotify.com/track/1CPZ5BxNNd0n0nF4Orb9JS?si=cde839a8106f4524" target="_blank">
+          <i class="fab fa-spotify"></i>
+        </a>
+      </footer>
+    </div>
+  </body>
+</html>
