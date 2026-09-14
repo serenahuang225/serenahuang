@@ -568,7 +568,7 @@ export default function Home() {
             <p>
               A place for the things I notice.
               <br />
-              Small details. Passing light.
+              Small, big; simple, complex; light, dark; all beautiful.
               <br />
               Moments worth keeping.
             </p>
@@ -592,8 +592,8 @@ export default function Home() {
         </section>
         <section className="about section-pad" id="about">
           <div className="section-top">
-            <span className="eyebrow">05 / THE PERSON BEHIND IT ALL</span>
-            <span className="quiet">Still learning. Always becoming.</span>
+            <span className="eyebrow">05 / WHO I AM</span>
+            <span className="quiet">Still learning, always becoming.</span>
           </div>
           <div className="about-layout">
             <h2>
@@ -601,7 +601,7 @@ export default function Home() {
               <br />
               possibilities.
               <br />
-              <em>Hands in the work.</em>
+              <em>Hands at work.</em>
             </h2>
             <div className="about-copy">
               <p>
@@ -609,7 +609,7 @@ export default function Home() {
               </p>
               <p>
                 I’m drawn to the space where ideas become useful: from diving
-                deep into cybersecurity or agentic ai research to building tools
+                deep into cybersecurity or agentic AI research to building tools
                 for swimmers, planners, and everyday life.
               </p>
               <p>
@@ -617,7 +617,7 @@ export default function Home() {
                 showing up as myself.
               </p>
               <p>
-                Some hobbies include reading great books (always excited for recs),
+                Some hobbies of mine include reading great books (always excited for recs),
                 gymming, swimming, board/card gaming, and eating (beli: @kingbubbles)
               </p>
               <div className="about-links">
@@ -663,9 +663,9 @@ export default function Home() {
             <a className="footer-signature" href="#home">
               Serena Huang<span>↗</span>
             </a>
-            <span>BUILT WITH INTENTION. ALWAYS A WORK IN PROGRESS.</span>
+            <span>A WORK IN PROGRESS, LAST UPDATED SEPTEMBER 2026</span>
             <a href="#home">
-              BACK TO THE SURFACE <ArrowUpRight size={13} />
+              TOP <ArrowUpRight size={13} />
             </a>
           </footer>
         </section>
