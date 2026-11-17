@@ -6,6 +6,8 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { ORBS, mulberry32, strands } from "./world-data";
 import {
   AMBIENT,
+  GLSL_BILLBOARD,
+  billboardGeometry,
   GLSL_CAMERA_FADE,
   GLSL_COMMON,
   GLSL_LIGHTS,
@@ -271,7 +273,7 @@ export function HangingStrands() {
 
 // ---------------------------------------------------------------- fireflies
 
-export function Fireflies({ count = 900, tile = 56 }: { count?: number; tile?: number }) {
+export function Fireflies({ count = 260, tile = 56 }: { count?: number; tile?: number }) {
   const { geometry, material } = useMemo(() => {
     const r = mulberry32(2024);
     const pos = new Float32Array(count * 3);
@@ -283,28 +285,28 @@ export function Fireflies({ count = 900, tile = 56 }: { count?: number; tile?: n
       seed[i * 2] = r();
       seed[i * 2 + 1] = r();
     }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    geometry.setAttribute("aSeed", new THREE.BufferAttribute(seed, 2));
+    const geometry = billboardGeometry(count, { aPos: { data: pos, size: 3 }, aSeed: { data: seed, size: 2 } });
     const material = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: wrapUniforms(tile),
+      uniforms: { ...wrapUniforms(tile), uProj: shared.uProj },
       vertexShader: /* glsl */ `
         ${GLSL_COMMON}
         ${GLSL_MAP}
         uniform vec2 uCenter;
         uniform float uTile;
+        attribute vec3 aPos;
         attribute vec2 aSeed;
         varying float vA;
         varying vec3 vC;
+        ${GLSL_BILLBOARD}
         void main() {
           vec2 wander = vec2(
             sin(uTime * (0.12 + aSeed.x * 0.1) + aSeed.y * 30.0),
             cos(uTime * (0.1 + aSeed.y * 0.1) + aSeed.x * 20.0)
           ) * 1.6;
-          vec2 xz = uCenter + mod(position.xz + wander - uCenter + 0.5 * uTile, uTile) - 0.5 * uTile;
+          vec2 xz = uCenter + mod(aPos.xz + wander - uCenter + 0.5 * uTile, uTile) - 0.5 * uTile;
           float ground = sampleMap(xz).r;
           vec3 wp = vec3(xz.x, ground + 0.45 + aSeed.x * 2.4 + sin(uTime * 0.3 + aSeed.y * 9.0) * 0.25, xz.y);
           // drift out of the ball's way
@@ -315,21 +317,19 @@ export function Fireflies({ count = 900, tile = 56 }: { count?: number; tile?: n
             float f = (1.0 - smoothstep(0.5, 3.2, dist)) * b.w;
             wp += (d / max(dist, 0.001) + vec3(0.0, 0.6, 0.0)) * f * 1.4;
           }
-          vec4 mv = viewMatrix * vec4(wp, 1.0);
-          gl_Position = projectionMatrix * mv;
-          float dist = max(-mv.z, 0.01);
-          float px = (6.0 + aSeed.y * 4.0) * 26.0 / dist;
+          float tiny = billboard(wp, 0.09 + aSeed.y * 0.06, 4.0);
+          float dist = length(wp - cameraPosition);
           float edge = 1.0 - smoothstep(uTile * 0.38, uTile * 0.48, length(xz - uCenter));
-          vA = (0.7 + 0.3 * sin(uTime * 0.25 + aSeed.x * 40.0)) * edge * exp(-pow(dist * 0.03, 2.0)) * clamp(px / 4.0, 0.0, 1.0);
+          vA = (0.7 + 0.3 * sin(uTime * 0.25 + aSeed.x * 40.0)) * edge * exp(-pow(dist * 0.03, 2.0)) * tiny * smoothstep(0.3, 1.2, dist);
           vC = aSeed.y < 0.6 ? vec3(1.6, 1.15, 0.35) : vec3(0.9, 1.8, 0.45);
-          gl_PointSize = max(px, 4.0);
         }
       `,
       fragmentShader: /* glsl */ `
         varying float vA;
         varying vec3 vC;
+        varying vec2 vUv;
         void main() {
-          float d = length(gl_PointCoord - 0.5);
+          float d = length(vUv - 0.5);
           float a = smoothstep(0.5, 0.0, d);
           a *= a;
           gl_FragColor = vec4(vC * a * vA * 0.75, a * vA);
@@ -338,10 +338,10 @@ export function Fireflies({ count = 900, tile = 56 }: { count?: number; tile?: n
     });
     return { geometry, material };
   }, [count, tile]);
-  return <points geometry={geometry} material={material} frustumCulled={false} />;
+  return <mesh geometry={geometry} material={material} frustumCulled={false} />;
 }
 
-// ---------------------------------------------------------------- light orbs
+// ---------------------------------------------------------------- light orbs (energy)
 
 const ORB_COLOR = new THREE.Color(1.0, 0.86, 0.55);
 
@@ -352,32 +352,29 @@ export function LightOrbs() {
     const born = new Float32Array(n).fill(-1); // time it was collected, -1 = still here
     ORBS.forEach((o, i) => pos.set([o.pos.x, o.pos.y, o.pos.z], i * 3));
 
-    // the glowing orb itself, as a big soft point
-    const glowGeo = new THREE.BufferGeometry();
-    glowGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    glowGeo.setAttribute("aCollected", new THREE.BufferAttribute(born, 1));
+    // each orb is a camera-facing card (no popping at screen edges, no size cap)
+    const glowGeo = billboardGeometry(n, { aPos: { data: pos, size: 3 }, aCollected: { data: born, size: 1 } });
     const glowMat = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uTime: shared.uTime, uScale: { value: 800 }, uColor: { value: ORB_COLOR } },
+      uniforms: { uTime: shared.uTime, uProj: shared.uProj, uColor: { value: ORB_COLOR } },
       vertexShader: /* glsl */ `
         uniform float uTime;
-        uniform float uScale;
+        attribute vec3 aPos;
         attribute float aCollected;
         varying float vA;
         varying float vBurst;
+        ${GLSL_BILLBOARD}
         void main() {
-          vec3 p = position;
-          float id = position.x * 0.37 + position.z * 0.61;
+          vec3 p = aPos;
+          float id = aPos.x * 0.37 + aPos.z * 0.61;
           p.y += sin(uTime * 0.8 + id) * 0.14;
           float age = aCollected < 0.0 ? -1.0 : uTime - aCollected;
           vBurst = age < 0.0 ? 0.0 : clamp(age / 1.1, 0.0, 1.0);
-          vA = age < 0.0 ? 1.0 : 1.0 - vBurst;
-          vec4 mv = modelViewMatrix * vec4(p, 1.0);
-          gl_Position = projectionMatrix * mv;
-          float size = 1.5 * (1.0 + vBurst * 5.0);
-          gl_PointSize = age > 1.1 ? 0.0 : max(size * uScale / max(-mv.z, 0.1), 3.0);
+          vA = age < 0.0 ? 1.0 : (age > 1.1 ? 0.0 : 1.0 - vBurst);
+          float radius = 0.75 * (1.0 + vBurst * 5.0) * step(age, 1.1);
+          billboard(p, radius, 5.0);
         }
       `,
       fragmentShader: /* glsl */ `
@@ -385,8 +382,9 @@ export function LightOrbs() {
         uniform float uTime;
         varying float vA;
         varying float vBurst;
+        varying vec2 vUv;
         void main() {
-          float d = length(gl_PointCoord - 0.5) * 2.0;
+          float d = length(vUv - 0.5) * 2.0;
           float core = 1.0 - smoothstep(0.0, 0.16, d);
           float halo = pow(1.0 - smoothstep(0.0, 1.0, d), 3.0);
           float ring = vBurst > 0.0 ? (1.0 - smoothstep(0.0, 0.1, abs(d - 0.8))) * 1.5 : 0.0;
@@ -447,10 +445,7 @@ export function LightOrbs() {
     (built.glowGeo.getAttribute("aCollected") as THREE.BufferAttribute).needsUpdate = true;
   }, [built]);
 
-  useFrame(({ size, camera, gl }) => {
-    const cam = camera as THREE.PerspectiveCamera;
-    built.glowMat.uniforms.uScale.value =
-      (size.height * gl.getPixelRatio()) / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
+  useFrame(() => {
     const p = player.position;
     let changed = false;
     for (let i = 0; i < ORBS.length; i++) {
@@ -476,7 +471,7 @@ export function LightOrbs() {
 
   return (
     <>
-      <points geometry={built.glowGeo} material={built.glowMat} frustumCulled={false} renderOrder={4} />
+      <mesh geometry={built.glowGeo} material={built.glowMat} frustumCulled={false} renderOrder={4} />
       <primitive object={built.pillars} />
     </>
   );

@@ -6,6 +6,7 @@ import { orbStore } from "./orb-store";
 import { lookStore } from "./look-store";
 import { sound } from "./audio";
 import { FieldGuide } from "./field-guide";
+import { StoryHud } from "./story-hud";
 import styles from "./underground.module.css";
 
 const UndergroundScene = dynamic(() => import("./scene"), { ssr: false });
@@ -161,24 +162,49 @@ export default function UndergroundClient() {
       {ready && <PotionStatus />}
       <SoundButton />
       {ready && <FieldGuide />}
+      {ready && <StoryHud />}
 
       <div
         className={`${styles.hint} ${hintHidden ? styles.hintHidden : ""}`}
         onMouseEnter={() => setHintHidden(false)}
       >
-        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> roll</span>
+        <span className={styles.moveHelp}>
+          <span className={styles.cluster} aria-hidden="true">
+            <i />
+            <kbd>W</kbd>
+            <i />
+            <kbd>A</kbd>
+            <kbd>S</kbd>
+            <kbd>D</kbd>
+          </span>
+          <span className={styles.or}>or</span>
+          <span className={styles.cluster} aria-hidden="true">
+            <i />
+            <kbd>↑</kbd>
+            <i />
+            <kbd>←</kbd>
+            <kbd>↓</kbd>
+            <kbd>→</kbd>
+          </span>
+          <span>
+            <b>roll</b> — W/↑ forward (the way the camera faces), S/↓ back, A/← left, D/→ right
+          </span>
+        </span>
         <span><kbd>Shift</kbd> sprint</span>
         <span><kbd>Space</kbd> jump</span>
-        <span><kbd>C</kbd> duck · hold, then <kbd>Space</kbd> for a super jump</span>
+        <span><kbd>C</kbd> duck (fit through logs)</span>
         <span><kbd>C</kbd> in the air to stomp</span>
         <span><kbd>Q</kbd><kbd>E</kbd> turn camera</span>
         <span><kbd>R</kbd> respawn</span>
         <span>In deep water: <kbd>Space</kbd> swim up, <kbd>C</kbd> dive</span>
         <span>Roll into a bottle to drink it</span>
-        <span><kbd>M</kbd> sound</span>
+        <span><kbd>T</kbd> talk</span>
+        <span><kbd>P</kbd> photo</span>
         <span><kbd>I</kbd> field guide</span>
+        <span><kbd>F</kbd> full screen</span>
+        <span><kbd>M</kbd> sound</span>
         <span>Roll onto a glowing puffball to reach the top of its mushroom</span>
-        <span>Follow the pillars of light to find all the glowing orbs</span>
+        <span>Gold pillars mark energy orbs · blue beams mark rocket parts</span>
         <span>{locked ? "Esc to free the mouse" : "Click to look around"}</span>
       </div>
 

@@ -826,13 +826,12 @@
   }
   .spread {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: minmax(0, 42%) minmax(0, 1fr);
   }
   .gutter {
     display: none;
   }
   .pageLeft {
-    max-height: 40%;
     border-radius: 6px 6px 0 0;
     border-bottom: 1px solid rgba(90, 60, 25, 0.25);
   }
@@ -924,4 +923,141 @@
   color: rgba(138, 75, 42, 0.7);
   rotate: 8deg;
   pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- friends + map */
+
+.ribbon_friends {
+  --ribbon: #3f6fae;
+}
+.ribbon_map {
+  --ribbon: #6b8a3a;
+}
+
+.thumbRound {
+  border-radius: 50%;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #2a3a58, #121a2c);
+}
+
+.unknownFace,
+.unknownBig {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-family: var(--serif);
+  color: rgba(255, 240, 210, 0.6);
+}
+
+.unknownFace {
+  font-size: 1.4rem;
+}
+
+.unknownBig {
+  font-size: 5rem;
+}
+
+.portraitPlate {
+  display: grid;
+  place-items: center;
+}
+
+.portraitPlate svg {
+  width: auto;
+  height: 100%;
+}
+
+.mapWrap {
+  position: relative;
+}
+
+.map {
+  display: block;
+  width: 100%;
+  max-height: 390px;
+  margin: 0 auto;
+}
+
+.mapHint {
+  margin: 6px 0 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.95rem;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.album {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 16px 12px;
+  margin-top: 8px;
+  padding: 4px;
+}
+
+.polaroid {
+  position: relative;
+  margin: 0;
+  padding: 6px 6px 4px;
+  background: #fbf6ea;
+  box-shadow: 1px 3px 6px rgba(70, 45, 15, 0.35);
+}
+
+/* a bit of tape holding each photo in */
+.polaroid::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 38px;
+  height: 14px;
+  margin-left: -19px;
+  background: rgba(240, 225, 180, 0.75);
+  box-shadow: 0 1px 2px rgba(70, 45, 15, 0.2);
+  rotate: -4deg;
+}
+
+.polaroid img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  background: #222;
+}
+
+.polaroid figcaption {
+  margin-top: 4px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.albumEmpty h3,
+.album + h3 {
+  margin-top: 0;
+}
+
+@media (max-width: 760px) {
+  .ribbon {
+    width: 58px;
+    height: 66px;
+    padding-top: 12px;
+    font-size: 0.74rem;
+  }
+  .ribbon small {
+    display: none;
+  }
+  .map {
+    max-height: 100%;
+  }
+  .title {
+    display: none;
+  }
 }

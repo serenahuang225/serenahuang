@@ -22,6 +22,8 @@ export const shared = {
     ],
   },
   uLightRange: { value: [9.5, ...LIGHTS.map((l) => l.range)] },
+  /** Device pixels per world unit at distance 1 (for billboards with a minimum size). */
+  uProj: { value: 900 },
 };
 
 export const NUM_LIGHTS = LIGHTS.length + 1;
@@ -188,3 +190,44 @@ export function lightUniforms() {
 }
 
 export const AMBIENT = new THREE.Color("#12223a");
+
+/**
+ * Camera-facing quads, one per instance. Unlike GL points they don't vanish
+ * the moment their centre leaves the screen and have no maximum size, so
+ * glowing specks never pop or snap.
+ */
+export function billboardGeometry(count: number, attrs: Record<string, { data: Float32Array; size: number }>) {
+  const geo = new THREE.InstancedBufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], 3));
+  geo.setIndex([0, 1, 2, 0, 2, 3]);
+  for (const [name, a] of Object.entries(attrs)) geo.setAttribute(name, new THREE.InstancedBufferAttribute(a.data, a.size));
+  geo.instanceCount = count;
+  return geo;
+}
+
+/**
+ * Expands a billboard around a world-space centre. Keeps it at least
+ * minPx pixels wide (fading it instead of letting it shimmer sub-pixel).
+ * Sets vUv; returns the alpha multiplier for tiny specks.
+ */
+export const GLSL_BILLBOARD = /* glsl */ `
+uniform float uProj;
+varying vec2 vUv;
+float billboard(vec3 center, float radius, float minPx) {
+  vec4 mv = viewMatrix * vec4(center, 1.0);
+  float dist = max(-mv.z, 0.05);
+  float minR = minPx * 0.5 * dist / uProj;
+  float r = max(radius, minR);
+  mv.xy += position.xy * r;
+  gl_Position = projectionMatrix * mv;
+  vUv = position.xy * 0.5 + 0.5;
+  return clamp(radius / r, 0.0, 1.0);
+}
+`;
+
+/** Story hooks into the ball: move it, hide it (Bob in the rocket), or film a cutscene. */
+export const control = {
+  teleport: null as null | { pos: THREE.Vector3; vel?: THREE.Vector3 },
+  hidden: false,
+  camera: null as null | { pos: THREE.Vector3; target: THREE.Vector3; speed?: number },
+};
