@@ -18,8 +18,10 @@ import {
   smoothstep,
 } from "./world-data";
 import {
+  GLSL_BILLBOARD,
   GLSL_COMMON,
   GLSL_LIGHTS,
+  billboardGeometry,
   ensureFoliageMap,
   lightUniforms,
   shared,
@@ -163,7 +165,12 @@ export function Ground() {
     () => ({
       ground: buildGroundGeometry(),
       wall: buildWallGeometry(),
-      material: makeRockMaterial(),
+      // double-sided, so even a camera that slips under the ground sees rock
+      material: (() => {
+        const m = makeRockMaterial();
+        m.side = THREE.DoubleSide;
+        return m;
+      })(),
     }),
     [],
   );
@@ -172,7 +179,7 @@ export function Ground() {
       <RigidBody type="fixed" colliders="trimesh" friction={1.2}>
         <mesh geometry={ground} material={material} />
       </RigidBody>
-      <mesh geometry={wall} material={material} material-side={THREE.BackSide} />
+      <mesh geometry={wall} material={material} />
     </>
   );
 }
@@ -348,53 +355,50 @@ export function Spores() {
       seed[i * 2] = r();
       seed[i * 2 + 1] = r();
     }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    geometry.setAttribute("aSeed", new THREE.BufferAttribute(seed, 2));
+    const geometry = billboardGeometry(count, { aPos: { data: pos, size: 3 }, aSeed: { data: seed, size: 2 } });
     const material = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       uniforms: {
         uTime: shared.uTime,
+        uProj: shared.uProj,
         uCenter: { value: new THREE.Vector3() },
       },
       vertexShader: /* glsl */ `
         uniform float uTime;
         uniform vec3 uCenter;
+        attribute vec3 aPos;
         attribute vec2 aSeed;
         varying float vA;
         varying vec3 vC;
+        ${GLSL_BILLBOARD}
         void main() {
           vec3 size = vec3(70.0, 26.0, 70.0);
-          vec3 p = position;
+          vec3 p = aPos;
           p.y += uTime * (0.15 + aSeed.x * 0.35);
           p.x += sin(uTime * 0.3 + aSeed.y * 30.0) * 1.5;
           p.z += cos(uTime * 0.25 + aSeed.x * 20.0) * 1.5;
           vec3 base = uCenter - vec3(0.0, 6.0, 0.0);
           vec3 wp = base + mod(p - base, size);
           wp.xz -= size.xz * 0.5;
-          vec4 mv = viewMatrix * vec4(wp, 1.0);
-          gl_Position = projectionMatrix * mv;
-          float dist = -mv.z;
+          float tiny = billboard(wp, 0.07 + aSeed.x * 0.08, 4.0);
+          float dist = length(wp - cameraPosition);
           float fade = smoothstep(0.6, 2.5, dist) * exp(-pow(dist * 0.035, 2.0));
           float edge = 1.0 - smoothstep(20.0, 34.0, length(wp.xz - uCenter.xz));
           // they wrap from the top of their box back to the bottom: fade at both ends
-          // so nothing pops in or out
           float hy = wp.y - base.y;
           edge *= smoothstep(0.0, 4.0, hy) * (1.0 - smoothstep(size.y - 6.0, size.y, hy));
-          vA = fade * edge * (0.75 + 0.25 * sin(uTime * 0.2 + aSeed.y * 40.0)) * 0.55;
+          vA = fade * edge * tiny * (0.75 + 0.25 * sin(uTime * 0.2 + aSeed.y * 40.0)) * 0.55;
           vC = aSeed.y < 0.5 ? vec3(0.3, 2.0, 2.2) : (aSeed.y < 0.8 ? vec3(1.6, 0.8, 2.6) : vec3(1.6, 2.4, 0.6));
-          float px = (5.0 + aSeed.x * 5.0) * 30.0 / dist;
-          vA *= clamp(px / 4.0, 0.0, 1.0);
-          gl_PointSize = max(px, 4.0);
         }
       `,
       fragmentShader: /* glsl */ `
         varying float vA;
         varying vec3 vC;
+        varying vec2 vUv;
         void main() {
-          float d = length(gl_PointCoord - 0.5);
+          float d = length(vUv - 0.5);
           float a = smoothstep(0.5, 0.05, d);
           gl_FragColor = vec4(vC * a * vA, a * vA);
         }
@@ -405,5 +409,5 @@ export function Spores() {
   useFrame(({ camera }) => {
     (material.uniforms.uCenter.value as THREE.Vector3).copy(camera.position);
   });
-  return <points geometry={geometry} material={material} frustumCulled={false} />;
+  return <mesh geometry={geometry} material={material} frustumCulled={false} />;
 }

@@ -2,9 +2,12 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { guideStore, type GuideId } from "./guide-store";
 import { orbStore } from "./orb-store";
+import { storyStore } from "./story-store";
+import { MAP, NPCS, PARTS, PHOTO_REVEAL, ROCKET } from "./story-data";
+import { Portrait } from "./story-hud";
 import styles from "./field-guide.module.css";
 
-type Tab = "creatures" | "potions" | "places" | "controls";
+type Tab = "creatures" | "friends" | "potions" | "places" | "map" | "controls";
 
 type Entry = {
   id: GuideId;
@@ -423,7 +426,7 @@ const ENTRIES: Entry[] = [
   {
     id: "orbs",
     tab: "places",
-    name: "Light orbs",
+    name: "Energy orbs",
     latin: "Collectible",
     art: ({ hidden }) => <Place hidden={hidden} kind="orbs" />,
     blurb: "Warm golden lights hidden all over the cave. Each has a faint pillar of light above it so you can spot it from afar.",
@@ -434,17 +437,18 @@ const ENTRIES: Entry[] = [
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "creatures", label: "Creatures" },
+  { id: "friends", label: "Friends" },
   { id: "potions", label: "Potions" },
   { id: "places", label: "Places" },
+  { id: "map", label: "Map" },
   { id: "controls", label: "Controls" },
 ];
 
 const CONTROLS: Array<[string, string]> = [
-  ["W A S D", "Roll"],
+  ["W A S D or ← ↑ → ↓", "Roll — W / ↑ goes the way the camera faces"],
   ["Shift", "Sprint"],
   ["Space", "Jump (hold for higher)"],
-  ["C", "Duck: fit through hollow logs"],
-  ["Hold C, then Space", "Super jump"],
+  ["C", "Duck: squeeze through hollow logs"],
   ["C in the air", "Stomp: bounce higher off a cap"],
   ["Hold C landing on a cap", "Stop bouncing"],
   ["Space / C underwater", "Swim up / dive"],
@@ -452,6 +456,9 @@ const CONTROLS: Array<[string, string]> = [
   ["Mouse or Q E", "Look around"],
   ["Scroll", "Zoom"],
   ["R", "Back to the start"],
+  ["T", "Talk to a friend nearby / launch"],
+  ["P", "Take a photo (fills in the map)"],
+  ["F", "Full screen (Esc to leave)"],
   ["M", "Sound on / off"],
   ["I", "Open or close this guide"],
 ];
@@ -460,7 +467,245 @@ const CONTROLS: Array<[string, string]> = [
 
 const EMPTY = { open: false, found: [] as GuideId[], colors: [] as string[], last: null, focus: null };
 
-const TAB_ORDER: Tab[] = ["creatures", "potions", "places", "controls"];
+// ---------------------------------------------------------------- friends + map pages
+
+function FriendPage({ id }: { id: string }) {
+  const s = useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
+  const n = NPCS.find((x) => x.id === id) ?? NPCS[0];
+  const met = s.met.includes(n.id);
+  if (!met) {
+    return (
+      <>
+        <div className={`${styles.art} ${styles.artHidden} ${styles.portraitPlate}`}>
+          <span className={styles.unknownBig}>?</span>
+        </div>
+        <h3>Not met yet</h3>
+        <p className={styles.latin}>Somebody friendly lives out there…</p>
+        <dl className={styles.facts}>
+          <dt>Hint</dt>
+          <dd>
+            {n.id === "pip"
+              ? "Right beside your rocket."
+              : n.id === "moss"
+                ? "At the foot of the Great Cap's spiral stairs."
+                : n.id === "finn"
+                  ? "In the deep lake, near the rope bridge."
+                  : n.id === "elder"
+                    ? "Inside the Hollow, the rock cave past the deep lake."
+                    : "Among the crystals in the south-west."}
+          </dd>
+        </dl>
+      </>
+    );
+  }
+  const gave = PARTS.filter((p) => p.from === n.id);
+  return (
+    <>
+      <span className={styles.stamp}>Friend</span>
+      <div className={`${styles.art} ${styles.portraitPlate}`}>
+        <Portrait who={n.id} />
+      </div>
+      <span className={styles.note}>{NOTES_FRIENDS[n.id]}</span>
+      <h3>{n.name}</h3>
+      <p className={styles.latin}>{n.species}</p>
+      <p className={styles.blurb}>{n.bio}</p>
+      <dl className={styles.facts}>
+        <dt>Helped with</dt>
+        <dd>
+          {gave.length
+            ? gave.map((p) => `${p.name}${storyStore.has(p.id) ? " ✓" : ""}`).join(", ")
+            : n.id === "moss"
+              ? "Knowing where everything is"
+              : n.id === "finn"
+                ? "Directions to the fins and the copper wire"
+                : "Good company"}
+        </dd>
+        <dt>Tip</dt>
+        <dd>Roll up close and press T to chat again.</dd>
+      </dl>
+    </>
+  );
+}
+
+const NOTES_FRIENDS: Record<string, string> = {
+  pip: "my first friend down here!",
+  moss: "talks very… very… slowly",
+  finn: "calls me a terrible fish",
+  elder: "knows the old story",
+  quartz: "the answer was mushrooms",
+};
+
+/** World (x, z) straight onto the map: north (-z) is up. */
+function MapView() {
+  const s = useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
+  const here = storyStore.here;
+  const reveals = [
+    { x: ROCKET.x, z: ROCKET.z, r: 26 },
+    ...s.photos.map((p) => ({ x: p.x, z: p.z, r: PHOTO_REVEAL })),
+    ...s.reveals,
+  ];
+  const seen = (x: number, z: number) => reveals.some((r) => Math.hypot(x - r.x, z - r.z) < r.r);
+  const ink = "#4a3826";
+  return (
+    <div className={styles.mapWrap}>
+      <svg viewBox="-215 -215 430 430" className={styles.map} role="img" aria-label="Map of the cave">
+        <defs>
+          <radialGradient id="fogHole">
+            <stop offset="0.6" stopColor="#000" />
+            <stop offset="1" stopColor="#000" stopOpacity="0" />
+          </radialGradient>
+          <mask id="fogMask">
+            <rect x="-215" y="-215" width="430" height="430" fill="#fff" />
+            {reveals.map((r, i) => (
+              <circle key={i} cx={r.x} cy={r.z} r={r.r} fill="url(#fogHole)" />
+            ))}
+          </mask>
+          <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke={ink} strokeOpacity="0.18" strokeWidth="1.2" />
+          </pattern>
+          <filter id="wobble">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="4" />
+            <feDisplacementMap in="SourceGraphic" scale="4" />
+          </filter>
+        </defs>
+
+        {/* the cave outline */}
+        <g filter="url(#wobble)">
+          <circle r={MAP.radius + 6} fill="url(#hatch)" />
+          <circle r={MAP.radius} fill="rgba(255,250,235,0.35)" stroke={ink} strokeWidth="2.2" />
+        </g>
+        {MAP.lakes.map((l) => (
+          <g key={l.name}>
+            <circle cx={l.x} cy={l.z} r={l.r} fill="rgba(70,150,190,0.28)" stroke={ink} strokeWidth="1.4" filter="url(#wobble)" />
+            {[-6, 0, 6].map((d) => (
+              <path key={d} d={`M${l.x - 10} ${l.z + d} q 5 -3 10 0 t 10 0`} stroke="#3b6f8a" strokeOpacity="0.6" fill="none" />
+            ))}
+          </g>
+        ))}
+        {MAP.giants.map((g, i) => (
+          <g key={i}>
+            <circle cx={g.x} cy={g.z} r={g.r} fill={g.color} fillOpacity="0.22" stroke={ink} strokeWidth="1.2" strokeDasharray="3 2" />
+            <path d={`M${g.x - 6} ${g.z + 2} Q ${g.x} ${g.z - 8} ${g.x + 6} ${g.z + 2} Z M${g.x - 1.2} ${g.z + 2} v5 h2.4 v-5`} fill={ink} />
+          </g>
+        ))}
+        <path d={`M${MAP.cave.x - 15} ${MAP.cave.z + 4} A 15 13 0 0 1 ${MAP.cave.x + 15} ${MAP.cave.z + 4} Z`} fill="rgba(90,80,100,0.35)" stroke={ink} strokeWidth="1.6" />
+        <polyline points={MAP.tunnel.map(([x, z]) => `${x},${z}`).join(" ")} fill="none" stroke="#7a5bb0" strokeWidth="2.2" strokeDasharray="4 3" />
+        <line x1={MAP.bridge.x} y1={MAP.bridge.z0} x2={MAP.bridge.x} y2={MAP.bridge.z1} stroke="#6b4a2a" strokeWidth="3" />
+        {Array.from({ length: 12 }, (_, i) => {
+          const z = MAP.bridge.z0 + ((MAP.bridge.z1 - MAP.bridge.z0) * i) / 11;
+          return <line key={i} x1={MAP.bridge.x - 3} y1={z} x2={MAP.bridge.x + 3} y2={z} stroke="#6b4a2a" strokeWidth="1" />;
+        })}
+        <path d={`M${MAP.falls.x - 4} ${MAP.falls.z - 6} l 4 12 l 4 -12`} stroke="#3b6f8a" strokeWidth="2" fill="none" />
+        {[[-8, 4], [0, -4], [7, 3], [-3, 10]].map(([dx, dz], i) => (
+          <path key={i} d={`M${MAP.crystals.x + dx - 3} ${MAP.crystals.z + dz + 4} l 3 -9 l 3 9 z`} fill="#9a68ff" fillOpacity="0.6" stroke={ink} strokeWidth="0.8" />
+        ))}
+
+        {/* labels */}
+        <g fontFamily="var(--serif)" fontStyle="italic" fontSize="11" fill={ink}>
+          <text x="0" y="-22" textAnchor="middle">Great Cap</text>
+          <text x={MAP.lakes[0].x} y={MAP.lakes[0].z + MAP.lakes[0].r + 13} textAnchor="middle">Shallow lake</text>
+          <text x={MAP.lakes[1].x - 30} y={MAP.lakes[1].z - MAP.lakes[1].r - 6} textAnchor="middle">Deep lake</text>
+          <text x={MAP.cave.x} y={MAP.cave.z + 22} textAnchor="middle">The Hollow</text>
+          <text x={MAP.falls.x - 4} y={MAP.falls.z - 10} textAnchor="middle">Falls</text>
+          <text x={MAP.crystals.x} y={MAP.crystals.z + 24} textAnchor="middle">Crystal garden</text>
+          <text x={ROCKET.x + 12} y={ROCKET.z + 4}>Rocket</text>
+        </g>
+
+        {/* the rocket under the Sky Eye */}
+        <circle cx={ROCKET.x} cy={ROCKET.z} r="9" fill="rgba(255,236,170,0.55)" />
+        <path d={`M${ROCKET.x} ${ROCKET.z - 7} l 3 6 v 6 h -6 v -6 z`} fill="#d4532e" stroke={ink} strokeWidth="0.8" />
+
+        {/* parts you've been told about but not found: an X marks the spot */}
+        {PARTS.filter((p) => p.at && !storyStore.has(p.id) && seen(p.at.x, p.at.z)).map((p) => (
+          <g key={p.id} stroke="#a3402a" strokeWidth="2.4" strokeLinecap="round">
+            <line x1={p.at!.x - 4} y1={p.at!.z - 4} x2={p.at!.x + 4} y2={p.at!.z + 4} />
+            <line x1={p.at!.x + 4} y1={p.at!.z - 4} x2={p.at!.x - 4} y2={p.at!.z + 4} />
+          </g>
+        ))}
+        {/* friends you've met */}
+        {NPCS.filter((n) => s.met.includes(n.id)).map((n) => (
+          <g key={n.id}>
+            <circle cx={n.x} cy={n.z} r="5" fill={n.color} stroke={ink} strokeWidth="1" />
+            <text x={n.x + 7} y={n.z + 3} fontSize="9" fontFamily="var(--serif)" fill={ink}>
+              {n.name}
+            </text>
+          </g>
+        ))}
+        {/* where each photo was taken */}
+        {s.photos.map((p) => (
+          <rect key={p.id} x={p.x - 2.5} y={p.z - 2} width="5" height="4" rx="1" fill="#fff" stroke={ink} strokeWidth="0.8" />
+        ))}
+
+        {/* fog over everything you haven't photographed yet */}
+        <g mask="url(#fogMask)">
+          <rect x="-215" y="-215" width="430" height="430" fill="#e2cea0" />
+          <rect x="-215" y="-215" width="430" height="430" fill="url(#hatch)" />
+        </g>
+
+        {/* the cave's outline stays faintly visible through the fog */}
+        <circle r={MAP.radius} fill="none" stroke={ink} strokeOpacity="0.35" strokeWidth="1.5" strokeDasharray="5 4" />
+        {/* you are here */}
+        <g>
+          <circle cx={here.x} cy={here.z} r="6" fill="none" stroke="#d4532e" strokeWidth="2" />
+          <circle cx={here.x} cy={here.z} r="2.5" fill="#d4532e" />
+        </g>
+        <g transform="translate(180 -180)" fontFamily="var(--serif)" fontSize="11" fill={ink} textAnchor="middle">
+          <path d="M0 -14 L 4 0 L 0 -3 L -4 0 Z" fill={ink} />
+          <text y="12">N</text>
+        </g>
+      </svg>
+      <p className={styles.mapHint}>
+        Press <b>P</b> to take a photo — every photo uncovers that part of the map.
+      </p>
+    </div>
+  );
+}
+
+function nearestPlace(x: number, z: number) {
+  const places = [
+    { name: "the rocket", x: ROCKET.x, z: ROCKET.z },
+    { name: "the Great Cap", x: 0, z: 0 },
+    ...MAP.lakes.map((l) => ({ name: `the ${l.name.toLowerCase()}`, x: l.x, z: l.z })),
+    { name: "the Hollow", x: MAP.cave.x, z: MAP.cave.z },
+    { name: "the falls", x: MAP.falls.x, z: MAP.falls.z },
+    { name: "the crystal garden", x: MAP.crystals.x, z: MAP.crystals.z },
+  ];
+  let best = places[0];
+  for (const p of places) if (Math.hypot(p.x - x, p.z - z) < Math.hypot(best.x - x, best.z - z)) best = p;
+  return best.name;
+}
+
+function Album() {
+  const s = useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
+  if (!s.photos.length) {
+    return (
+      <div className={styles.albumEmpty}>
+        <h3>Photographs</h3>
+        <p className={styles.latin}>No pictures yet</p>
+        <p className={styles.blurb}>Press P anywhere in the cave to snap a photo. It gets tucked in here, and the area around it appears on the map.</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <h3>Photographs</h3>
+      <p className={styles.latin}>
+        {s.photos.length} snapshot{s.photos.length === 1 ? "" : "s"} of the Glowdeep
+      </p>
+      <div className={styles.album}>
+        {s.photos.map((p, i) => (
+          <figure key={p.id} className={styles.polaroid} style={{ rotate: `${((i * 37) % 9) - 4}deg` }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.thumb} alt={`Photo taken near ${nearestPlace(p.x, p.z)}`} />
+            <figcaption>near {nearestPlace(p.x, p.z)}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const TAB_ORDER: Tab[] = ["creatures", "friends", "potions", "places", "map", "controls"];
 
 /** Little handwritten scribbles in the margin of each discovered page. */
 const NOTES: Record<GuideId, string> = {
@@ -484,13 +729,13 @@ const NOTES: Record<GuideId, string> = {
   orbs: "collect them all",
 };
 
-type Shown = { tab: Tab; id: GuideId };
+type Shown = { tab: Tab; id: string };
 
 export function FieldGuide() {
   const g = useSyncExternalStore(guideStore.subscribe, guideStore.get, () => EMPTY);
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => ({ found: [] as string[], total: 0, last: null }));
   const [tab, setTab] = useState<Tab>("creatures");
-  const [selected, setSelected] = useState<GuideId>("puffkin");
+  const [selected, setSelected] = useState<string>("puffkin");
   // what the pages currently show; it lags `tab`/`selected` while a page turns
   const [shown, setShown] = useState<Shown>({ tab: "creatures", id: "puffkin" });
   const [flip, setFlip] = useState<{ dir: 1 | -1; key: number } | null>(null);
@@ -526,7 +771,8 @@ export function FieldGuide() {
       setShown(next);
       return;
     }
-    const order = (x: Shown) => TAB_ORDER.indexOf(x.tab) * 100 + ENTRIES.findIndex((e) => e.id === x.id);
+    const order = (x: Shown) =>
+      TAB_ORDER.indexOf(x.tab) * 100 + Math.max(ENTRIES.findIndex((e) => e.id === x.id), NPCS.findIndex((n) => n.id === x.id), 0);
     const dir: 1 | -1 = order(next) >= order(shown) ? 1 : -1;
     timers.current.forEach((t) => window.clearTimeout(t));
     setFlip({ dir, key: Date.now() });
@@ -572,9 +818,14 @@ export function FieldGuide() {
   const list = useMemo(() => ENTRIES.filter((e) => e.tab === shown.tab), [shown.tab]);
   const current = ENTRIES.find((e) => e.id === shown.id && e.tab === shown.tab) ?? list[0];
   const pageNo = (TAB_ORDER.indexOf(shown.tab) * 12 + Math.max(0, list.findIndex((e) => e.id === current?.id))) * 2 + 3;
+  const story = storyStore.get();
 
   const rightPage =
-    shown.tab === "controls" ? (
+    shown.tab === "friends" ? (
+      <FriendPage id={shown.id} />
+    ) : shown.tab === "map" ? (
+      <Album />
+    ) : shown.tab === "controls" ? (
       <div className={styles.controlsPage}>
         <h3>Handling your ball</h3>
         <p className={styles.latin}>Notes for the curious traveller</p>
@@ -668,6 +919,9 @@ export function FieldGuide() {
               {TABS.map((t) => {
                 const inTab = ENTRIES.filter((e) => e.tab === t.id);
                 const n = inTab.filter((e) => known(e.id)).length;
+                const firstId = t.id === "friends" ? NPCS[0].id : t.id === "map" ? "map" : t.id === "controls" ? "controls" : inTab[0].id;
+                const counter =
+                  t.id === "friends" ? `${story.met.length}/${NPCS.length}` : t.id === "map" ? `${story.photos.length} photos` : t.id === "controls" ? null : `${n}/${inTab.length}`;
                 return (
                   <button
                     key={t.id}
@@ -675,14 +929,10 @@ export function FieldGuide() {
                     role="tab"
                     aria-selected={tab === t.id}
                     className={`${styles.ribbon} ${styles[`ribbon_${t.id}`]} ${tab === t.id ? styles.ribbonActive : ""}`}
-                    onClick={() => turnTo({ tab: t.id, id: t.id === "controls" ? shown.id : inTab[0].id })}
+                    onClick={() => turnTo({ tab: t.id, id: firstId })}
                   >
                     <span>{t.label}</span>
-                    {t.id !== "controls" && (
-                      <small>
-                        {n}/{inTab.length}
-                      </small>
-                    )}
+                    {counter && <small>{counter}</small>}
                   </button>
                 );
               })}
@@ -708,7 +958,31 @@ export function FieldGuide() {
                       </p>
                       <span className={styles.owner}>property of one small, very fluffy explorer</span>
                     </header>
-                    {shown.tab === "controls" ? (
+                    {shown.tab === "friends" ? (
+                      <ol className={styles.index}>
+                        {NPCS.map((n) => {
+                          const met = story.met.includes(n.id);
+                          return (
+                            <li key={n.id}>
+                              <button
+                                type="button"
+                                className={`${styles.item} ${shown.id === n.id ? styles.itemActive : ""}`}
+                                onClick={() => turnTo({ tab: "friends", id: n.id })}
+                                aria-current={shown.id === n.id}
+                              >
+                                <span className={`${styles.thumb} ${styles.thumbRound} ${met ? "" : styles.artHidden}`}>
+                                  {met ? <Portrait who={n.id} /> : <span className={styles.unknownFace}>?</span>}
+                                </span>
+                                <span className={styles.itemName}>{met ? n.name : "???"}</span>
+                                <span className={styles.dots} aria-hidden="true" />
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    ) : shown.tab === "map" ? (
+                      <MapView />
+                    ) : shown.tab === "controls" ? (
                       <dl className={styles.controlList}>
                         {CONTROLS.slice(0, 6).map(([k, v]) => (
                           <div key={k}>

@@ -26,13 +26,18 @@ import {
   pads,
   terrainHeight,
   tunnelDistance,
+  tunnelNearest,
+  TUNNEL_RADIUS,
+  TUNNEL_SAMPLES,
+  TUNNEL_STEP,
 } from "./world-data";
-import { TRAIL, player, sampleFoliage, shared } from "./shared";
+import { TRAIL, control, player, sampleFoliage, shared } from "./shared";
 import { caps, findCap, jiggleCap, jigglePad } from "./mushrooms";
 import { environment } from "./landmarks";
 import { sound } from "./audio";
 import { lookStore } from "./look-store";
 import { guideStore } from "./guide-store";
+import { storyStore } from "./story-store";
 
 const FLUFF_LENGTH = [0.085, 0.13, 0.18, 0.24];
 
@@ -48,13 +53,18 @@ function useKeys() {
       "Space", "ShiftLeft", "ShiftRight", "KeyC", "KeyR", "KeyQ", "KeyE",
     ]);
     const down = (e: KeyboardEvent) => {
-      if (guideStore.isOpen()) return;
+      if (guideStore.isOpen() || storyStore.inputBlocked()) {
+        if (game.has(e.code) && e.code !== "Space") e.preventDefault();
+        return;
+      }
       if (game.has(e.code)) e.preventDefault();
       keys.current[e.code] = true;
     };
-    const unsub = guideStore.subscribe(() => {
-      if (guideStore.isOpen()) keys.current = {};
-    });
+    const clear = () => {
+      if (guideStore.isOpen() || storyStore.inputBlocked()) keys.current = {};
+    };
+    const unsub = guideStore.subscribe(clear);
+    const unsub2 = storyStore.subscribe(clear);
     const up = (e: KeyboardEvent) => {
       keys.current[e.code] = false;
     };
@@ -69,6 +79,7 @@ function useKeys() {
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", blur);
       unsub();
+      unsub2();
     };
   }, []);
   return keys;
@@ -96,7 +107,8 @@ function useLook() {
       if (!locked && !dragging) return;
       const l = look.current;
       l.yaw -= e.movementX * 0.0024;
-      l.pitch = THREE.MathUtils.clamp(l.pitch + e.movementY * 0.0022, -0.25, 1.25);
+      // wide range: from looking steeply down to looking almost straight up
+      l.pitch = THREE.MathUtils.clamp(l.pitch + e.movementY * 0.0022, -1.3, 1.35);
       l.lastManual = performance.now() / 1000;
     };
     const onWheel = (e: WheelEvent) => {
@@ -383,6 +395,7 @@ export function Ball() {
     strokeClock: 0,
     placeClock: 0,
     tunnelBlend: 0,
+    tunnelDir: 1,
     bubbleClock: 0,
     /** physics steps left in which a landing is soft (no trampoline) */
     softLand: 0,
@@ -397,6 +410,18 @@ export function Ball() {
     const st = state.current;
     const k = keys.current;
     const dt = world.timestep;
+    if (control.teleport) {
+      b.setTranslation(control.teleport.pos, true);
+      const tv = control.teleport.vel ?? new THREE.Vector3();
+      b.setLinvel({ x: tv.x, y: tv.y, z: tv.z }, true);
+      b.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      control.teleport = null;
+      st.padFlight = null;
+    }
+    if (control.hidden) {
+      // Bob is inside the rocket: hold still
+      b.setLinvel({ x: 0, y: Math.min(0, b.linvel().y), z: 0 }, true);
+    }
     const pos = b.translation();
     const vel = b.linvel();
     st.prevVel.set(vel.x, vel.y, vel.z);
@@ -426,7 +451,7 @@ export function Ball() {
       if (!st.swimming && impact > 2.2 && findCap(tmpV2.set(pos.x, pos.y, pos.z), st.radius) < 0) sound.land(impact);
     }
 
-    // ducking (C): smaller body, slower, charges a super jump
+    // ducking (C): a smaller, slower body that fits through hollow logs
     // in deep water, C dives instead
     const wantDuck = !!k.KeyC && !st.swimming;
     if (wantDuck && !st.ducking) {
@@ -446,7 +471,6 @@ export function Ball() {
         st.charge = 0;
       }
     }
-    if (st.ducking && st.grounded) st.charge = Math.min(1, st.charge + dt * 1.4);
     if (st.stomping) b.applyImpulse({ x: 0, y: -60 * b.mass() * dt, z: 0 }, true);
 
     // movement relative to camera
@@ -465,8 +489,8 @@ export function Ball() {
     if (hasInput) dir.normalize();
     const sprint = !!(k.ShiftLeft || k.ShiftRight);
     const flyingNow = Date.now() < look0.flyUntil && !st.swimming && !st.grounded;
-    const maxSpeed = st.swimming ? (sprint ? 8 : 5.2) : st.ducking ? 4.4 : sprint ? 13 : flyingNow ? 10 : 7.6;
-    const accel = st.swimming ? 15 : st.grounded ? (sprint ? 40 : 32) : flyingNow ? 26 : 16;
+    const maxSpeed = st.swimming ? (sprint ? 9 : 6.5) : st.ducking ? 4.4 : sprint ? 13 : flyingNow ? 10 : 7.6;
+    const accel = st.swimming ? 24 : st.grounded ? (sprint ? 40 : 32) : flyingNow ? 26 : 16;
     const m = b.mass();
     if (hasInput) {
       const along = vel.x * dir.x + vel.z * dir.z;
@@ -512,17 +536,14 @@ export function Ball() {
       st.sv += 0.9;
       sound.jump();
     } else if (st.jumpBuffer > 0 && !st.swimming && (st.grounded || st.coyote > 0)) {
-      const charged = st.ducking && st.charge > 0.25;
-      const power = (st.ducking ? 8.5 + st.charge * 7.5 : 8.4) * (bouncy ? 1.3 : 1);
-      if (charged) sound.superJump();
-      else sound.jump();
+      const power = 8.4 * (bouncy ? 1.3 : 1);
+      sound.jump();
       b.setLinvel({ x: vel.x, y: power, z: vel.z }, true);
       st.jumpBuffer = 0;
       st.coyote = 0;
       st.grounded = false;
       st.jumpCut = true;
-      st.sv += 0.9 + st.charge * 0.6;
-      st.charge = 0;
+      st.sv += 0.9;
     }
     if (st.jumpCut && !jumpDown && vel.y > 3.5) {
       b.setLinvel({ x: vel.x, y: 3.5, z: vel.z }, true);
@@ -530,7 +551,7 @@ export function Ball() {
     }
     if (vel.y <= 0) st.jumpCut = false;
     if (!st.grounded && !st.padFlight && !st.swimming && !flying && vel.y < 0 && vel.y > -30) {
-      b.applyImpulse({ x: 0, y: WORLD.gravity * 0.35 * m * dt, z: 0 }, true);
+      b.applyImpulse({ x: 0, y: WORLD.gravity * 0.2 * m * dt, z: 0 }, true);
     }
     // with wings, holding Space while falling turns it into a gentle glide
     if (flying && !st.grounded && k.Space && vel.y < 0) {
@@ -546,7 +567,24 @@ export function Ball() {
       if (k.KeyC) up -= 16;
       // gently bob at the surface when idle
       if (!k.KeyC && pos.y > DEEP_LEVEL - 0.9) up += (DEEP_LEVEL - 0.25 - pos.y) * 30;
-      b.applyImpulse({ x: -v.x * 1.8 * m * dt, y: (up - v.y * 2.2) * m * dt, z: -v.z * 1.8 * m * dt }, true);
+      b.applyImpulse({ x: -v.x * 1.2 * m * dt, y: (up - v.y * 2.0) * m * dt, z: -v.z * 1.2 * m * dt }, true);
+      // inside the flooded tunnel: forward/back follow the tunnel (even up and
+      // down its slopes), a gentle current carries you toward the cave, and
+      // you're eased away from the walls
+      const tn = tunnelNearest(pos.x, pos.y, pos.z);
+      if (tn.dist < TUNNEL_RADIUS + 0.6 && tn.index > 6 && tn.index < TUNNEL_SAMPLES.length - 4) {
+        const fwd = tn.tangent.clone().multiplyScalar(st.tunnelDir);
+        const alongNow = (vel.x * fwd.x + vel.y * fwd.y + vel.z * fwd.z) * iz;
+        if (iz !== 0 && alongNow < (sprint ? 8 : 6)) {
+          b.applyImpulse({ x: fwd.x * iz * 20 * m * dt, y: fwd.y * iz * 20 * m * dt, z: fwd.z * iz * 20 * m * dt }, true);
+        }
+        b.applyImpulse({ x: tn.tangent.x * 3 * m * dt, y: tn.tangent.y * 3 * m * dt, z: tn.tangent.z * 3 * m * dt }, true);
+        const off = new THREE.Vector3(pos.x - tn.point.x, pos.y - tn.point.y, pos.z - tn.point.z);
+        const o = off.length();
+        if (o > 0.6) off.multiplyScalar(-((o - 0.6) * 9) / o);
+        else off.set(0, 0, 0);
+        b.applyImpulse({ x: off.x * m * dt, y: off.y * m * dt, z: off.z * m * dt }, true);
+      }
       st.stomping = false;
       st.strokeClock -= dt;
       const stroking = hasInput || k.Space || k.KeyC;
@@ -764,7 +802,7 @@ export function Ball() {
     // squash & stretch spring
     let target = 0;
     st.size = THREE.MathUtils.damp(st.size, st.ducking ? 0.6 : 1, 14, dt);
-    if (st.ducking) target = -0.14 - st.charge * 0.16;
+    if (st.ducking) target = -0.14;
     else if (!st.grounded) target = THREE.MathUtils.clamp(Math.abs(vel.y) * 0.018, 0, 0.22);
     const stiffness = 180;
     const damping = 11;
@@ -825,6 +863,18 @@ export function Ball() {
     }
     shared.uCenter.value.set(center.x, center.z);
 
+    if (squashGroup.current) squashGroup.current.visible = !control.hidden;
+    if (shadow.current) shadow.current.visible = !control.hidden;
+    if (control.hidden && wings.current) wings.current.visible = false;
+
+    // a story cutscene can take over the camera
+    if (control.camera) {
+      camera.position.lerp(control.camera.pos, 1 - Math.exp(-(control.camera.speed ?? 3) * dt));
+      camera.lookAt(control.camera.target);
+      sound.update({ speed: 0, grounded: true, brush: 0, underwater: environment.underwater, swimming: false, flying: false, fallsDistance: Math.hypot(center.x - FALLS.x, center.z - FALLS.z) });
+      return;
+    }
+
     // camera: low and close, so the world feels enormous
     const l = look.current;
     const k = keys.current;
@@ -839,15 +889,26 @@ export function Ball() {
       diff = Math.atan2(Math.sin(diff), Math.cos(diff));
       l.yaw += diff * Math.min(1, dt * 0.9 * Math.min(hSpeed / 7, 1.5));
     }
-    // look a little ahead of the ball in the direction it's rolling
-    const ahead = Math.min(hSpeed, 12) * 0.06;
-    const targetPos = tmpV2.set(
-      center.x + (hSpeed > 0.1 ? (vel.x / hSpeed) * ahead : 0),
-      center.y + 0.55,
-      center.z + (hSpeed > 0.1 ? (vel.z / hSpeed) * ahead : 0),
-    );
-    // in the narrow tunnel, sit lower and closer so the walls don't squash the view
-    const inTunnel = tunnelDistance(center.x, center.y, center.z) < 3.4;
+    // aim right at the middle of the fluffy ball, so Bob sits in the centre of the screen
+    const vis = squashGroup.current ? squashGroup.current.position : center;
+    const targetPos = tmpV2.set(vis.x, vis.y, vis.z);
+    // in the narrow tunnel the camera rides the tunnel's centre line behind Bob,
+    // so it can never end up outside the walls
+    const tnear = tunnelNearest(center.x, center.y, center.z);
+    const inTunnel = tnear.dist < TUNNEL_RADIUS + 1 && tnear.index > 4 && tnear.index < TUNNEL_SAMPLES.length - 3;
+    if (inTunnel) {
+      const along = vel.x * tnear.tangent.x + vel.y * tnear.tangent.y + vel.z * tnear.tangent.z;
+      if (Math.abs(along) > 0.8) st.tunnelDir = along >= 0 ? 1 : -1;
+      // keep the yaw pointing along the tunnel, so W means "onward"
+      const fx = tnear.tangent.x * st.tunnelDir;
+      const fz = tnear.tangent.z * st.tunnelDir;
+      if (Math.hypot(fx, fz) > 0.2) {
+        const want = Math.atan2(-fx, -fz);
+        let d = want - l.yaw;
+        d = Math.atan2(Math.sin(d), Math.cos(d));
+        l.yaw += d * Math.min(1, dt * 4);
+      }
+    }
     st.tunnelBlend = THREE.MathUtils.damp(st.tunnelBlend, inTunnel ? 1 : 0, 3, dt);
     const pitch = THREE.MathUtils.lerp(l.pitch, Math.min(l.pitch, 0.08), st.tunnelBlend);
     const wantDist = THREE.MathUtils.lerp(l.dist, Math.min(l.dist, 2.6), st.tunnelBlend);
@@ -864,10 +925,20 @@ export function Ball() {
     const allowed = camHit ? Math.max(0.7, camHit.timeOfImpact - 0.35) : wantDist;
     st.camDist = allowed < st.camDist ? allowed : THREE.MathUtils.damp(st.camDist, allowed, 3, dt);
     const desired = targetPos.clone().addScaledVector(offset, st.camDist);
+    if (st.tunnelBlend > 0.01) {
+      const back = Math.round(2.6 / TUNNEL_STEP);
+      const ci = THREE.MathUtils.clamp(tnear.index - back * st.tunnelDir, 0, TUNNEL_SAMPLES.length - 1);
+      const railCam = TUNNEL_SAMPLES[ci].clone().add(new THREE.Vector3(0, 0.45, 0));
+      desired.lerp(railCam, st.tunnelBlend);
+    }
     // in the tunnel the ground is overhead, so don't push the camera up to it
+    let lifted = 0;
     if (tunnelDistance(center.x, center.y, center.z) > 6) {
       const floor = terrainHeight(desired.x, desired.z) + 0.3;
-      if (desired.y < floor) desired.y = floor;
+      if (desired.y < floor) {
+        lifted = floor - desired.y;
+        desired.y = floor;
+      }
     }
 
     // sound: rolling, brushing through plants, the waterfall, underwater
@@ -884,8 +955,12 @@ export function Ball() {
       flying: Date.now() < lk.flyUntil,
       fallsDistance: Math.hypot(center.x - FALLS.x, center.z - FALLS.z),
     });
-    camera.position.lerp(desired, 1 - Math.exp(-14 * dt));
-    camera.lookAt(targetPos);
+    camera.position.lerp(desired, 1 - Math.exp(-(st.tunnelBlend > 0.5 ? 22 : 14) * dt));
+    // when looking up, the ground stops the camera going lower; keep the view
+    // tilting up anyway by aiming along the look direction instead of at Bob
+    const tilt = THREE.MathUtils.smoothstep(lifted, 0, 1.2);
+    const lookAt = targetPos.clone().lerp(camera.position.clone().addScaledVector(offset, -6), tilt);
+    camera.lookAt(lookAt);
     const speed = Math.hypot(vel.x, vel.z);
     const fov = 62 + THREE.MathUtils.clamp((speed - 7) * 1.1, 0, 9);
     if (Math.abs(camera.fov - fov) > 0.01) {

@@ -15,6 +15,7 @@ import { Fireflies, GlowFlowers, HangingStrands, LightOrbs } from "./extras";
 import { Atmosphere, Bridge, Cave, CrystalTunnel, Waterfall } from "./landmarks";
 import { Fishes, Puffkins, Snails } from "./creatures";
 import { Potions } from "./potions";
+import { Friends, PartPickups, PhotoCapture, Rocket, SkyEye, StoryDirector } from "./story-world";
 
 /** Hide the loader only once every shader is compiled and a few frames have drawn. */
 function Ready({ onReady }: { onReady: () => void }) {
@@ -79,7 +80,9 @@ export default function UndergroundScene({ onReady }: { onReady: () => void }) {
           <CrystalTunnel />
           <Waterfall />
           <Bridge />
+          <Rocket />
           <Ball />
+          <StoryDirector />
           <Ready onReady={onReady} />
         </Physics>
       </Suspense>
@@ -96,6 +99,10 @@ export default function UndergroundScene({ onReady }: { onReady: () => void }) {
       <Fishes />
       <Snails />
       <Potions />
+      <PartPickups />
+      <Friends />
+      <SkyEye />
+      <PhotoCapture />
       <Glowworms />
       <Spores />
       <GlowLights />

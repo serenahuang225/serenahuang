@@ -106,7 +106,8 @@
 }
 
 .hintHidden {
-  opacity: 0.12;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .hint kbd {
@@ -302,4 +303,37 @@
   .toastLow {
     top: 160px;
   }
+}
+
+.moveHelp {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding-bottom: 4px;
+  font-size: 0.85rem;
+  color: #d8f3ef;
+}
+
+.moveHelp b {
+  color: #fff3d6;
+}
+
+.cluster {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1.7em);
+  gap: 2px;
+}
+
+.cluster kbd {
+  margin: 0;
+  min-width: 0;
+  padding: 1px 0;
+}
+
+.or {
+  color: #8fb8b2;
+  font-style: italic;
 }

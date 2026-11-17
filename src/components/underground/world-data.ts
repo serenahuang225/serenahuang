@@ -16,7 +16,8 @@ export const WORLD = {
   ballRadius: 0.35,
   duckRadius: 0.2,
   spawn: new THREE.Vector3(0, 0, 58),
-  gravity: -22,
+  // a touch floaty, so bounces carry you further up
+  gravity: -18,
   fogColor: "#04070f",
   fogDensity: 0.0165,
 };
@@ -327,7 +328,7 @@ export const steps: Mushroom[] = [];
       leanX: 0,
       leanZ: 0,
       hue,
-      bounce: 11.5,
+      bounce: 15,
       kind: "step",
     });
   }
@@ -907,4 +908,26 @@ export const caveCrystals: Crystal[] = [];
       });
     }
   }
+}
+
+// ---------------------------------------------------------------- tunnel helpers
+
+export const TUNNEL_STEP = TUNNEL.getLength() / (TUNNEL_SAMPLES.length - 1);
+
+/** Nearest point on the tunnel's centre line, with its index and direction (toward the cave). */
+export function tunnelNearest(x: number, y: number, z: number) {
+  let best = Infinity;
+  let bi = 0;
+  for (let i = 0; i < TUNNEL_SAMPLES.length; i++) {
+    const p = TUNNEL_SAMPLES[i];
+    const d = (p.x - x) ** 2 + (p.y - y) ** 2 + (p.z - z) ** 2;
+    if (d < best) {
+      best = d;
+      bi = i;
+    }
+  }
+  const a = TUNNEL_SAMPLES[Math.max(0, bi - 1)];
+  const b = TUNNEL_SAMPLES[Math.min(TUNNEL_SAMPLES.length - 1, bi + 1)];
+  const tangent = new THREE.Vector3().subVectors(b, a).normalize();
+  return { index: bi, dist: Math.sqrt(best), point: TUNNEL_SAMPLES[bi], tangent };
 }

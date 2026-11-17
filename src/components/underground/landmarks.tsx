@@ -639,9 +639,11 @@ export function Atmosphere() {
     };
   }, [scene, fog, bg]);
   const state = useMemo(() => ({ water: 0, t: 0 }), []);
-  useFrame(({ camera }, delta) => {
+  useFrame(({ camera, size, gl }, delta) => {
     const dt = Math.min(delta, 0.05);
     state.t += dt;
+    const cam = camera as THREE.PerspectiveCamera;
+    shared.uProj.value = (size.height * gl.getPixelRatio()) / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
     const c = camera.position;
     const under =
       inDeepWater(c.x, c.y, c.z) ||

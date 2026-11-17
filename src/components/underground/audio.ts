@@ -348,6 +348,34 @@ class SoundEngine {
     this.tone({ from: 520, to: 780, glide: 0.08, peak: 0.04, decay: 0.12 });
   }
 
+  /** Camera shutter: a soft click-clack. */
+  shutter() {
+    this.burst({ type: "highpass", from: 2500, peak: 0.12, attack: 0.002, decay: 0.04 });
+    this.burst({ type: "bandpass", from: 1400, q: 2, peak: 0.08, attack: 0.002, decay: 0.05, delay: 0.07 });
+  }
+
+  /** A rocket part clunking into place. */
+  clunk() {
+    this.tone({ type: "triangle", from: 180, to: 120, glide: 0.1, peak: 0.2, decay: 0.2 });
+    this.burst({ type: "bandpass", from: 900, q: 3, peak: 0.08, decay: 0.15 });
+    [1318.5, 1760].forEach((f, i) => this.bell(f, 0.04, 0.6, undefined, 0.15 + i * 0.08));
+  }
+
+  /** A soft little "mm" when someone talks, pitched per speaker. */
+  blip(pitch = 1) {
+    this.tone({ type: "sine", from: 420 * pitch, to: 480 * pitch, glide: 0.05, peak: 0.05, decay: 0.07 });
+  }
+
+  /** The rocket roaring to life and lifting off. */
+  launchRoar() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    this.burst({ type: "lowpass", from: 200, to: 900, peak: 0.35, attack: 1.2, decay: 4.5 });
+    this.burst({ type: "bandpass", from: 300, to: 2400, q: 0.6, peak: 0.18, attack: 1.8, decay: 3.5, delay: 0.8 });
+    this.tone({ type: "sawtooth", from: 55, to: 110, glide: 4, peak: 0.05, attack: 1, decay: 4 });
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => this.bell(f, 0.06, 2.5, undefined, 2 + i * 0.25));
+  }
+
   bubble() {
     this.tone({ from: 260 + Math.random() * 300, to: 600 + Math.random() * 500, glide: 0.06, peak: 0.04, decay: 0.07 });
   }
