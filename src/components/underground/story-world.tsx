@@ -8,6 +8,7 @@ import { GLSL_BILLBOARD, billboardGeometry, control, player, shared } from "./sh
 import { makeRockMaterial } from "./terrain";
 import { sound } from "./audio";
 import { orbStore } from "./orb-store";
+import { isTouchDevice } from "./touch";
 import { lineFor, storyStore } from "./story-store";
 import { ENERGY_NEEDED, NPCS, PARTS, ROCKET, type Npc, type PartId } from "./story-data";
 
@@ -931,10 +932,15 @@ export function StoryDirector() {
       }
     }
     if (!prompt && inDeepWater(p.x, p.y, p.z)) {
+      const touch = isTouchDevice();
       prompt =
         tunnelDistance(p.x, p.y, p.z) < 4
-          ? "Swimming — W follows the tunnel · the current carries you to the cave · Space up · C down"
-          : "Swimming — W A S D to swim · Space to rise · C to dive";
+          ? touch
+            ? "Swimming — push the stick up to follow the tunnel · the current carries you to the cave"
+            : "Swimming — W follows the tunnel · the current carries you to the cave · Space up · C down"
+          : touch
+            ? "Swimming — the stick swims you around"
+            : "Swimming — W A S D to swim · Space to rise · C to dive";
     } else if (!prompt && p.y > DEEP_LEVEL + 0.5 && st.carried.length) {
       prompt = `Carrying ${st.carried.length} part${st.carried.length > 1 ? "s" : ""} — bring ${st.carried.length > 1 ? "them" : "it"} to the rocket under the beam of light`;
     }
@@ -947,7 +953,10 @@ export function StoryDirector() {
       c.moved = true;
       c.movedAt = c.t;
     }
-    if (!c.moved && !action) prompt = "Roll with W A S D or the arrow keys — W / ↑ goes the way the camera faces";
+    if (!c.moved && !action)
+      prompt = isTouchDevice()
+        ? "Push the stick on the left to roll"
+        : "Roll with W A S D or the arrow keys — W / ↑ goes the way the camera faces";
     storyStore.setAction(action, prompt);
     if (c.moved) showTips(c, p, st.met.length > 0);
   });
@@ -965,21 +974,23 @@ function showTips(c: { t: number; movedAt: number; metAt: number }, p: THREE.Vec
   const near = (x: number, z: number, r: number) => Math.hypot(p.x - x, p.z - z) < r;
   const ground = terrainHeight(p.x, p.z);
   if (metSomeone && !c.metAt) c.metAt = c.t;
-  const tips: Array<[string, boolean, string]> = [
-    ["jump", since > 14, "Hold [Space] longer to jump higher, and keep holding it as you land on a mushroom cap for a bigger bounce."],
-    ["log", HOLLOW_LOGS.some((l) => near(l.x, l.z, l.length * 0.5 + 4)), "[C] means go down. Hold [C] to duck small and squeeze through the hollow log."],
-    ["pad", pads.some((q) => near(q.x, q.z, 5)), "Roll onto a glowing puffball and it bounces you up onto its mushroom."],
-    ["potion", POTIONS.some((q) => near(q.pos.x, q.pos.z, 4)), "Roll into a bottle to drink it. Potions change Bob for a while."],
-    ["stomp", !player.grounded && p.y > ground + 4 && !inDeepWater(p.x, p.y, p.z), "Up high? Press [C] in mid-air to stomp: you bounce higher off a mushroom cap."],
-    ["dive", inDeepWater(p.x, p.y, p.z), "[C] goes down here too: hold it to dive. [Space] swims back up."],
-    ["photo", c.metAt > 0 && c.t - c.metAt > 8, "Press [P] to take a photo. Each one fills in more of the map in your field guide ([I])."],
-    ["sprint", since > 25, "Hold [Shift] to sprint."],
-    ["camera", since > 50, "Move the mouse or press [Q] / [E] to turn the camera. Scroll to zoom."],
-    ["home", since > 160, "Lost? Follow the gold needle on the compass, or press [H] to roll home to your rocket."],
+  const tips: Array<[string, boolean, string, string | null]> = [
+    ["jump", since > 14, "Hold [Space] longer to jump higher, and keep holding it as you land on a mushroom cap for a bigger bounce.", "Hold [Jump] longer to jump higher, and keep holding it as you land on a mushroom cap for a bigger bounce."],
+    ["log", HOLLOW_LOGS.some((l) => near(l.x, l.z, l.length * 0.5 + 4)), "[C] means go down. Hold [C] to duck small and squeeze through the hollow log.", "Near a hollow log a [Duck] button pops up. Hold it to squeeze through."],
+    ["pad", pads.some((q) => near(q.x, q.z, 5)), "Roll onto a glowing puffball and it bounces you up onto its mushroom.", "Roll onto a glowing puffball and it bounces you up onto its mushroom."],
+    ["potion", POTIONS.some((q) => near(q.pos.x, q.pos.z, 4)), "Roll into a bottle to drink it. Potions change Bob for a while.", "Roll into a bottle to drink it. Potions change Bob for a while."],
+    ["stomp", !player.grounded && p.y > ground + 4 && !inDeepWater(p.x, p.y, p.z), "Up high? Press [C] in mid-air to stomp: you bounce higher off a mushroom cap.", "Up high? Tap [Stomp] in mid-air: you bounce higher off a mushroom cap."],
+    ["dive", inDeepWater(p.x, p.y, p.z), "[C] goes down here too: hold it to dive. [Space] swims back up.", "Hold [Dive] to swim down. [Swim up] takes you back up."],
+    ["photo", c.metAt > 0 && c.t - c.metAt > 8, "Press [P] to take a photo. Each one fills in more of the map in your field guide ([I]).", "Tap the camera button to take a photo. Each one fills in more of the map in your field guide."],
+    ["sprint", since > 25, "Hold [Shift] to sprint.", null],
+    ["camera", since > 50, "Move the mouse or press [Q] / [E] to turn the camera. Scroll to zoom.", null],
+    ["home", since > 160, "Lost? Follow the gold needle on the compass, or press [H] to roll home to your rocket.", "Lost? Follow the gold needle on the compass: it always points at your next goal."],
   ];
-  for (const [id, when, text] of tips) {
+  const touch = isTouchDevice();
+  for (const [id, when, text, touchText] of tips) {
     if (!when || storyStore.tipSeen(id)) continue;
-    storyStore.tip(id, text);
+    if (touch && touchText === null) continue;
+    storyStore.tip(id, touch ? touchText! : text);
     return;
   }
 }

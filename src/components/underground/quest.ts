@@ -18,6 +18,7 @@ import {
   type NpcId,
   type PartId,
 } from "./story-data";
+import { isTouchDevice } from "./touch";
 
 type QuestState = {
   phase: string;
@@ -51,9 +52,10 @@ export function questSteps(s: QuestState, energy: number): Step[] {
   const has = (id: PartId) => s.carried.includes(id) || s.delivered.includes(id);
   const allParts = s.delivered.length === PARTS.length;
   const left = Math.max(0, ENERGY_NEEDED - energy);
+  const touch = typeof window !== "undefined" && isTouchDevice();
   return [
     {
-      text: "Say hi to Pip, the little pink puffkin by your rocket (press T)",
+      text: `Say hi to Pip, the little pink puffkin by your rocket (${touch ? "tap Talk" : "press T"})`,
       done: s.met.includes("pip"),
       label: "Pip",
       goal: spot("pip"),
@@ -93,11 +95,11 @@ export function questSteps(s: QuestState, energy: number): Step[] {
       focus: DEEP_LAKE,
     },
     {
-      text: "Dive to the bottom of the deep lake for the tail fins (hold C)",
+      text: `Dive to the bottom of the deep lake for the tail fins (hold ${touch ? "Dive" : "C"})`,
       done: has("fins"),
       label: "Tail fins",
       goal: part("fins"),
-      hint: "Your tail fins are lying on the bottom of the deep lake. Hold C to dive down and grab them!",
+      hint: `Your tail fins are lying on the bottom of the deep lake. Hold ${touch ? "Dive" : "C"} to swim down and grab them!`,
       focus: LAKE_FLOOR,
     },
     {
@@ -142,16 +144,16 @@ export function questSteps(s: QuestState, energy: number): Step[] {
       focus: ROCKET_VIEW,
     },
     {
-      text: "Go to the rocket and press T to launch!",
+      text: `Go to the rocket and ${touch ? "tap Launch" : "press T"} to launch!`,
       done: s.phase === "free",
       final: true,
       label: "Rocket",
       goal: ROCKET,
-      hint: "Your rocket is ready! Roll over to it and press T to fly home!",
+      hint: `Your rocket is ready! Roll over to it and ${touch ? "tap Launch" : "press T"} to fly home!`,
       focus: ROCKET_VIEW,
     },
     {
-      text: `Take photos with P to fill in your map (${s.photos.length})`,
+      text: `Take photos with ${touch ? "the camera button" : "P"} to fill in your map (${s.photos.length})`,
       done: s.photos.length >= 5,
       optional: true,
     },

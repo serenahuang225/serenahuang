@@ -7,6 +7,7 @@ import { lookStore } from "./look-store";
 import { sound } from "./audio";
 import { FieldGuide } from "./field-guide";
 import { StoryHud } from "./story-hud";
+import { TouchControls } from "./touch-controls";
 import { ENERGY_NEEDED } from "./story-data";
 import styles from "./underground.module.css";
 
@@ -171,7 +172,7 @@ export default function UndergroundClient() {
       </div>
 
       <Link href="/" className={styles.back}>
-        ← Back through the glass
+        ←<span className={styles.backWords}> Back through the glass</span>
       </Link>
 
       {ready && <OrbCounter />}
@@ -179,6 +180,7 @@ export default function UndergroundClient() {
       <SoundButton />
       {ready && <FieldGuide />}
       {ready && <StoryHud />}
+      {ready && <TouchControls />}
 
       <div
         className={`${styles.hint} ${hintHidden ? styles.hintHidden : ""}`}
@@ -211,7 +213,6 @@ export default function UndergroundClient() {
         <span>New controls pop up as you need them · all of them: <kbd>I</kbd> field guide</span>
       </div>
 
-      <p className={styles.touchNote}>This little world is best explored with a keyboard.</p>
     </main>
   );
 }

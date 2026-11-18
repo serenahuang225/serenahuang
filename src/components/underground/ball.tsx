@@ -39,6 +39,7 @@ import { sound } from "./audio";
 import { lookStore } from "./look-store";
 import { guideStore } from "./guide-store";
 import { storyStore } from "./story-store";
+import { bobState, stick } from "./touch";
 
 const FLUFF_LENGTH = [0.085, 0.13, 0.18, 0.24];
 
@@ -94,23 +95,41 @@ function useLook() {
   useEffect(() => {
     const el = gl.domElement;
     let dragging = false;
+    // a finger dragging on the scene (the stick and buttons sit on top, so
+    // they never reach here); tracked by id so a second finger can't steer
+    let finger: { id: number; x: number; y: number } | null = null;
+    const turn = (dx: number, dy: number, speed: number) => {
+      const l = look.current;
+      l.yaw -= dx * speed;
+      // wide range: from looking steeply down to looking almost straight up
+      l.pitch = THREE.MathUtils.clamp(l.pitch + dy * speed * 0.92, -1.3, 1.35);
+      l.lastManual = performance.now() / 1000;
+    };
     const onDown = (e: PointerEvent) => {
+      if (e.pointerType === "touch") {
+        if (!finger) finger = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        return;
+      }
       dragging = true;
       if (e.pointerType === "mouse" && document.pointerLockElement !== el) {
         el.requestPointerLock?.()?.catch?.(() => {});
       }
     };
-    const onUp = () => {
-      dragging = false;
+    const onUp = (e: PointerEvent) => {
+      if (finger && e.pointerId === finger.id) finger = null;
+      if (e.pointerType !== "touch") dragging = false;
     };
     const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") {
+        if (!finger || e.pointerId !== finger.id) return;
+        turn(e.clientX - finger.x, e.clientY - finger.y, 0.0055);
+        finger.x = e.clientX;
+        finger.y = e.clientY;
+        return;
+      }
       const locked = document.pointerLockElement === el;
       if (!locked && !dragging) return;
-      const l = look.current;
-      l.yaw -= e.movementX * 0.0024;
-      // wide range: from looking steeply down to looking almost straight up
-      l.pitch = THREE.MathUtils.clamp(l.pitch + e.movementY * 0.0022, -1.3, 1.35);
-      l.lastManual = performance.now() / 1000;
+      turn(e.movementX, e.movementY, 0.0024);
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -119,11 +138,13 @@ function useLook() {
     };
     el.addEventListener("pointerdown", onDown);
     window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
     window.addEventListener("pointermove", onMove);
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       el.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
       window.removeEventListener("pointermove", onMove);
       el.removeEventListener("wheel", onWheel);
     };
@@ -460,13 +481,20 @@ export function Ball() {
     if (k.KeyS || k.ArrowDown) iz -= 1;
     if (k.KeyD || k.ArrowRight) ix += 1;
     if (k.KeyA || k.ArrowLeft) ix -= 1;
+    // the on-screen stick (phones): analog, so a light push rolls slowly
+    const stickOn = stick.mag > 0.12 && !storyStore.inputBlocked() && !guideStore.isOpen();
+    if (stickOn) {
+      ix += stick.x;
+      iz += stick.y;
+    }
     const dir = tmpV.set(fx * iz + -fz * ix, 0, fz * iz + fx * ix);
     // while a puffball is carrying you onto a cap, it does the steering
     const hasInput = dir.lengthSq() > 0 && !st.padFlight;
     if (hasInput) dir.normalize();
     const sprint = !!(k.ShiftLeft || k.ShiftRight);
     const flyingNow = Date.now() < look0.flyUntil && !st.swimming && !st.grounded;
-    const maxSpeed = st.swimming ? (sprint ? 9 : 6.5) : st.ducking ? 4.4 : sprint ? 13 : flyingNow ? 10 : 7.6;
+    const analog = stickOn && !(k.KeyW || k.KeyA || k.KeyS || k.KeyD) ? THREE.MathUtils.clamp((stick.mag - 0.12) / 0.75, 0.3, 1) : 1;
+    const maxSpeed = (st.swimming ? (sprint ? 9 : 6.5) : st.ducking ? 4.4 : sprint ? 13 : flyingNow ? 10 : 7.6) * analog;
     const accel = st.swimming ? 24 : st.grounded ? (sprint ? 40 : 32) : flyingNow ? 26 : 16;
     const m = b.mass();
     if (hasInput) {
@@ -788,6 +816,10 @@ export function Ball() {
     player.velocity.set(vel.x, vel.y, vel.z);
     player.ducking = st.ducking;
     player.grounded = st.grounded;
+    bobState.grounded = st.grounded;
+    bobState.swimming = st.swimming;
+    bobState.flying = Date.now() < lookStore.get().flyUntil;
+    bobState.nearLog = HOLLOW_LOGS.some((l) => Math.hypot(center.x - l.x, center.z - l.z) < l.length * 0.5 + 3);
 
     // squash & stretch spring
     let target = 0;

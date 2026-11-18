@@ -6,6 +6,7 @@ import { nextStep, questSteps, type Step } from "./quest";
 import { orbStore } from "./orb-store";
 import { guideStore } from "./guide-store";
 import { sound } from "./audio";
+import { isTouchDevice } from "./touch";
 import styles from "./story-hud.module.css";
 
 const EMPTY_ORBS = { found: [] as string[], total: 0, last: null };
@@ -147,7 +148,7 @@ function Dialogue() {
   const name = who === "bob" ? "Bob" : NPCS.find((n) => n.id === who)?.name;
   return (
     <div className={styles.dialogue} role="dialog" aria-label={`Talking with ${name}`}>
-      <div className={styles.bubble}>
+      <div className={styles.bubble} onClick={() => typing && setShown(line.text.length)}>
         <div className={styles.portrait}>
           <Portrait who={who} />
         </div>
@@ -171,7 +172,7 @@ function Dialogue() {
           ))}
         </ol>
       )}
-      {typing && <p className={styles.skip}>Space to skip</p>}
+      {typing && <p className={styles.skip}>{isTouchDevice() ? "Tap to skip" : "Space to skip"}</p>}
     </div>
   );
 }
@@ -259,6 +260,7 @@ function Objectives() {
 function Prompt() {
   const s = useStory();
   if (!s.prompt || s.talk) return null;
+  if (s.prompt.startsWith("T —") && isTouchDevice()) return null;
   return (
     <div className={styles.prompt} role="status">
       {s.prompt.startsWith("T —") ? (
@@ -414,6 +416,12 @@ function Ending() {
 
 function FullscreenButton() {
   const [fs, setFs] = useState(false);
+  const [can, setCan] = useState(true);
+  const [touch, setTouch] = useState(false);
+  useEffect(() => {
+    setCan(!!document.fullscreenEnabled);
+    setTouch(isTouchDevice());
+  }, []);
   const [showEsc, setShowEsc] = useState(false);
   useEffect(() => {
     const on = () => {
@@ -429,6 +437,7 @@ function FullscreenButton() {
     const t = window.setTimeout(() => setShowEsc(false), 5000);
     return () => window.clearTimeout(t);
   }, [showEsc]);
+  if (!can) return null;
   return (
     <>
       <button
@@ -439,11 +448,12 @@ function FullscreenButton() {
         title={fs ? "Exit full screen (Esc)" : "Full screen (F)"}
       >
         <span className={styles.fsIcon} aria-hidden="true" />
-        {fs ? "Exit full screen" : "Full screen"} <kbd>F</kbd>
+        {touch ? (fs ? "Exit" : "Full screen") : fs ? "Exit full screen" : "Full screen"}
+        {!touch && <kbd>F</kbd>}
       </button>
       {fs && (
         <div className={`${styles.escNote} ${showEsc ? styles.escNoteShown : ""}`} role="status">
-          Press <kbd>Esc</kbd> to exit full screen
+          {touch ? "Tap Exit to leave full screen" : <>Press <kbd>Esc</kbd> to exit full screen</>}
         </div>
       )}
     </>
@@ -469,10 +479,19 @@ function LookHint() {
       setLearned(false);
     }
     const onLock = () => setLocked(!!document.pointerLockElement);
+    let last: { x: number; y: number } | null = null;
     const onMove = (e: PointerEvent) => {
-      if (!document.pointerLockElement) return;
-      moved.current += Math.abs(e.movementX) + Math.abs(e.movementY);
-      if (moved.current > 600) {
+      if (e.pointerType === "touch") {
+        // a finger dragging the scene counts too (not the stick or buttons)
+        if (!(e.target instanceof HTMLCanvasElement)) return;
+        if (last) moved.current += Math.abs(e.clientX - last.x) + Math.abs(e.clientY - last.y);
+        last = { x: e.clientX, y: e.clientY };
+      } else if (!document.pointerLockElement) {
+        return;
+      } else {
+        moved.current += Math.abs(e.movementX) + Math.abs(e.movementY);
+      }
+      if (moved.current > (e.pointerType === "touch" ? 220 : 600)) {
         setLearned(true);
         try {
           window.localStorage.setItem(LOOKED_KEY, "1");
@@ -481,11 +500,16 @@ function LookHint() {
         }
       }
     };
+    const onUp = () => {
+      last = null;
+    };
     document.addEventListener("pointerlockchange", onLock);
     window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
     return () => {
       document.removeEventListener("pointerlockchange", onLock);
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
     };
   }, []);
   if ((s.phase !== "play" && s.phase !== "free") || s.talk) return null;
@@ -494,6 +518,17 @@ function LookHint() {
       <div className={styles.lookChip}>
         <span className={styles.mouseIcon} aria-hidden="true" />
         Move the mouse to look around · <kbd>Esc</kbd> frees the mouse
+      </div>
+    );
+  }
+  if (isTouchDevice()) {
+    if (learned) return null;
+    return (
+      <div className={styles.lookHint}>
+        <span className={styles.fingerIcon} aria-hidden="true" />
+        <span>
+          <strong>Drag anywhere</strong> to look around
+        </span>
       </div>
     );
   }
