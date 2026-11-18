@@ -3,7 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { CylinderCollider, RigidBody } from "@react-three/rapier";
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as THREE from "three";
-import { DEEP_LEVEL, inDeepWater, terrainHeight, tunnelDistance } from "./world-data";
+import { DEEP_LEVEL, TUNNEL_RADIUS, inDeepWater, terrainHeight, tunnelDistance } from "./world-data";
 import { GLSL_BILLBOARD, billboardGeometry, control, player, shared } from "./shared";
 import { makeRockMaterial } from "./terrain";
 import { sound } from "./audio";
@@ -47,7 +47,7 @@ export function SkyEye() {
         varying vec3 vV;
         void main() {
           // soft at the silhouette edges, brightest looking through the middle
-          float face = pow(abs(dot(vN, vV)), 1.6);
+          float face = pow(clamp(abs(dot(vN, vV)), 0.0, 1.0), 1.6);
           float shimmer = 0.85 + 0.15 * sin(vUv.x * 40.0 + uTime * 0.25) * sin(vUv.y * 9.0 - uTime * 0.15);
           // clamp: pow() of a tiny negative (from interpolation) is NaN, and bloom
           // would smear a single NaN pixel over the whole screen
@@ -418,7 +418,8 @@ export function PartPickups() {
     () =>
       PARTS.filter((p) => p.at).map((p) => {
         const y = p.at!.y ?? terrainHeight(p.at!.x, p.at!.z) + 0.75;
-        return { id: p.id, pos: new THREE.Vector3(p.at!.x, y, p.at!.z), icon: partIcon(p.id) };
+        const inTunnel = tunnelDistance(p.at!.x, y, p.at!.z) < TUNNEL_RADIUS + 0.5;
+        return { id: p.id, pos: new THREE.Vector3(p.at!.x, y, p.at!.z), icon: partIcon(p.id), reach: inTunnel ? 3 : 1.3 };
       }),
     [],
   );
@@ -442,7 +443,7 @@ export function PartPickups() {
       if (!g) return;
       g.position.set(it.pos.x, it.pos.y + Math.sin(t * 1.3 + i) * 0.12, it.pos.z);
       g.rotation.y = t * 0.8;
-      if (!storyStore.has(it.id) && p.distanceTo(it.pos) < 1.3 && storyStore.get().phase !== "card") {
+      if (!storyStore.has(it.id) && p.distanceTo(it.pos) < it.reach && storyStore.get().phase !== "card") {
         storyStore.pickUp(it.id);
         sound.collect();
       }
@@ -691,7 +692,8 @@ export function Friends() {
       const m = motion.current[i];
       if (hv > 0.6) m.heading.set(v.x / hv, 0, v.z / hv);
       const pos = friendPos[n.id];
-      const following = st.met.includes(n.id) && !st.talk && (st.phase === "play" || st.phase === "free");
+      // friends stay at home (they used to follow Bob around)
+      const following = false;
       let moving = false;
       if (following && (n.id !== "finn" || bobInWater)) {
         const [ang, dist] = SLOTS[n.id];
@@ -719,8 +721,8 @@ export function Friends() {
             m.speed = THREE.MathUtils.damp(m.speed, 0, 6, dt);
           }
         }
-      } else if (!st.met.includes(n.id) || n.id === "finn") {
-        // not following: drift back home
+      } else {
+        // drift back home
         const b = home[i];
         const far = pos.distanceTo(b);
         if (far > 0.2) {
@@ -882,14 +884,12 @@ export function StoryDirector() {
     // who's close enough to talk to?
     let action: ReturnType<typeof storyStore.get>["action"] = null;
     let prompt: string | null = null;
-    const still = Math.hypot(player.velocity.x, player.velocity.z) < 1.2;
     let nearest = Infinity;
     for (const n of NPCS) {
       const fp = friendPos[n.id];
       const d = Math.hypot(p.x - fp.x, p.y - fp.y - 0.3, p.z - fp.z);
       // friends who follow you are always close by: only offer a chat when you stop
-      const following = st.met.includes(n.id);
-      if (d < n.talkRange && d < nearest && (!following || still)) {
+      if (d < n.talkRange && d < nearest) {
         nearest = d;
         action = { kind: "talk", npc: n.id, name: n.name };
         prompt = `T — talk to ${n.name}`;

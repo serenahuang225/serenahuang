@@ -295,7 +295,7 @@ export const giants: Mushroom[] = giantSpecs.map((g) => ({
   leanX: (rng() - 0.5) * 0.06,
   leanZ: (rng() - 0.5) * 0.06,
   hue: HUES[g.hueKey].clone(),
-  bounce: 17,
+  bounce: 14,
   kind: "giant",
 }));
 
@@ -328,7 +328,8 @@ export const steps: Mushroom[] = [];
       leanX: 0,
       leanZ: 0,
       hue,
-      bounce: 15,
+      // about 3 m up: comfortably more than the 1.7 m to the next step
+      bounce: 10.5,
       kind: "step",
     });
   }
@@ -426,7 +427,7 @@ export const groves: Mushroom[] = [];
       leanX: Math.cos(leanDir) * lean,
       leanZ: Math.sin(leanDir) * lean,
       hue: regionHue(x, z, rng),
-      bounce: 10 + height * 0.25,
+      bounce: 9.5 + height * 0.15,
       kind: "grove",
     });
   }

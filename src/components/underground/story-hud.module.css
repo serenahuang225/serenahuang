@@ -572,3 +572,50 @@
     animation: none;
   }
 }
+
+.objCount {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: #c9b98f;
+}
+
+.nextStep {
+  padding: 10px 14px 12px;
+  border-top: 1px solid rgba(255, 220, 150, 0.12);
+}
+
+.nextStep p {
+  margin: 2px 0 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: #fff3d6;
+}
+
+.nextLabel {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffd27a;
+}
+
+.objCurrent {
+  color: #fff3d6 !important;
+}
+
+.objCurrent i {
+  border-color: #ffd27a !important;
+}
+
+.groupLabel {
+  margin: 0;
+  padding: 8px 14px 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffd27a;
+  border-top: 1px solid rgba(255, 220, 150, 0.12);
+}
+
+.objectives ul + ul {
+  padding-top: 0;
+}

@@ -727,14 +727,16 @@ export function Ball() {
       sound.squish();
       return;
     }
-    let vy = Math.max(cap.m.bounce, impact * 0.9);
+    // a steady bounce height (not growing with the fall), so it's easy to judge
+    let vy = cap.m.bounce;
     if (st.stomping) vy *= 1.3;
     if (keys.current.Space) vy *= 1.15;
     if (Date.now() < lookStore.get().bounceUntil) vy *= 1.25;
     vy = Math.min(vy, 30);
     sound.boing(impact, cap.m.capR);
     const v = b.linvel();
-    b.setLinvel({ x: v.x * 0.9, y: vy, z: v.z * 0.9 }, true);
+    // mostly straight up, so you can steer onto the next cap instead of sailing past it
+    b.setLinvel({ x: v.x * 0.5, y: vy, z: v.z * 0.5 }, true);
     st.stomping = false;
     st.jumpCut = false;
     st.sv -= 0.6;

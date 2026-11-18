@@ -51,7 +51,7 @@ function softMaterial(emissive = 0.3) {
       "#include <emissivemap_fragment>",
       `#include <emissivemap_fragment>
       {
-        float rim = pow(1.0 - abs(dot(normal, normalize(vViewPosition))), 2.0);
+        float rim = pow(clamp(1.0 - abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 2.0);
         #if defined( USE_COLOR )
           totalEmissiveRadiance += vColor.rgb * (${emissive.toFixed(2)} + rim * 0.55);
         #endif
