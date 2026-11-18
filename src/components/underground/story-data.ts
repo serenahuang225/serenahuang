@@ -5,17 +5,17 @@
  */
 
 export const ROCKET = { x: -2.2, z: 45.8 };
-export const ENERGY_NEEDED = 20;
+export const ENERGY_NEEDED = 6;
 
 /** Things conversations point the camera at. */
 const SKY_EYE = { x: -2.2, y: 131, z: 45.8 };
-const ROCKET_VIEW = { x: -2.2, y: 3.6, z: 45.8 };
-const GREAT_CAP = { x: 0.8, y: 34, z: 0.7 };
-const GREAT_CAP_TOP = { x: 0.8, y: 39.5, z: 0.7 };
-const DEEP_LAKE = { x: 60, y: 2, z: 75 };
-const HOLLOW = { x: 110, y: 7, z: 75 };
-const LAKE_FLOOR = { x: 55, y: -8, z: 71 };
-const TUNNEL_MOUTH_VIEW = { x: 66, y: -8, z: 75 };
+export const ROCKET_VIEW = { x: -2.2, y: 3.6, z: 45.8 };
+export const GREAT_CAP = { x: 0.8, y: 34, z: 0.7 };
+export const GREAT_CAP_TOP = { x: 0.8, y: 39.5, z: 0.7 };
+export const DEEP_LAKE = { x: 60, y: 2, z: 75 };
+export const HOLLOW = { x: 110, y: 7, z: 75 };
+export const LAKE_FLOOR = { x: 55, y: -8, z: 71 };
+export const TUNNEL_MOUTH_VIEW = { x: 66, y: -8, z: 75 };
 export const PHOTO_REVEAL = 58;
 
 export type PartId = "hull" | "spring" | "lens" | "fins" | "nozzle" | "cone" | "wire";
@@ -350,7 +350,7 @@ export const NPCS: Npc[] = [
         choices: [{ text: "I'll listen.", next: "hub" }],
       },
       place: {
-        text: "West, the shallow glowing lake. North, the Great Cap. Far to the east, the deep lake, the falls, and the Hollow beyond.",
+        text: "South, past the Great Cap, your rocket, and the shallow glowing lake beyond it. Far to the south-east, the deep lake, the falls, and the Hollow.",
         focus: GREAT_CAP,
         effect: { reveal: { x: -70, z: 62, r: 34 } },
         choices: [{ text: "Thanks!", next: "hub" }],
@@ -426,9 +426,9 @@ export const MAP = {
   bridge: { x: 60, z0: 47, z1: 103 },
   tunnel: [
     [66, 75],
-    [74, 76.5],
-    [86, 73.5],
-    [97, 74.5],
-    [106, 75],
+    [75, 76],
+    [87, 73.8],
+    [96.5, 74.5],
+    [105, 75],
   ] as Array<[number, number]>,
 };

@@ -108,24 +108,43 @@ export function analyticHeight(x: number, z: number) {
 // ---- crystal tunnel: from the deep lake floor, under the shore, up into the cave
 
 export const TUNNEL_RADIUS = 2.3;
-export const TUNNEL_MOUTH = 4.1;
-export const TUNNEL = new THREE.CatmullRomCurve3(
-  [
-    new THREE.Vector3(DEEP.x + 6, DEEP_FLOOR + 0.35, DEEP.z),
-    new THREE.Vector3(DEEP.x + 7, DEEP_FLOOR - 3.2, DEEP.z + 0.4),
-    new THREE.Vector3(DEEP.x + 14, DEEP_FLOOR - 6.5, DEEP.z + 1.5),
-    new THREE.Vector3(DEEP.x + 26, DEEP_FLOOR - 7.2, DEEP.z - 1.5),
-    new THREE.Vector3(DEEP.x + 37, DEEP_FLOOR - 6, DEEP.z - 0.5),
-    new THREE.Vector3(CAVE.x - 5.5, CAVE_FLOOR - 4.2, CAVE.z),
-    new THREE.Vector3(CAVE.x - 4, CAVE_FLOOR + 0.35, CAVE.z),
-  ],
-  false,
-  "centripetal",
-);
+/** Radius of the rounded lip where each shaft curves out into the floor. */
+export const TUNNEL_FILLET = 1.6;
+/** Where the lip meets the floor. */
+export const TUNNEL_MOUTH = TUNNEL_RADIUS + TUNNEL_FILLET;
+/** A flat stone collar that covers the floor's cut edge around each opening. */
+export const TUNNEL_APRON = TUNNEL_MOUTH + 3.1;
+const LAKE_HOLE = { x: DEEP.x + 6, z: DEEP.z };
+const CAVE_HOLE = { x: CAVE.x - 5, z: CAVE.z };
+const lakeHoleY = analyticHeight(LAKE_HOLE.x, LAKE_HOLE.z);
+const caveHoleY = analyticHeight(CAVE_HOLE.x, CAVE_HOLE.z);
+// both ends rise straight up, so each opening sits level with the floor; the
+// path is a chain of gentle curves (no bend tighter than ~3.7 m, so the tube never pinches)
+function smoothChain(keys: Array<[THREE.Vector3, THREE.Vector3]>, k = 0.4) {
+  const path = new THREE.CurvePath<THREE.Vector3>();
+  for (let i = 0; i < keys.length - 1; i++) {
+    const [a, ta] = keys[i];
+    const [b, tb] = keys[i + 1];
+    const h = a.distanceTo(b) * k;
+    path.add(
+      new THREE.CubicBezierCurve3(a, a.clone().addScaledVector(ta.clone().normalize(), h), b.clone().addScaledVector(tb.clone().normalize(), -h), b),
+    );
+  }
+  return path;
+}
+const V3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+export const TUNNEL = smoothChain([
+  [V3(LAKE_HOLE.x, lakeHoleY - TUNNEL_FILLET, LAKE_HOLE.z), V3(0, -1, 0)],
+  [V3(DEEP.x + 15, DEEP_FLOOR - 7.0, DEEP.z + 1), V3(1, -0.1, 0)],
+  [V3(DEEP.x + 27, DEEP_FLOOR - 7.4, DEEP.z - 1.2), V3(1, 0, -0.03)],
+  [V3(DEEP.x + 36.5, DEEP_FLOOR - 6.4, DEEP.z - 0.5), V3(1, 0.45, 0)],
+  [V3(CAVE_HOLE.x, caveHoleY - TUNNEL_FILLET, CAVE_HOLE.z), V3(0, 1, 0)],
+]);
 export const TUNNEL_SAMPLES = TUNNEL.getSpacedPoints(240);
+/** The two openings: the floor is cut away under the collar. */
 export const TUNNEL_HOLES = [
-  { x: TUNNEL_SAMPLES[0].x, z: TUNNEL_SAMPLES[0].z, r: 2.4 },
-  { x: TUNNEL_SAMPLES[240].x, z: TUNNEL_SAMPLES[240].z, r: 2.4 },
+  { x: LAKE_HOLE.x, z: LAKE_HOLE.z, r: TUNNEL_MOUTH + 1.45 },
+  { x: CAVE_HOLE.x, z: CAVE_HOLE.z, r: TUNNEL_MOUTH + 1.45 },
 ];
 
 /** Distance from a point to the tunnel's centre line. */
@@ -540,6 +559,7 @@ export const smallMushrooms: SmallMushroom[] = [];
       if (Math.hypot(x - DEEP.x, z - DEEP.z) < DEEP.r * 1.2) continue;
       if (Math.abs(x - BRIDGE.x) < BRIDGE.width && z > BRIDGE.z0 - 3 && z < BRIDGE.z1 + 3) continue;
       if (Math.hypot(x - FALLS.x, z - FALLS.z) < FALLS.r + 0.5) continue;
+      if (TUNNEL_HOLES.some((t) => Math.hypot(x - t.x, z - t.z) < TUNNEL_APRON + 0.8)) continue;
       const height = (0.12 + Math.pow(r(), 1.8) * 0.95) * scale;
       const capR = height * (0.32 + r() * 0.3);
       smallMushrooms.push({
@@ -672,6 +692,8 @@ export function buildFoliageMap() {
       // the cave has a bare rock floor with a few flowers; the falls rock is rock
       const inCave = 1 - smoothstep(CAVE.r * 0.8, CAVE.r * 1.05, Math.hypot(x - CAVE.x, z - CAVE.z));
       if (Math.hypot(x - FALLS.x, z - FALLS.z) < FALLS.r + 0.8) wet = 0;
+      // nothing grows in or on the stone collars around the tunnel openings
+      if (TUNNEL_HOLES.some((t) => Math.hypot(x - t.x, z - t.z) < TUNNEL_APRON + 1.5)) wet = 0;
       const edge = 1 - smoothstep(175, 200, r);
       const grass = smoothstep(-0.45, 0.35, noiseC(x * 0.017, z * 0.017)) * 0.85 + 0.15;
       const leaves = smoothstep(-0.1, 0.55, noiseD(x * 0.021 + 40, z * 0.021 - 17));
@@ -888,7 +910,7 @@ export const caveCrystals: Crystal[] = [];
     const d = CAVE.r * (0.35 + r() * 0.4);
     const cx = CAVE.x + Math.cos(a) * d;
     const cz = CAVE.z + Math.sin(a) * d;
-    if (Math.hypot(cx - TUNNEL_HOLES[1].x, cz - TUNNEL_HOLES[1].z) < 6) continue;
+    if (Math.hypot(cx - TUNNEL_HOLES[1].x, cz - TUNNEL_HOLES[1].z) < TUNNEL_APRON + 1) continue;
     const hue = (r() < 0.5 ? HUES.amber : HUES.cyan).clone();
     for (let i = 0; i < 14; i++) {
       const aa = r() * Math.PI * 2;

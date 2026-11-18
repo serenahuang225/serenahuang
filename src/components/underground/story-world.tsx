@@ -3,7 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { CylinderCollider, RigidBody } from "@react-three/rapier";
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as THREE from "three";
-import { DEEP_LEVEL, TUNNEL_RADIUS, inDeepWater, terrainHeight, tunnelDistance } from "./world-data";
+import { DEEP_LEVEL, HOLLOW_LOGS, ORBS, POTIONS, TUNNEL_RADIUS, inDeepWater, pads, terrainHeight, tunnelDistance } from "./world-data";
 import { GLSL_BILLBOARD, billboardGeometry, control, player, shared } from "./shared";
 import { makeRockMaterial } from "./terrain";
 import { sound } from "./audio";
@@ -815,8 +815,10 @@ export function PhotoCapture() {
 
 // ---------------------------------------------------------------- the director: intro fall, prompts
 
+const compassDir = new THREE.Vector3();
+
 export function StoryDirector() {
-  const clock = useRef({ t: 0, fellAt: 0, airborne: false, startX: NaN, startZ: NaN, moved: false });
+  const clock = useRef({ t: 0, fellAt: 0, airborne: false, startX: NaN, startZ: NaN, moved: false, movedAt: 0, metAt: 0 });
   useEffect(() => {
     storyStore.load();
     // already mid-adventure? start beside the rocket
@@ -859,8 +861,29 @@ export function StoryDirector() {
       camState.current.active = false;
       if (st.phase !== "launch") control.camera = null;
     }
-    storyStore.here.x = p.x;
-    storyStore.here.z = p.z;
+    const here = storyStore.here;
+    here.x = p.x;
+    here.y = p.y;
+    here.z = p.z;
+    // compass: which way the camera faces, and where the current goal is
+    camera.getWorldDirection(compassDir);
+    here.heading = Math.atan2(compassDir.x, -compassDir.z);
+    if (here.goal === "orb") {
+      const found = orbStore.get().found;
+      let best: THREE.Vector3 | null = null;
+      let bestD = Infinity;
+      for (const o of ORBS) {
+        if (found.includes(o.id)) continue;
+        const d = (o.pos.x - p.x) ** 2 + (o.pos.z - p.z) ** 2;
+        if (d < bestD) {
+          bestD = d;
+          best = o.pos;
+        }
+      }
+      here.aim = best ? { x: best.x, y: best.y, z: best.z } : null;
+    } else {
+      here.aim = here.goal;
+    }
 
     if (st.phase === "falling") {
       if (!c.fellAt) {
@@ -920,9 +943,41 @@ export function StoryDirector() {
       c.startX = p.x;
       c.startZ = p.z;
     }
-    if (!c.moved && Math.hypot(p.x - c.startX, p.z - c.startZ) > 6) c.moved = true;
+    if (!c.moved && Math.hypot(p.x - c.startX, p.z - c.startZ) > 6) {
+      c.moved = true;
+      c.movedAt = c.t;
+    }
     if (!c.moved && !action) prompt = "Roll with W A S D or the arrow keys — W / ↑ goes the way the camera faces";
     storyStore.setAction(action, prompt);
+    if (c.moved) showTips(c, p, st.met.length > 0);
   });
   return null;
+}
+
+/**
+ * Controls are taught one at a time, the first time each becomes useful,
+ * instead of all at once. Each tip shows once per browser.
+ */
+function showTips(c: { t: number; movedAt: number; metAt: number }, p: THREE.Vector3, metSomeone: boolean) {
+  const since = c.t - c.movedAt;
+  const near = (x: number, z: number, r: number) => Math.hypot(p.x - x, p.z - z) < r;
+  const ground = terrainHeight(p.x, p.z);
+  if (metSomeone && !c.metAt) c.metAt = c.t;
+  const tips: Array<[string, boolean, string]> = [
+    ["jump", since > 14, "Hold [Space] longer to jump higher, and keep holding it as you land on a mushroom cap for a bigger bounce."],
+    ["log", HOLLOW_LOGS.some((l) => near(l.x, l.z, l.length * 0.5 + 4)), "[C] means go down. Hold [C] to duck small and squeeze through the hollow log."],
+    ["pad", pads.some((q) => near(q.x, q.z, 5)), "Roll onto a glowing puffball and it bounces you up onto its mushroom."],
+    ["potion", POTIONS.some((q) => near(q.pos.x, q.pos.z, 4)), "Roll into a bottle to drink it. Potions change Bob for a while."],
+    ["stomp", !player.grounded && p.y > ground + 4 && !inDeepWater(p.x, p.y, p.z), "Up high? Press [C] in mid-air to stomp: you bounce higher off a mushroom cap."],
+    ["dive", inDeepWater(p.x, p.y, p.z), "[C] goes down here too: hold it to dive. [Space] swims back up."],
+    ["photo", c.metAt > 0 && c.t - c.metAt > 8, "Press [P] to take a photo. Each one fills in more of the map in your field guide ([I])."],
+    ["sprint", since > 25, "Hold [Shift] to sprint."],
+    ["camera", since > 50, "Move the mouse or press [Q] / [E] to turn the camera. Scroll to zoom."],
+    ["home", since > 160, "Lost? Follow the gold needle on the compass, or press [H] to roll home to your rocket."],
+  ];
+  for (const [id, when, text] of tips) {
+    if (!when || storyStore.tipSeen(id)) continue;
+    storyStore.tip(id, text);
+    return;
+  }
 }

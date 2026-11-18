@@ -11,7 +11,9 @@
   background: rgba(8, 18, 30, 0.6);
   border: 1px solid rgba(255, 220, 150, 0.22);
   backdrop-filter: blur(8px);
-  overflow: hidden;
+  overflow: hidden auto;
+  max-height: calc(100% - 82px);
+  scrollbar-width: thin;
 }
 
 .objHead {
@@ -465,7 +467,7 @@
 .lookHint {
   position: absolute;
   left: 50%;
-  top: 28%;
+  top: max(28%, 240px);
   z-index: 2;
   transform: translate(-50%, -50%);
   display: flex;
@@ -552,6 +554,7 @@
 @media (max-width: 760px) {
   .objectives {
     top: 110px;
+    max-height: calc(100% - 290px);
   }
   .fsButton {
     top: auto;
@@ -618,4 +621,242 @@
 
 .objectives ul + ul {
   padding-top: 0;
+}
+
+/* ---------------------------------------------------------------- compass */
+
+.compass {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.dial {
+  position: relative;
+  flex: none;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 220, 150, 0.06) 0 38%, transparent 39%),
+    radial-gradient(circle at 35% 30%, rgba(30, 52, 70, 0.92), rgba(6, 14, 24, 0.92) 70%);
+  border: 2px solid rgba(255, 210, 122, 0.55);
+  box-shadow:
+    0 0 0 4px rgba(8, 18, 30, 0.55),
+    inset 0 0 14px rgba(0, 0, 0, 0.6),
+    0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.rose {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.tick,
+.tickBig {
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 1px;
+  height: 5px;
+  margin-left: -0.5px;
+  background: rgba(255, 230, 180, 0.35);
+  transform-origin: 50% 43px;
+}
+
+.tickBig {
+  height: 7px;
+  width: 2px;
+  margin-left: -1px;
+  background: rgba(255, 230, 180, 0.6);
+}
+
+.cardinal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  display: grid;
+  place-items: center;
+  font-family: var(--serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #cfe9e5;
+}
+
+.north {
+  color: #ff8a6a;
+  text-shadow: 0 0 6px rgba(255, 120, 90, 0.6);
+}
+
+.needle {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.4s;
+  will-change: transform;
+}
+
+.needle b {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  width: 0;
+  height: 0;
+  margin-left: -6px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 30px solid #ffd27a;
+  filter: drop-shadow(0 0 5px rgba(255, 210, 122, 0.85));
+}
+
+.facing {
+  position: absolute;
+  left: 50%;
+  top: -7px;
+  width: 0;
+  height: 0;
+  margin-left: -5px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid #e9fffc;
+}
+
+.hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff4d6, #c9953e);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
+.compassLabel {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 6px 11px;
+  border-radius: 10px;
+  background: rgba(8, 18, 30, 0.6);
+  border: 1px solid rgba(255, 220, 150, 0.22);
+  backdrop-filter: blur(8px);
+  font-size: 0.78rem;
+  color: #e3d8c0;
+}
+
+.compassName {
+  font-family: var(--serif);
+  font-size: 0.98rem;
+  color: #fff3d6;
+}
+
+.compassDist {
+  font-variant-numeric: tabular-nums;
+  color: #ffd27a;
+}
+
+.compassLevel:empty {
+  display: none;
+}
+
+.compassLevel {
+  font-size: 0.72rem;
+  color: #9ee9e2;
+}
+
+@media (max-width: 760px) {
+  .compass {
+    right: auto;
+    left: 18px;
+    align-items: flex-start;
+  }
+}
+
+/* ---------------------------------------------------------------- one-time control tips */
+
+.tip {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(560px, calc(100% - 32px));
+  padding: 10px 16px 10px 12px;
+  border-radius: 14px;
+  color: #efe6d2;
+  background: rgba(8, 18, 30, 0.78);
+  border: 1px solid rgba(255, 220, 150, 0.3);
+  backdrop-filter: blur(8px);
+  transform: translate(-50%, 14px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.tipShown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.tipLabel {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1a1408;
+  background: #ffd27a;
+}
+
+.tip p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.tip kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.6em;
+  margin: 0 2px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.78rem;
+  color: #fff3d6;
+  background: rgba(255, 220, 150, 0.14);
+  border: 1px solid rgba(255, 220, 150, 0.4);
+}
+
+@media (max-width: 760px) {
+  .tip {
+    bottom: 196px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tip {
+    transition: opacity 0.3s ease;
+  }
+}
+
+@media (max-width: 760px) {
+  .lookHint {
+    top: max(34%, 300px);
+    max-width: calc(100% - 32px);
+  }
 }

@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { lineFor, storyStore } from "./story-store";
-import { ENERGY_NEEDED, NPCS, PARTS, type NpcId } from "./story-data";
+import { ENERGY_NEEDED, NPCS, type NpcId } from "./story-data";
+import { nextStep, questSteps, type Step } from "./quest";
 import { orbStore } from "./orb-store";
 import { guideStore } from "./guide-store";
 import { sound } from "./audio";
@@ -177,33 +178,29 @@ function Dialogue() {
 
 // ---------------------------------------------------------------- objectives + prompts
 
-type Step = { text: string; done: boolean; optional?: boolean; final?: boolean };
-
-/** The adventure as a chain of small, concrete steps, in a sensible order. */
-function questSteps(s: ReturnType<typeof storyStore.get>, energy: number): Step[] {
-  const has = (id: Parameters<typeof storyStore.has>[0]) => s.carried.includes(id) || s.delivered.includes(id);
-  const allParts = s.delivered.length === PARTS.length;
-  return [
-    { text: "Say hi to Pip, the little pink puffkin by your rocket (press T)", done: s.met.includes("pip") },
-    { text: "Grab the hull plate glowing in the grass near the rocket", done: has("hull") },
-    { text: "Roll to the big blue mushroom and visit Moss at its foot", done: s.met.includes("moss") },
-    { text: "Bounce up the spiral of caps to the top of the big blue mushroom for the nose cone", done: has("cone") },
-    { text: "Head east and cross the rope bridge — find Finn in the deep lake", done: s.met.includes("finn") },
-    { text: "Dive to the bottom of the deep lake for the tail fins (hold C)", done: has("fins") },
-    { text: "Swim into the crystal tunnel in the lake floor and grab the copper wire", done: has("wire") },
-    { text: "Follow the tunnel to the Hollow and ask Elder Puff about your rocket", done: has("nozzle") },
-    { text: "Find Quartz among the crystals in the south-west and solve her riddle", done: has("lens") },
-    { text: `Collect glowing energy orbs: ${Math.min(energy, ENERGY_NEEDED)}/${ENERGY_NEEDED}`, done: energy >= ENERGY_NEEDED, final: true },
-    { text: `Bring the parts back to the rocket: ${s.delivered.length}/${PARTS.length} fitted${s.carried.length ? ` (carrying ${s.carried.length})` : ""}`, done: allParts, final: true },
-    { text: "Go to the rocket and press T to launch!", done: s.phase === "free", final: true },
-    { text: `Take photos with P to fill in your map (${s.photos.length})`, done: s.photos.length >= 5, optional: true },
-  ];
-}
+const OBJ_KEY = "underground-objectives-open";
 
 function Objectives() {
   const s = useStory();
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY_ORBS);
-  const [open, setOpen] = useState(true);
+  const [open, setOpenState] = useState(false);
+  useEffect(() => {
+    try {
+      setOpenState(window.localStorage.getItem(OBJ_KEY) === "1");
+    } catch {
+      // ignore
+    }
+  }, []);
+  const setOpen = (fn: (o: boolean) => boolean) =>
+    setOpenState((o) => {
+      const v = fn(o);
+      try {
+        window.localStorage.setItem(OBJ_KEY, v ? "1" : "0");
+      } catch {
+        // ignore
+      }
+      return v;
+    });
   const lastNext = useRef<string | null>(null);
   const active = s.phase === "play" || s.phase === "free";
   const steps = questSteps(s, orbs.found.length);
@@ -214,7 +211,7 @@ function Objectives() {
   // ...while the three goals for getting home are always shown together
   const finale = steps.filter((x) => x.final);
   const extras = steps.filter((x) => x.optional);
-  const next = current ?? finale.find((x) => !x.done) ?? null;
+  const next = nextStep(steps);
 
   // when a step is finished, say what's next
   const nextKey = next ? next.text.replace(/\d+\/\d+.*$/, "") : null;
@@ -238,7 +235,7 @@ function Objectives() {
     <section className={styles.objectives} aria-label="Objectives">
       <button type="button" className={styles.objHead} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span>{s.phase === "free" ? "Bob made it home!" : "Help Bob get home"}</span>
-        <span className={styles.objCount}>{open ? "–" : "+"}</span>
+        <span className={styles.objCount}>{open ? "hide steps –" : "all steps +"}</span>
       </button>
       {/* finished story steps, then the one you're on now */}
       {open && revealed.some((x) => x.done) && <ul>{revealed.filter((x) => x.done).map(row)}</ul>}
@@ -288,6 +285,31 @@ function Notes() {
   return (
     <div className={`${styles.note} ${text ? styles.noteShown : ""}`} role="status">
       {text}
+    </div>
+  );
+}
+
+/** Turns "Press [Space] to jump" into text with key caps. */
+export function withKeys(text: string) {
+  return text.split(/(\[[^\]]+\])/).map((part, i) =>
+    part.startsWith("[") && part.endsWith("]") ? <kbd key={i}>{part.slice(1, -1)}</kbd> : <span key={i}>{part}</span>,
+  );
+}
+
+function Tip() {
+  const s = useStory();
+  const [tip, setTip] = useState<string | null>(null);
+  useEffect(() => {
+    if (!s.tip) return;
+    setTip(s.tip.text);
+    const t = window.setTimeout(() => setTip(null), 6800);
+    return () => window.clearTimeout(t);
+  }, [s.tip]);
+  const hidden = !tip || !!s.talk;
+  return (
+    <div className={`${styles.tip} ${hidden ? "" : styles.tipShown}`} role="status" aria-hidden={hidden}>
+      <span className={styles.tipLabel}>Tip</span>
+      <p>{tip ? withKeys(tip) : null}</p>
     </div>
   );
 }
@@ -479,8 +501,105 @@ function LookHint() {
     <div className={`${styles.lookHint} ${learned ? styles.lookHintQuiet : ""}`}>
       <span className={styles.mouseIcon} aria-hidden="true" />
       <span>
-        <strong>Click the cave</strong>, then move your mouse to look around
+        <strong>Click anywhere</strong>, then move your mouse to look around
       </span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- compass
+
+const POINTS = [
+  { a: 0, t: "N" },
+  { a: Math.PI / 2, t: "E" },
+  { a: Math.PI, t: "S" },
+  { a: -Math.PI / 2, t: "W" },
+];
+
+/** A little compass: the rose turns with the camera, the gold needle points at the next goal. */
+function Compass() {
+  const s = useStory();
+  const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY_ORBS);
+  const active = (s.phase === "play" || s.phase === "free") && !s.talk;
+  const next = nextStep(questSteps(s, orbs.found.length));
+  const goal = s.phase === "play" ? (next?.goal ?? null) : null;
+  const label = goal ? next?.label : null;
+  const rose = useRef<HTMLDivElement>(null);
+  const needle = useRef<HTMLDivElement>(null);
+  const dist = useRef<HTMLSpanElement>(null);
+  const level = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    storyStore.here.goal = goal;
+    return () => {
+      storyStore.here.goal = null;
+    };
+  }, [goal]);
+
+  useEffect(() => {
+    if (!active) return;
+    let raf = 0;
+    let shown = NaN;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const h = storyStore.here;
+      // ease the dial a little so it doesn't jitter with the camera
+      const d = Number.isNaN(shown) ? 0 : Math.atan2(Math.sin(h.heading - shown), Math.cos(h.heading - shown));
+      shown = Number.isNaN(shown) ? h.heading : shown + d * 0.35;
+      if (rose.current) rose.current.style.transform = `rotate(${-shown}rad)`;
+      const aim = h.aim;
+      if (!needle.current) return;
+      if (!aim) {
+        needle.current.style.opacity = "0";
+        return;
+      }
+      const dx = aim.x - h.x;
+      const dz = aim.z - h.z;
+      const bearing = Math.atan2(dx, -dz);
+      const m = Math.hypot(dx, dz);
+      needle.current.style.opacity = "1";
+      needle.current.style.transform = `rotate(${bearing - shown}rad)`;
+      if (dist.current) dist.current.textContent = m < 4 ? "here!" : `${Math.round(m)} m`;
+      if (level.current) {
+        const dy = aim.y === undefined ? 0 : aim.y - h.y;
+        level.current.textContent = m < 30 && dy > 4 ? "▲ up high" : m < 30 && dy < -4 ? "▼ down below" : "";
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [active]);
+
+  if (!active) return null;
+  return (
+    <div className={styles.compass} aria-label={label ? `Compass pointing to ${label}` : "Compass"} role="img">
+      <div className={styles.dial}>
+        <div ref={rose} className={styles.rose}>
+          {Array.from({ length: 16 }, (_, i) => (
+            <i key={i} className={i % 4 === 0 ? styles.tickBig : styles.tick} style={{ transform: `rotate(${i * 22.5}deg)` }} />
+          ))}
+          {POINTS.map((p) => (
+            <span
+              key={p.t}
+              className={`${styles.cardinal} ${p.t === "N" ? styles.north : ""}`}
+              style={{ transform: `rotate(${p.a}rad) translateY(-34px) rotate(${-p.a}rad)` }}
+            >
+              {p.t}
+            </span>
+          ))}
+        </div>
+        <div ref={needle} className={styles.needle} style={{ opacity: 0 }}>
+          <b />
+        </div>
+        <span className={styles.facing} aria-hidden="true" />
+        <span className={styles.hub} aria-hidden="true" />
+      </div>
+      {label && (
+        <p className={styles.compassLabel}>
+          <span className={styles.compassName}>{label}</span>
+          <span ref={dist} className={styles.compassDist} />
+          <span ref={level} className={styles.compassLevel} />
+        </p>
+      )}
     </div>
   );
 }
@@ -518,8 +637,10 @@ export function StoryHud() {
   return (
     <>
       <Objectives />
+      <Compass />
       <Prompt />
       <Notes />
+      <Tip />
       <Flash />
       <LookHint />
       <FullscreenButton />

@@ -26,6 +26,7 @@ import {
   pads,
   terrainHeight,
   tunnelDistance,
+  TUNNEL_APRON,
   tunnelNearest,
   TUNNEL_RADIUS,
   TUNNEL_SAMPLES,
@@ -50,7 +51,7 @@ function useKeys() {
   useEffect(() => {
     const game = new Set([
       "KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
-      "Space", "ShiftLeft", "ShiftRight", "KeyC", "KeyR", "KeyQ", "KeyE",
+      "Space", "ShiftLeft", "ShiftRight", "KeyC", "KeyH", "KeyQ", "KeyE",
     ]);
     const down = (e: KeyboardEvent) => {
       if (guideStore.isOpen() || storyStore.inputBlocked()) {
@@ -139,23 +140,19 @@ function furTexture(tint: string | null) {
         const hex = (col: THREE.Color) => `#${col.getHexString()}`;
         const rgba = (col: THREE.Color, a: number) => `rgba(${Math.round(col.r * 255)},${Math.round(col.g * 255)},${Math.round(col.b * 255)},${a})`;
         return {
-          top: hex(c.clone().offsetHSL(0, 0, -0.08)),
+          top: hex(c),
           mid: hex(c),
-          bottom: hex(c.clone().offsetHSL(0, 0, -0.14)),
-          ring: (a: number) => rgba(c.clone().offsetHSL(0, 0.05, -0.32), a),
-          cream: (a: number) => rgba(c.clone().lerp(new THREE.Color("#ffffff"), 0.78), a),
-          light: (a: number) => rgba(c.clone().lerp(new THREE.Color("#ffffff"), 0.45), a),
-          dark: (a: number) => rgba(c.clone().offsetHSL(0, 0, -0.4), a),
+          bottom: hex(c),
+          light: (a: number) => rgba(c.clone().lerp(new THREE.Color("#ffffff"), 0.35), a),
+          dark: (a: number) => rgba(c.clone().offsetHSL(0, 0, -0.18), a),
         };
       })()
     : {
-        top: "#b8452a",
+        top: "#d4532e",
         mid: "#d4532e",
-        bottom: "#a63a24",
-        ring: (a: number) => `rgba(70,22,14,${a})`,
-        cream: (a: number) => `rgba(255,232,206,${a})`,
-        light: (a: number) => `rgba(255,170,120,${a})`,
-        dark: (a: number) => `rgba(60,15,10,${a})`,
+        bottom: "#d4532e",
+        light: (a: number) => `rgba(255,150,110,${a})`,
+        dark: (a: number) => `rgba(170,55,35,${a})`,
       };
   const w = 1024;
   const h = 512;
@@ -169,29 +166,6 @@ function furTexture(tint: string | null) {
   grad.addColorStop(1, pal.bottom);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
-  // soft rings, like a red panda's tail
-  for (const y of [0.3, 0.7]) {
-    const g = ctx.createLinearGradient(0, h * (y - 0.07), 0, h * (y + 0.07));
-    g.addColorStop(0, pal.ring(0));
-    g.addColorStop(0.5, pal.ring(0.8));
-    g.addColorStop(1, pal.ring(0));
-    ctx.fillStyle = g;
-    ctx.fillRect(0, h * (y - 0.07), w, h * 0.14);
-  }
-  // cream patches
-  for (const [x, y] of [
-    [0.22, 0.5],
-    [0.72, 0.5],
-  ]) {
-    const g = ctx.createRadialGradient(w * x, h * y, 0, w * x, h * y, h * 0.2);
-    g.addColorStop(0, pal.cream(1));
-    g.addColorStop(0.55, pal.cream(0.85));
-    g.addColorStop(1, pal.cream(0));
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(w * x, h * y, h * 0.24, h * 0.2, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
   // strands
   let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -201,7 +175,7 @@ function furTexture(tint: string | null) {
     const len = 4 + rnd() * 9;
     const a = Math.PI / 2 + (rnd() - 0.5) * 0.9;
     const light = rnd() < 0.5;
-    ctx.strokeStyle = light ? pal.light(0.08 + rnd() * 0.12) : pal.dark(0.08 + rnd() * 0.14);
+    ctx.strokeStyle = light ? pal.light(0.05 + rnd() * 0.08) : pal.dark(0.05 + rnd() * 0.08);
     ctx.lineWidth = 0.8 + rnd() * 1.2;
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -297,10 +271,10 @@ function furShellMaterial(fur: THREE.Texture) {
         float taper = (1.0 - vS / strandLen);
         if (length(f) > 0.62 * taper + 0.04) discard;
         vec3 fur = texture2D(uFur, vUv).rgb;
-        float ao = mix(0.35, 1.0, vS);
+        float ao = mix(0.6, 1.0, vS);
         float tip = vS * vS;
         vec3 col = mix(fur, fur * 1.35 + vec3(0.05, 0.03, 0.02), tip) * ao;
-        float light = 0.5 + 0.5 * clamp(vN.y * 0.6 + 0.4, 0.0, 1.0);
+        float light = 0.74 + 0.26 * clamp(vN.y * 0.6 + 0.4, 0.0, 1.0);
         float rim = pow(1.0 - max(dot(vN, vV), 0.0), 2.0);
         col = col * light * 0.95 + fur * (0.22 + uGlow * 0.6) + mix(vec3(1.0, 0.55, 0.38), fur, 0.5) * rim * (0.35 + uGlow) * vS;
         gl_FragColor = vec4(col, 1.0);
@@ -400,6 +374,9 @@ export function Ball() {
     /** physics steps left in which a landing is soft (no trampoline) */
     softLand: 0,
     padFlight: null as null | { target: THREE.Vector3; steering: boolean; t: number },
+    /** recent spots where Bob stood safely on the ground (oldest first) */
+    safe: [] as THREE.Vector3[],
+    safeClock: 0,
   });
 
   // ---- physics-rate control
@@ -683,13 +660,24 @@ export function Ball() {
       b.applyImpulse({ x: (-pos.x / r) * push * m * dt, y: 0, z: (-pos.z / r) * push * m * dt }, true);
     }
 
-    // respawn on R, or if something went very wrong
-    const underground = pos.y < terrainHeight(pos.x, pos.z) - 6 && tunnelDistance(pos.x, pos.y, pos.z) > 7;
-    if (k.KeyR || underground || pos.y < -80) {
-      b.setTranslation(spawn, true);
+    // remember where Bob last stood safely, a few times a second
+    const ground = terrainHeight(pos.x, pos.z);
+    st.safeClock += dt;
+    if (st.grounded && st.safeClock > 0.6 && pos.y > ground - 1 && tunnelDistance(pos.x, pos.y, pos.z) > TUNNEL_APRON + 1) {
+      st.safeClock = 0;
+      st.safe.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+      if (st.safe.length > 4) st.safe.shift();
+    }
+
+    // H takes Bob home; if he ever slips under the world, put him back where he last stood
+    const underground = pos.y < ground - 6 && tunnelDistance(pos.x, pos.y, pos.z) > 7;
+    if (k.KeyH || underground || pos.y < -80) {
+      const back = !k.KeyH && st.safe.length ? st.safe[0].clone().add(new THREE.Vector3(0, 0.6, 0)) : spawn;
+      if (!k.KeyH) st.safe = st.safe.slice(0, 1);
+      b.setTranslation(back, true);
       b.setLinvel({ x: 0, y: 0, z: 0 }, true);
       b.setAngvel({ x: 0, y: 0, z: 0 }, true);
-      k.KeyR = false;
+      k.KeyH = false;
     }
   });
 

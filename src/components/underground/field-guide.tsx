@@ -448,14 +448,13 @@ const CONTROLS: Array<[string, string]> = [
   ["W A S D or ← ↑ → ↓", "Roll — W / ↑ goes the way the camera faces"],
   ["Shift", "Sprint"],
   ["Space", "Jump (hold for higher)"],
-  ["C", "Duck: squeeze through hollow logs"],
-  ["C in the air", "Stomp: bounce higher off a cap"],
+  ["C (always means “go down”)", "Duck through hollow logs · stomp in the air · dive underwater"],
   ["Hold C landing on a cap", "Stop bouncing"],
-  ["Space / C underwater", "Swim up / dive"],
+  ["Space underwater", "Swim up (or hop out at the surface)"],
   ["Space in the air (with wings)", "Flap; hold to glide"],
   ["Mouse or Q E", "Look around"],
   ["Scroll", "Zoom"],
-  ["R", "Back to the start"],
+  ["H", "Home: back to the start"],
   ["T", "Talk to a friend nearby / launch"],
   ["P", "Take a photo (fills in the map)"],
   ["F", "Full screen (Esc to leave)"],
@@ -492,7 +491,7 @@ function FriendPage({ id }: { id: string }) {
                   ? "In the deep lake, near the rope bridge."
                   : n.id === "elder"
                     ? "Inside the Hollow, the rock cave past the deep lake."
-                    : "Among the crystals in the south-west."}
+                    : "Among the crystals far to the north."}
           </dd>
         </dl>
       </>
