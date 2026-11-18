@@ -127,7 +127,16 @@ vec2 clearViewAt(vec3 base, float plantH) {
   float along = smoothstep(0.0, 0.08, s) * (1.0 - smoothstep(0.88, 1.0, s));
   float f = (1.0 - smoothstep(0.25, 1.1, dist)) * tall * along;
   vec2 side = dist > 0.001 ? d / dist : vec2(-ab.y, ab.x) / sqrt(len2);
-  return side * f;
+  // and anything tall right next to the lens bends away from it, so big dark
+  // leaves never sweep across the whole screen
+  vec2 dc = base.xz - cameraPosition.xz;
+  float dcl = length(dc);
+  float tallCam = smoothstep(-0.3, 0.2, base.y + plantH - cameraPosition.y + 0.6);
+  float near = (1.0 - smoothstep(0.4, 1.6, dcl)) * tallCam;
+  vec2 away = dcl > 0.001 ? dc / dcl : side;
+  vec2 r = side * f + away * near;
+  float rl = length(r);
+  return rl > 1.0 ? r / rl : r;
 }
 `;
 

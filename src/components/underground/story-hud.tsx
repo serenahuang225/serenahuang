@@ -177,40 +177,83 @@ function Dialogue() {
 
 // ---------------------------------------------------------------- objectives + prompts
 
+type Step = { text: string; done: boolean; optional?: boolean; final?: boolean };
+
+/** The adventure as a chain of small, concrete steps, in a sensible order. */
+function questSteps(s: ReturnType<typeof storyStore.get>, energy: number): Step[] {
+  const has = (id: Parameters<typeof storyStore.has>[0]) => s.carried.includes(id) || s.delivered.includes(id);
+  const allParts = s.delivered.length === PARTS.length;
+  return [
+    { text: "Say hi to Pip, the little pink puffkin by your rocket (press T)", done: s.met.includes("pip") },
+    { text: "Grab the hull plate glowing in the grass near the rocket", done: has("hull") },
+    { text: "Roll to the big blue mushroom and visit Moss at its foot", done: s.met.includes("moss") },
+    { text: "Bounce up the spiral of caps to the top of the big blue mushroom for the nose cone", done: has("cone") },
+    { text: "Head east and cross the rope bridge — find Finn in the deep lake", done: s.met.includes("finn") },
+    { text: "Dive to the bottom of the deep lake for the tail fins (hold C)", done: has("fins") },
+    { text: "Swim into the crystal tunnel in the lake floor and grab the copper wire", done: has("wire") },
+    { text: "Follow the tunnel to the Hollow and ask Elder Puff about your rocket", done: has("nozzle") },
+    { text: "Find Quartz among the crystals in the south-west and solve her riddle", done: has("lens") },
+    { text: `Collect glowing energy orbs: ${Math.min(energy, ENERGY_NEEDED)}/${ENERGY_NEEDED}`, done: energy >= ENERGY_NEEDED, final: true },
+    { text: `Bring the parts back to the rocket: ${s.delivered.length}/${PARTS.length} fitted${s.carried.length ? ` (carrying ${s.carried.length})` : ""}`, done: allParts, final: true },
+    { text: "Go to the rocket and press T to launch!", done: s.phase === "free", final: true },
+    { text: `Take photos with P to fill in your map (${s.photos.length})`, done: s.photos.length >= 5, optional: true },
+  ];
+}
+
 function Objectives() {
   const s = useStory();
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY_ORBS);
   const [open, setOpen] = useState(true);
-  if (s.phase !== "play" && s.phase !== "free") return null;
-  const energy = Math.min(orbs.found.length, ENERGY_NEEDED);
-  const delivered = s.delivered.length;
-  const done = delivered === PARTS.length && energy >= ENERGY_NEEDED;
-  const metPip = s.met.includes("pip");
-  const items = [
-    { done: metPip, text: "Say hi to the little pink puffkin by the rocket" },
-    { done: delivered === PARTS.length, text: `Rocket parts brought back: ${delivered}/${PARTS.length}${s.carried.length ? ` (carrying ${s.carried.length})` : ""}` },
-    { done: energy >= ENERGY_NEEDED, text: `Energy orbs: ${energy}/${ENERGY_NEEDED}` },
-    { done: s.photos.length >= 5, text: `Photos for your map: ${s.photos.length} (press P)`, optional: true },
-    { done: s.phase === "free", text: done ? "Go to the rocket and press T to launch!" : "Launch the rocket home" },
-  ];
+  const lastNext = useRef<string | null>(null);
+  const active = s.phase === "play" || s.phase === "free";
+  const steps = questSteps(s, orbs.found.length);
+  // the story steps unlock one at a time, as Bob meets people and finds things
+  const story = steps.filter((x) => !x.final && !x.optional);
+  const current = story.find((x) => !x.done) ?? null;
+  const revealed = current ? story.slice(0, story.indexOf(current) + 1) : story;
+  // ...while the three goals for getting home are always shown together
+  const finale = steps.filter((x) => x.final);
+  const extras = steps.filter((x) => x.optional);
+  const next = current ?? finale.find((x) => !x.done) ?? null;
+
+  // when a step is finished, say what's next
+  const nextKey = next ? next.text.replace(/\d+\/\d+.*$/, "") : null;
+  useEffect(() => {
+    if (!active) return;
+    if (lastNext.current !== null && nextKey !== lastNext.current && next) storyStore.notify(`Next: ${next.text}`);
+    lastNext.current = nextKey;
+  }, [nextKey, active, next]);
+
+  if (!active) return null;
+  const row = (it: Step) => (
+    <li key={it.text} className={`${it.done ? styles.objDone : ""} ${it === next ? styles.objCurrent : ""}`}>
+      <i aria-hidden="true">{it.done ? "✓" : ""}</i>
+      <span>
+        {it.text}
+        {it.optional && !it.done && <em> · optional</em>}
+      </span>
+    </li>
+  );
   return (
     <section className={styles.objectives} aria-label="Objectives">
       <button type="button" className={styles.objHead} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span>{s.phase === "free" ? "Bob made it home!" : "Help Bob get home"}</span>
-        <span aria-hidden="true">{open ? "–" : "+"}</span>
+        <span className={styles.objCount}>{open ? "–" : "+"}</span>
       </button>
+      {/* finished story steps, then the one you're on now */}
+      {open && revealed.some((x) => x.done) && <ul>{revealed.filter((x) => x.done).map(row)}</ul>}
+      {next && (
+        <div className={styles.nextStep}>
+          <span className={styles.nextLabel}>Next</span>
+          <p>{next.text}</p>
+        </div>
+      )}
       {open && (
-        <ul>
-          {items.map((it) => (
-            <li key={it.text} className={it.done ? styles.objDone : ""}>
-              <i aria-hidden="true">{it.done ? "✓" : ""}</i>
-              <span>
-                {it.text}
-                {it.optional && !it.done && <em> · optional</em>}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className={styles.groupLabel}>To fly home</p>
+          <ul>{finale.map(row)}</ul>
+          <ul>{extras.map(row)}</ul>
+        </>
       )}
     </section>
   );

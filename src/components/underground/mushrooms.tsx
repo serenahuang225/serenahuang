@@ -127,7 +127,7 @@ function makeMushroomMaterial(opts: { push?: boolean; squash?: boolean; flat?: b
         {
           float pulse = 0.82 + 0.18 * sin(uTime * 0.22 + vPhase);
           vec3 V = normalize(vViewPosition);
-          float rim = pow(1.0 - abs(dot(normal, V)), 2.5);
+          float rim = pow(clamp(1.0 - abs(dot(normal, V)), 0.0, 1.0), 2.5);
           vec3 g = hue * (vGlow * 1.9 * pulse + rim * vCap * 0.7);
           // glowing spots on the upper surface of some caps
           vec2 sp = vLocal.xz * 4.0;

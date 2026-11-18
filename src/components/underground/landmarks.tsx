@@ -645,9 +645,11 @@ export function Atmosphere() {
     const cam = camera as THREE.PerspectiveCamera;
     shared.uProj.value = (size.height * gl.getPixelRatio()) / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
     const c = camera.position;
+    // only once the camera is properly below the surface, so skimming it doesn't
+    // flicker the screen dark teal and back
     const under =
-      inDeepWater(c.x, c.y, c.z) ||
-      (c.y < LAKE_LEVEL && Math.hypot(c.x - LAKE.x, c.z - LAKE.z) < LAKE.r * 1.3);
+      inDeepWater(c.x, c.y + 0.3, c.z) ||
+      (c.y < LAKE_LEVEL - 0.3 && Math.hypot(c.x - LAKE.x, c.z - LAKE.z) < LAKE.r * 1.3);
     environment.underwater = under;
     state.water = THREE.MathUtils.damp(state.water, under ? 1 : 0, 6, dt);
     // a slow breath of fog: about two and a half minutes from clear to thick and back

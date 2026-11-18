@@ -256,7 +256,7 @@ export function Lake({
             vec2 p = vWP.xz;
             float n1 = sin(p.x * 1.1 + uTime * 0.5 + sin(p.y * 0.9 + uTime * 0.3) * 1.5);
             float n2 = sin(p.y * 1.3 - uTime * 0.45 + sin(p.x * 0.7 - uTime * 0.25) * 1.7);
-            float caustic = pow(1.0 - abs(n1 * n2), 9.0);
+            float caustic = pow(clamp(1.0 - abs(n1 * n2), 0.0, 1.0), 9.0);
             vec3 col = vec3(0.004, 0.025, 0.035);
             col += uTint * caustic * 0.3;
             col += glowLights(vWP, vec3(0.0, 1.0, 0.0), 0.0) * 0.12;
@@ -264,7 +264,7 @@ export function Lake({
             float bd = length(p - ball.xz);
             float near = 1.0 - smoothstep(0.0, 1.4, abs(ball.y - vWP.y));
             float rings = sin(bd * 8.0 - uTime * 3.0) * 0.5 + 0.5;
-            col += vec3(1.0, 0.45, 0.3) * pow(rings, 6.0) * exp(-bd * 0.9) * near * 1.2;
+            col += vec3(1.0, 0.45, 0.3) * pow(clamp(rings, 0.0, 1.0), 6.0) * exp(-bd * 0.9) * near * 1.2;
             float edge = smoothstep(uCenter.y, uCenter.y * 0.83, length(p - uCenter.xz));
             // from underneath the surface reads as a bright, wobbly ceiling
             float alpha = gl_FrontFacing ? 0.86 : 0.55;

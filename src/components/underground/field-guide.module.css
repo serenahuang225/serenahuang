@@ -403,8 +403,6 @@
 .pageLeft {
   border-radius: 6px 0 0 6px;
   background-image:
-    radial-gradient(circle at 70% 70%, transparent 48px, rgba(120, 70, 20, 0.2) 50px, rgba(120, 70, 20, 0.08) 54px, transparent 58px),
-    radial-gradient(circle at 72% 72%, rgba(120, 70, 20, 0.05), transparent 50px),
     radial-gradient(circle at 12% 94%, rgba(40, 25, 15, 0.45), rgba(40, 25, 15, 0.15) 6px, transparent 9px),
     linear-gradient(to left, rgba(90, 60, 25, 0.32), rgba(90, 60, 25, 0.08) 40px, transparent 80px),
     radial-gradient(ellipse at 18% 22%, rgba(150, 105, 45, 0.16), transparent 22%),

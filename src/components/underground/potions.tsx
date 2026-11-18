@@ -2,7 +2,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { POTIONS, type Potion, type PotionKind } from "./world-data";
+import { POTIONS, TUNNEL_RADIUS, tunnelDistance, type Potion, type PotionKind } from "./world-data";
 import { player } from "./shared";
 import { sound } from "./audio";
 import { lookStore } from "./look-store";
@@ -130,7 +130,8 @@ export function Potions() {
       g.visible = visible;
       if (!visible) return;
       const d = Math.hypot(ball.x - pos.x, ball.y - (pos.y + 0.15), ball.z - pos.z);
-      if (d < 0.85) {
+      const reach = tunnelDistance(pos.x, pos.y, pos.z) < TUNNEL_RADIUS + 0.5 ? 3 : 0.85;
+      if (d < reach) {
         drink(item.p);
         st.hiddenUntil = now + RESPAWN_MS;
         st.burst = 0;

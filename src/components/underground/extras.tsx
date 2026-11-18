@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { ORBS, mulberry32, strands } from "./world-data";
+import { ORBS, TUNNEL_RADIUS, mulberry32, strands, tunnelDistance } from "./world-data";
 import {
   AMBIENT,
   GLSL_BILLBOARD,
@@ -454,7 +454,9 @@ export function LightOrbs() {
       const dx = p.x - o.x;
       const dy = p.y - o.y;
       const dz = p.z - o.z;
-      if (dx * dx + dy * dy + dz * dz < 1.1 * 1.1) {
+      // orbs in the narrow tunnel are collected anywhere in its cross-section
+      const reach = tunnelDistance(o.x, o.y, o.z) < TUNNEL_RADIUS + 0.5 ? 3 : 1.1;
+      if (dx * dx + dy * dy + dz * dz < reach * reach) {
         built.born[i] = shared.uTime.value;
         built.pillars.setMatrixAt(i, new THREE.Matrix4().makeScale(0, 0, 0));
         orbStore.collect(ORBS[i].id);
