@@ -1,6 +1,7 @@
 "use client";
 import { useFrame, useThree } from "@react-three/fiber";
 import {
+  CoefficientCombineRule,
   CuboidCollider,
   CylinderCollider,
   RigidBody,
@@ -21,6 +22,7 @@ import {
   LAKE_LEVEL,
   TUNNEL,
   TUNNEL_MOUTH,
+  TUNNEL_GATES,
   TUNNEL_APRON,
   TUNNEL_FILLET,
   TUNNEL_RADIUS,
@@ -32,7 +34,7 @@ import {
   smoothstep,
   terrainHeight,
 } from "./world-data";
-import { GLSL_BILLBOARD, GLSL_COMMON, GLSL_LIGHTS, billboardGeometry, lightUniforms, shared } from "./shared";
+import { GLSL_BILLBOARD, GLSL_CAMERA_FADE, GLSL_COMMON, GLSL_LIGHTS, billboardGeometry, lightUniforms, shared } from "./shared";
 import { Lake, makeRockMaterial } from "./terrain";
 
 /** Live environment state other modules (sound, HUD) can read. */
@@ -183,6 +185,7 @@ function buildTunnel() {
   geo.setIndex(idx);
   geo.computeVertexNormals();
 
+  const tunnelLength = TUNNEL.getLength();
   // crystals growing from the walls and ceiling (never the floor you roll on)
   const r = mulberry32(31337);
   const crystals: THREE.Matrix4[] = [];
@@ -190,6 +193,8 @@ function buildTunnel() {
   const palette = [new THREE.Color("#7fe8ff"), new THREE.Color("#b48cff"), new THREE.Color("#ff8be0"), new THREE.Color("#8cffd9")];
   for (let k = 0; k < 190; k++) {
     const t = 0.08 + r() * 0.84;
+    // keep the crystal gates' gaps clear
+    if (TUNNEL_GATES.some((g) => Math.abs(t - g.t) * tunnelLength < 1.6)) continue;
     const i = Math.round(t * tubular);
     TUNNEL.getPointAt(t, p);
     const v = r() * Math.PI * 2;
@@ -205,6 +210,111 @@ function buildTunnel() {
     colors.push(palette[Math.floor(r() * palette.length)].clone().multiplyScalar(1.1));
   }
   return { geo, crystals, colors };
+}
+
+/**
+ * The crystal gates: a thicket of crystals grown across most of the tube,
+ * leaving one gap (ringed in soft light) to squeeze through. A plain box
+ * does the blocking, so the gap is exactly where it looks.
+ */
+function buildGates() {
+  const r = mulberry32(4242);
+  const palette = [new THREE.Color("#7fe8ff"), new THREE.Color("#b48cff"), new THREE.Color("#8cffd9"), new THREE.Color("#ff8be0")];
+  const spikes: Array<{ m: THREE.Matrix4; c: THREE.Color }> = [];
+  const boxes: Array<{ pos: [number, number, number]; rot: [number, number, number]; half: [number, number, number] }> = [];
+  const R = TUNNEL_RADIUS;
+  const EDGE = -0.3; // how far past the centre line the crystals reach
+  for (const g of TUNNEL_GATES) {
+    const b = g.blocked;
+    const c = g.axis;
+    const T = g.tangent;
+    for (let k = 0; k < 38; k++) {
+      const th = (r() - 0.5) * 2 * 1.4;
+      const sl = (r() - 0.5) * 0.8;
+      const base = g.center
+        .clone()
+        .addScaledVector(T, sl)
+        .addScaledVector(b, Math.cos(th) * R * 0.98)
+        .addScaledVector(c, Math.sin(th) * R * 0.98);
+      const tip = g.center
+        .clone()
+        .addScaledVector(T, sl * 0.5 + (r() - 0.5) * 0.3)
+        .addScaledVector(b, EDGE + r() * 0.25)
+        .addScaledVector(c, Math.sin(th) * R * (0.25 + r() * 0.45));
+      const dir = tip.clone().sub(base);
+      const len = dir.length();
+      const rad = 0.13 + r() * 0.17;
+      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+      spikes.push({ m: new THREE.Matrix4().compose(base, q, new THREE.Vector3(rad, len, rad)), c: palette[Math.floor(r() * palette.length)].clone().multiplyScalar(0.8) });
+    }
+    const halfB = (R + 0.6 - EDGE) / 2;
+    // the blocking face leans back a little, so swimming straight into it
+    // nudges Bob deeper into the crystals instead of sliding him to the gap;
+    // only steering for the gap gets you through
+    const lean = 0.27;
+    const Tl = T.clone().addScaledVector(b, -lean).normalize();
+    const bl = b.clone().addScaledVector(T, lean).normalize();
+    // keep the box's axes right-handed (a mirrored basis isn't a rotation)
+    const cx = new THREE.Vector3().crossVectors(c, bl).dot(Tl) < 0 ? c.clone().negate() : c;
+    const rot = new THREE.Euler().setFromRotationMatrix(new THREE.Matrix4().makeBasis(cx, bl, Tl));
+    boxes.push({
+      pos: g.center.clone().addScaledVector(b, EDGE + halfB).toArray() as [number, number, number],
+      rot: [rot.x, rot.y, rot.z],
+      half: [R + 0.4, halfB, 0.32],
+    });
+  }
+  const mat = new THREE.ShaderMaterial({
+    fog: true,
+    uniforms: { ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog), uTime: shared.uTime },
+    vertexShader: /* glsl */ `
+      varying float vY;
+      varying vec3 vColor;
+      varying vec3 vN;
+      varying vec3 vWP;
+      #include <fog_pars_vertex>
+      void main() {
+        vY = position.y;
+        vColor = instanceColor;
+        vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.0);
+        vWP = wp.xyz;
+        vN = normalize(mat3(modelMatrix * instanceMatrix) * normal);
+        vec4 mvPosition = viewMatrix * wp;
+        gl_Position = projectionMatrix * mvPosition;
+        #include <fog_vertex>
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      varying float vY;
+      varying vec3 vColor;
+      varying vec3 vN;
+      varying vec3 vWP;
+      ${GLSL_CAMERA_FADE}
+      #include <fog_pars_fragment>
+      void main() {
+        // crystals right at the lens dissolve, so they never block the view
+        cameraFade(vWP, 0.45, 1.5);
+        vec3 V = normalize(cameraPosition - vWP);
+        float facet = 0.5 + 0.5 * abs(dot(normalize(vN), V));
+        float glow = 0.4 + 0.75 * smoothstep(0.25, 1.0, vY);
+        gl_FragColor = vec4(vColor * glow * facet, 1.0);
+        #include <fog_fragment>
+      }
+    `,
+  });
+  const mesh = new THREE.InstancedMesh(crystalGeometry(), mat, spikes.length);
+  spikes.forEach((sp, i) => {
+    mesh.setMatrixAt(i, sp.m);
+    mesh.setColorAt(i, sp.c);
+  });
+  mesh.computeBoundingSphere();
+  // a soft, steady ring around each gap
+  const ringGeo = new THREE.TorusGeometry(0.78, 0.04, 8, 48);
+  const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.35, 0.85, 0.95), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+  const rings = TUNNEL_GATES.map((g) => {
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), g.tangent);
+    return { pos: g.gap.toArray() as [number, number, number], quat: q.toArray() as [number, number, number, number] };
+  });
+  return { mesh, boxes, ringGeo, ringMat, rings };
 }
 
 export function CrystalTunnel() {
@@ -275,7 +385,8 @@ export function CrystalTunnel() {
       positions: new Float32Array(g.getAttribute("position").array),
       indices: new Uint32Array(g.getIndex()!.array),
     }));
-    return { geo, wall, crystalMesh, positions, indices, exit, mouths };
+    const gates = buildGates();
+    return { geo, wall, crystalMesh, positions, indices, exit, mouths, gates };
   }, []);
 
   return (
@@ -290,6 +401,16 @@ export function CrystalTunnel() {
       </RigidBody>
       {built.mouths.map((m, i) => (
         <mesh key={i} geometry={m.geo} material={built.wall} />
+      ))}
+      <primitive object={built.gates.mesh} />
+      {/* frictionless, so a spinning ball can't climb the gate and roll over it */}
+      <RigidBody type="fixed" colliders={false}>
+        {built.gates.boxes.map((c, i) => (
+          <CuboidCollider key={i} args={c.half} position={c.pos} rotation={c.rot} friction={0} frictionCombineRule={CoefficientCombineRule.Min} />
+        ))}
+      </RigidBody>
+      {built.gates.rings.map((r, i) => (
+        <mesh key={i} geometry={built.gates.ringGeo} material={built.gates.ringMat} position={r.pos} quaternion={r.quat} renderOrder={3} />
       ))}
       {/* the pool where the tunnel surfaces inside the cave */}
       <Lake x={built.exit.x} z={built.exit.z} r={TUNNEL_RADIUS + 0.2} level={DEEP_LEVEL} tint={[0.2, 1.0, 1.6]} />

@@ -380,6 +380,18 @@ class SoundEngine {
     this.tone({ from: 260 + Math.random() * 300, to: 600 + Math.random() * 500, glide: 0.06, peak: 0.04, decay: 0.07 });
   }
 
+  /** One of Quartz's four singing crystals (a soft pentatonic bell). */
+  crystal(i: number) {
+    const f = [523.25, 659.25, 783.99, 1046.5][i % 4];
+    this.bell(f, 0.11, 1.6);
+    this.bell(f * 2, 0.025, 0.9);
+  }
+
+  /** A gentle "not quite" when the song goes wrong. */
+  oops() {
+    this.tone({ type: "triangle", from: 330, to: 220, glide: 0.35, peak: 0.07, attack: 0.02, decay: 0.4 });
+  }
+
   collect() {
     [1046.5, 1318.5, 1568, 2093].forEach((f, i) => this.bell(f, 0.09, 1.4, undefined, i * 0.08));
   }

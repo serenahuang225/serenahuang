@@ -25,6 +25,8 @@ type State = {
   action: Action;
   prompt: string | null;
   note: { text: string; at: number } | null;
+  /** A puzzle on screen (Quartz's crystal song). */
+  puzzle: "song" | null;
   /** A one-time control tip, shown when that control first becomes useful. */
   tip: { id: string; text: string; at: number } | null;
   flash: number;
@@ -62,6 +64,7 @@ let state: State = {
   action: null,
   prompt: null,
   note: null,
+  puzzle: null,
   tip: null,
   flash: 0,
   photoRequest: 0,
@@ -160,7 +163,7 @@ export const storyStore = {
 
   /** True while the game shouldn't take movement keys. */
   inputBlocked() {
-    return state.talk !== null || state.phase === "card" || state.phase === "launch" || state.phase === "ended";
+    return state.talk !== null || state.puzzle !== null || state.phase === "card" || state.phase === "launch" || state.phase === "ended";
   },
   has(id: PartId) {
     return state.carried.includes(id) || state.delivered.includes(id);
@@ -185,7 +188,7 @@ export const storyStore = {
   },
   restart() {
     set(
-      { phase: "card", carried: [], delivered: [], photos: [], reveals: [], met: [], talk: null, startedAt: 0, endedAt: 0 },
+      { phase: "card", carried: [], delivered: [], photos: [], reveals: [], met: [], talk: null, puzzle: null, startedAt: 0, endedAt: 0 },
       true,
     );
   },
@@ -235,9 +238,19 @@ export const storyStore = {
     if ("give" in effect) storyStore.pickUp(effect.give);
     else if ("reveal" in effect) set({ reveals: [...state.reveals, effect.reveal] }, true);
     else if ("startPlay" in effect) set({ phase: "play" }, true);
+    else if ("puzzle" in effect) set({ puzzle: effect.puzzle, talk: null });
   },
   closeTalk() {
     set({ talk: null });
+  },
+  /** Quartz's song sung right: she hands over the lens. */
+  solvePuzzle() {
+    set({ puzzle: null, talk: { who: "quartz", node: "songDone" } });
+    const line = lineFor(state.talk);
+    if (line?.effect) storyStore.apply(line.effect);
+  },
+  leavePuzzle() {
+    set({ puzzle: null });
   },
 
   // ---- photos

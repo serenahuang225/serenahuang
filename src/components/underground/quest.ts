@@ -119,11 +119,11 @@ export function questSteps(s: QuestState, energy: number): Step[] {
       focus: HOLLOW,
     },
     {
-      text: "Find Quartz among the crystals far to the north and solve her riddle",
+      text: "Find Quartz among the crystals far to the north and sing her crystal song back",
       done: has("lens"),
       label: "Quartz",
       goal: spot("quartz"),
-      hint: "Quartz, the crystal sprite, lives in the crystal garden far to the north, past the Great Cap. Answer her riddle and she'll grow you a window.",
+      hint: "Quartz, the crystal sprite, lives in the crystal garden far to the north, past the Great Cap. Sing her crystal song back and she'll grow you a window.",
       focus: GREAT_CAP,
     },
     {

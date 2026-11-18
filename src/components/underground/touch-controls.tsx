@@ -72,7 +72,7 @@ export function TouchControls() {
     return () => window.clearInterval(t);
   }, [touch]);
 
-  const playing = (s.phase === "play" || s.phase === "free") && !s.talk && !g.open;
+  const playing = (s.phase === "play" || s.phase === "free") && !s.talk && !s.puzzle && !g.open;
 
   // let go of everything when the controls go away (a chat opens, the guide…)
   useEffect(() => {

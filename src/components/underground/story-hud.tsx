@@ -177,9 +177,185 @@ function Dialogue() {
   );
 }
 
+// ---------------------------------------------------------------- Quartz's crystal song
+
+const CRYSTALS = [
+  { name: "blue", color: "#7fe8ff" },
+  { name: "violet", color: "#b48cff" },
+  { name: "pink", color: "#ff8be0" },
+  { name: "mint", color: "#8cffd9" },
+];
+const VERSES = [3, 4, 5];
+
+/**
+ * Quartz hums a little tune on four crystals; Bob sings it back. Three
+ * verses, each one note longer. A wrong note just means she hums it again.
+ */
+function SongPuzzle() {
+  const s = useStory();
+  const open = s.puzzle === "song";
+  const [song, setSong] = useState<number[]>([]);
+  const [verse, setVerse] = useState(0);
+  const [mode, setMode] = useState<"listen" | "play" | "oops" | "done">("listen");
+  const [step, setStep] = useState(0);
+  const [lit, setLit] = useState<number | null>(null);
+  const timers = useRef<number[]>([]);
+  const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
+  const clear = () => {
+    timers.current.forEach((t) => window.clearTimeout(t));
+    timers.current = [];
+  };
+
+  // a fresh tune each time the puzzle opens
+  useEffect(() => {
+    if (!open) return;
+    const tune: number[] = [];
+    for (let i = 0; i < VERSES[VERSES.length - 1]; i++) {
+      let n = Math.floor(Math.random() * 4);
+      if (i > 0 && n === tune[i - 1]) n = (n + 1 + Math.floor(Math.random() * 3)) % 4;
+      tune.push(n);
+    }
+    setSong(tune);
+    setVerse(0);
+    setMode("listen");
+    if (document.pointerLockElement) document.exitPointerLock();
+    return clear;
+  }, [open]);
+
+  // Quartz hums the verse
+  useEffect(() => {
+    if (!open || mode !== "listen" || !song.length) return;
+    clear();
+    const len = VERSES[verse];
+    const gap = verse === 0 ? 720 : 620;
+    for (let i = 0; i < len; i++) {
+      later(() => {
+        setLit(song[i]);
+        sound.crystal(song[i]);
+      }, 900 + i * gap);
+      later(() => setLit(null), 900 + i * gap + gap * 0.6);
+    }
+    later(() => {
+      setStep(0);
+      setMode("play");
+    }, 900 + len * gap);
+    return clear;
+  }, [open, mode, verse, song]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sing = (n: number) => {
+    if (mode !== "play") return;
+    sound.crystal(n);
+    setLit(n);
+    later(() => setLit(null), 260);
+    if (song[step] !== n) {
+      sound.oops();
+      setMode("oops");
+      later(() => setMode("listen"), 1300);
+      return;
+    }
+    if (step + 1 < VERSES[verse]) {
+      setStep(step + 1);
+      return;
+    }
+    if (verse + 1 < VERSES.length) {
+      setMode("listen");
+      setVerse(verse + 1);
+      return;
+    }
+    setMode("done");
+    later(() => storyStore.solvePuzzle(), 1100);
+  };
+
+  // keys 1–4 sing, Esc leaves
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      const n = Number(e.key);
+      if (n >= 1 && n <= 4) sing(n - 1);
+      else if (e.code === "Escape") storyStore.leavePuzzle();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  if (!open) return null;
+  const say =
+    mode === "listen"
+      ? verse === 0
+        ? "Listen closely…"
+        : "Lovely! Now a little longer… listen."
+      : mode === "play"
+        ? "Your turn. Sing it back!"
+        : mode === "oops"
+          ? "Hmm, not quite. I'll hum it again…"
+          : "Yes! That's the song!";
+  const touch = isTouchDevice();
+  return (
+    <div className={styles.dialogue} role="dialog" aria-label="Quartz's crystal song">
+      <div className={styles.bubble}>
+        <div className={styles.portrait}>
+          <Portrait who="quartz" />
+        </div>
+        <div className={styles.speech}>
+          <p className={styles.speaker}>
+            Quartz <span className={styles.verse}>verse {verse + 1} of {VERSES.length}</span>
+          </p>
+          <p className={styles.say} aria-live="polite">
+            {say}
+          </p>
+          <p className={styles.songDots} aria-hidden="true">
+            {Array.from({ length: VERSES[verse] }, (_, i) => (
+              <i key={i} className={mode === "play" && i < step ? styles.dotOn : mode === "done" ? styles.dotOn : ""} />
+            ))}
+          </p>
+        </div>
+      </div>
+      <div className={styles.crystals}>
+        {CRYSTALS.map((c, i) => (
+          <button
+            key={c.name}
+            type="button"
+            className={`${styles.crystalKey} ${lit === i ? styles.crystalLit : ""}`}
+            style={{ "--c": c.color } as React.CSSProperties}
+            onClick={() => sing(i)}
+            disabled={mode !== "play"}
+            aria-label={`${c.name} crystal`}
+          >
+            <span className={styles.gem} aria-hidden="true" />
+            {!touch && <kbd>{i + 1}</kbd>}
+          </button>
+        ))}
+      </div>
+      <button type="button" className={styles.songLeave} onClick={() => storyStore.leavePuzzle()}>
+        Maybe later{touch ? "" : " (Esc)"}
+      </button>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- objectives + prompts
 
 const OBJ_KEY = "underground-objectives-open";
+
+/** On a replay (once there's a best time to beat), a small running clock. */
+function RunClock() {
+  const s = useStory();
+  const [now, setNow] = useState(() => Date.now());
+  const [best, setBest] = useState<number | null>(null);
+  useEffect(() => setBest(readBest()), [s.phase]);
+  useEffect(() => {
+    if (s.phase !== "play" || !best) return;
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [s.phase, best]);
+  if (s.phase !== "play" || !best || !s.startedAt) return null;
+  const ms = now - s.startedAt;
+  return (
+    <span className={`${styles.runClock} ${ms > best ? styles.runSlow : ""}`} title={`Best time ${clock(best)}`}>
+      {clock(ms)} <small>/ {clock(best)}</small>
+    </span>
+  );
+}
 
 function Objectives() {
   const s = useStory();
@@ -236,6 +412,7 @@ function Objectives() {
     <section className={styles.objectives} aria-label="Objectives">
       <button type="button" className={styles.objHead} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span>{s.phase === "free" ? "Bob made it home!" : "Help Bob get home"}</span>
+        <RunClock />
         <span className={styles.objCount}>{open ? "hide steps –" : "all steps +"}</span>
       </button>
       {/* finished story steps, then the one you're on now */}
@@ -259,7 +436,7 @@ function Objectives() {
 
 function Prompt() {
   const s = useStory();
-  if (!s.prompt || s.talk) return null;
+  if (!s.prompt || s.talk || s.puzzle) return null;
   if (s.prompt.startsWith("T —") && isTouchDevice()) return null;
   return (
     <div className={styles.prompt} role="status">
@@ -364,11 +541,47 @@ function IntroCard() {
   );
 }
 
+const BEST_KEY = "underground-best-v1";
+
+function readBest() {
+  try {
+    const v = Number(window.localStorage.getItem(BEST_KEY));
+    return v > 0 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clock(ms: number) {
+  const t = Math.max(0, Math.round(ms / 1000));
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const sec = String(t % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+}
+
 function Ending() {
   const s = useStory();
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY_ORBS);
+  const [best, setBest] = useState<{ prev: number | null; isNew: boolean }>({ prev: null, isNew: false });
+  const time = s.startedAt && s.endedAt ? s.endedAt - s.startedAt : null;
+
+  // remember the fastest flight home (on this browser)
+  useEffect(() => {
+    if (s.phase !== "ended" || !time) return;
+    const prev = readBest();
+    const isNew = prev === null || time < prev;
+    if (isNew) {
+      try {
+        window.localStorage.setItem(BEST_KEY, String(time));
+      } catch {
+        // ignore
+      }
+    }
+    setBest({ prev, isNew: isNew && prev !== null });
+  }, [s.phase, time]);
+
   if (s.phase !== "ended") return null;
-  const minutes = s.startedAt ? Math.max(1, Math.round((s.endedAt - s.startedAt) / 60000)) : null;
   return (
     <div className={`${styles.cardWrap} ${styles.endingWrap}`}>
       <div className={styles.card}>
@@ -380,31 +593,36 @@ function Ending() {
           The little rocket roared up through the Sky Eye and out into the sunshine. Bob will never forget the Glowdeep — or the
           friends who helped him.
         </p>
+        {time && (
+          <p className={styles.endTime}>
+            <span>Your time</span>
+            <strong>{clock(time)}</strong>
+            {best.isNew ? <em>New best! (was {clock(best.prev!)})</em> : best.prev ? <em>Best {clock(best.prev)}</em> : null}
+          </p>
+        )}
         <ul className={styles.stats}>
-          {minutes && <li>{minutes} minute{minutes === 1 ? "" : "s"} underground</li>}
           <li>{s.met.length} of {NPCS.length} friends met</li>
           <li>
-            {orbs.found.length} energy orb{orbs.found.length === 1 ? "" : "s"} found
+            {orbs.found.length} of {orbs.total} lights found
           </li>
           <li>
             {s.photos.length} photo{s.photos.length === 1 ? "" : "s"} taken
           </li>
         </ul>
+        <p className={styles.endAsk}>Explore more of the Glowdeep, or go back and collect the parts faster?</p>
         <div className={styles.endButtons}>
           <button type="button" className={styles.begin} onClick={() => storyStore.keepExploring()} autoFocus>
-            Keep exploring
+            Explore more
           </button>
           <button
             type="button"
             className={styles.secondary}
             onClick={() => {
-              if (window.confirm("Start Bob's adventure over from the beginning?")) {
-                orbStore.reset();
-                storyStore.restart();
-              }
+              orbStore.reset();
+              storyStore.restart();
             }}
           >
-            Play again
+            Collect them faster
           </button>
         </div>
       </div>
@@ -512,7 +730,7 @@ function LookHint() {
       window.removeEventListener("pointerup", onUp);
     };
   }, []);
-  if ((s.phase !== "play" && s.phase !== "free") || s.talk) return null;
+  if ((s.phase !== "play" && s.phase !== "free") || s.talk || s.puzzle) return null;
   if (locked) {
     return (
       <div className={styles.lookChip}>
@@ -555,7 +773,7 @@ const POINTS = [
 function Compass() {
   const s = useStory();
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY_ORBS);
-  const active = (s.phase === "play" || s.phase === "free") && !s.talk;
+  const active = (s.phase === "play" || s.phase === "free") && !s.talk && !s.puzzle;
   const next = nextStep(questSteps(s, orbs.found.length));
   const goal = s.phase === "play" ? (next?.goal ?? null) : null;
   const label = goal ? next?.label : null;
@@ -650,7 +868,7 @@ export function StoryHud() {
       const st = storyStore.get();
       if (e.code === "KeyF" && !e.metaKey && !e.ctrlKey) {
         toggleFullscreen();
-      } else if (st.talk) {
+      } else if (st.talk || st.puzzle) {
         return;
       } else if (e.code === "KeyT" && st.action) {
         e.preventDefault();
@@ -680,6 +898,7 @@ export function StoryHud() {
       <LookHint />
       <FullscreenButton />
       <Dialogue />
+      <SongPuzzle />
       <IntroCard />
       <Ending />
     </>

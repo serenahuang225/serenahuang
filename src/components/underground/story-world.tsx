@@ -3,7 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { CylinderCollider, RigidBody } from "@react-three/rapier";
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as THREE from "three";
-import { DEEP_LEVEL, HOLLOW_LOGS, ORBS, POTIONS, TUNNEL_RADIUS, inDeepWater, pads, terrainHeight, tunnelDistance } from "./world-data";
+import { DEEP_LEVEL, HOLLOW_LOGS, TUNNEL_GATES, ORBS, POTIONS, TUNNEL_RADIUS, inDeepWater, pads, terrainHeight, tunnelDistance } from "./world-data";
 import { GLSL_BILLBOARD, billboardGeometry, control, player, shared } from "./shared";
 import { makeRockMaterial } from "./terrain";
 import { sound } from "./audio";
@@ -936,8 +936,8 @@ export function StoryDirector() {
       prompt =
         tunnelDistance(p.x, p.y, p.z) < 4
           ? touch
-            ? "Swimming — push the stick up to follow the tunnel · the current carries you to the cave"
-            : "Swimming — W follows the tunnel · the current carries you to the cave · Space up · C down"
+            ? "Swimming — push the stick up to follow the tunnel · steer with it sideways"
+            : "Swimming — W follows the tunnel · Space up · C down · A / D sideways"
           : touch
             ? "Swimming — the stick swims you around"
             : "Swimming — W A S D to swim · Space to rise · C to dive";
@@ -980,6 +980,7 @@ function showTips(c: { t: number; movedAt: number; metAt: number }, p: THREE.Vec
     ["pad", pads.some((q) => near(q.x, q.z, 5)), "Roll onto a glowing puffball and it bounces you up onto its mushroom.", "Roll onto a glowing puffball and it bounces you up onto its mushroom."],
     ["potion", POTIONS.some((q) => near(q.pos.x, q.pos.z, 4)), "Roll into a bottle to drink it. Potions change Bob for a while.", "Roll into a bottle to drink it. Potions change Bob for a while."],
     ["stomp", !player.grounded && p.y > ground + 4 && !inDeepWater(p.x, p.y, p.z), "Up high? Press [C] in mid-air to stomp: you bounce higher off a mushroom cap.", "Up high? Tap [Stomp] in mid-air: you bounce higher off a mushroom cap."],
+    ["gate", TUNNEL_GATES.some((g) => p.distanceTo(g.center) < 9), "Crystal gate! Swim through the glowing ring: [Space] up, [C] down, [A] / [D] sideways.", "Crystal gate! Swim through the glowing ring: Swim up, Dive, or steer sideways with the stick."],
     ["dive", inDeepWater(p.x, p.y, p.z), "[C] goes down here too: hold it to dive. [Space] swims back up.", "Hold [Dive] to swim down. [Swim up] takes you back up."],
     ["photo", c.metAt > 0 && c.t - c.metAt > 8, "Press [P] to take a photo. Each one fills in more of the map in your field guide ([I]).", "Tap the camera button to take a photo. Each one fills in more of the map in your field guide."],
     ["sprint", since > 25, "Hold [Shift] to sprint.", null],

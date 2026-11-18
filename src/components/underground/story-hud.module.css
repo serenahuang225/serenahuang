@@ -930,3 +930,212 @@
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------- Quartz's crystal song */
+
+.verse {
+  margin-left: 8px;
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a7a60;
+}
+
+.songDots {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.songDots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid #b48cff;
+  transition: background 0.2s ease;
+}
+
+.songDots .dotOn {
+  background: #b48cff;
+}
+
+.crystals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.crystalKey {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 92px;
+  border-radius: 16px;
+  font: inherit;
+  color: #fff3d6;
+  background: rgba(8, 18, 30, 0.78);
+  border: 1.5px solid color-mix(in srgb, var(--c) 45%, transparent);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.12s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.crystalKey:disabled {
+  cursor: default;
+}
+
+.crystalKey:not(:disabled):hover,
+.crystalKey:not(:disabled):focus-visible {
+  border-color: var(--c);
+}
+
+.crystalKey:not(:disabled):active {
+  transform: scale(0.94);
+}
+
+.gem {
+  width: 30px;
+  height: 52px;
+  clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
+  background: linear-gradient(160deg, #ffffff 0%, var(--c) 35%, color-mix(in srgb, var(--c) 55%, #10202c) 100%);
+  opacity: 0.55;
+  transition: opacity 0.18s ease, transform 0.18s ease, filter 0.18s ease;
+}
+
+.crystalLit {
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 22%, rgba(8, 18, 30, 0.78));
+}
+
+.crystalLit .gem {
+  opacity: 1;
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 10px var(--c));
+}
+
+.crystalKey kbd {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  min-width: 1.4em;
+  padding: 0 4px;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 0.68rem;
+  color: #c9b98f;
+  background: rgba(255, 220, 150, 0.08);
+  border: 1px solid rgba(255, 220, 150, 0.22);
+}
+
+.songLeave {
+  display: block;
+  margin: 10px auto 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.8rem;
+  color: #c9b98f;
+  background: rgba(8, 18, 30, 0.6);
+  border: 1px solid rgba(255, 220, 150, 0.2);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gem,
+  .crystalKey {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------- ending time + replay clock */
+
+.endTime {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  margin: 4px 0 2px;
+}
+
+.endTime span {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a6a3a;
+}
+
+.endTime strong {
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: #3a2c1c;
+}
+
+.endTime em {
+  font-style: normal;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a5502a;
+}
+
+.endAsk {
+  margin-top: 6px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: #5a4630;
+}
+
+.runClock {
+  margin-left: auto;
+  margin-right: 10px;
+  align-self: center;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: #ffd27a;
+}
+
+.runClock small {
+  color: #a99d83;
+}
+
+.runSlow {
+  color: #e3d8c0;
+}
+
+/* the header holds the title, the replay clock and the toggle on one line */
+.objHead {
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.objHead > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.objCount,
+.runClock {
+  flex: none;
+  white-space: nowrap;
+}
+
+.runClock {
+  margin: 0;
+}
+
+@media (max-width: 520px) {
+  .objHead {
+    font-size: 1.02rem;
+  }
+  .runClock small {
+    display: none;
+  }
+}

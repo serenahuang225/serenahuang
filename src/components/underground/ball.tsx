@@ -586,6 +586,8 @@ export function Ball() {
         b.applyImpulse({ x: tn.tangent.x * 3 * m * dt, y: tn.tangent.y * 3 * m * dt, z: tn.tangent.z * 3 * m * dt }, true);
         const off = new THREE.Vector3(pos.x - tn.point.x, pos.y - tn.point.y, pos.z - tn.point.z);
         const o = off.length();
+        // (steering is stronger than this pull, so you can still swim for a
+        // crystal gate's gap; but you won't drift into it by accident)
         if (o > 0.6) off.multiplyScalar(-((o - 0.6) * 9) / o);
         else off.set(0, 0, 0);
         b.applyImpulse({ x: off.x * m * dt, y: off.y * m * dt, z: off.z * m * dt }, true);

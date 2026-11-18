@@ -147,6 +147,39 @@ export const TUNNEL_HOLES = [
   { x: CAVE_HOLE.x, z: CAVE_HOLE.z, r: TUNNEL_MOUTH + 1.45 },
 ];
 
+/**
+ * Crystal gates in the flooded tunnel: bars of crystal fill most of the
+ * tube, leaving one glowing gap to swim through (over, under, right, left).
+ */
+export type TunnelGate = {
+  t: number;
+  kind: "over" | "under" | "right" | "left";
+  center: THREE.Vector3;
+  tangent: THREE.Vector3;
+  /** Points into the blocked part of the tube. */
+  blocked: THREE.Vector3;
+  /** The bars run along this. */
+  axis: THREE.Vector3;
+  gap: THREE.Vector3;
+};
+export const TUNNEL_GATES: TunnelGate[] = (
+  [
+    [0.17, "over"],
+    [0.27, "under"],
+    [0.42, "right"],
+    [0.56, "left"],
+  ] as Array<[number, TunnelGate["kind"]]>
+).map(([t, kind]) => {
+  const center = TUNNEL.getPointAt(t);
+  const tangent = TUNNEL.getTangentAt(t).normalize();
+  // across the tube: "side" is the swimmer's right when heading to the cave
+  const side = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+  const up = new THREE.Vector3().crossVectors(side, tangent).normalize();
+  const blocked = { over: up.clone().negate(), under: up.clone(), right: side.clone().negate(), left: side.clone() }[kind];
+  const axis = kind === "over" || kind === "under" ? side.clone() : up.clone();
+  return { t, kind, center, tangent, blocked, axis, gap: center.clone().addScaledVector(blocked, -1.45) };
+});
+
 /** Distance from a point to the tunnel's centre line. */
 export function tunnelDistance(x: number, y: number, z: number) {
   let best = Infinity;
