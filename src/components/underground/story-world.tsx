@@ -959,6 +959,8 @@ export function StoryDirector() {
  * instead of all at once. Each tip shows once per browser.
  */
 function showTips(c: { t: number; movedAt: number; metAt: number }, p: THREE.Vector3, metSomeone: boolean) {
+  // wait for the starter line at the bottom to fade (about 14 s) first
+  if (c.t < 16) return;
   const since = c.t - c.movedAt;
   const near = (x: number, z: number, r: number) => Math.hypot(p.x - x, p.z - z) < r;
   const ground = terrainHeight(p.x, p.z);
