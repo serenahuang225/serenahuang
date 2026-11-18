@@ -309,14 +309,14 @@ export function Fireflies({ count = 260, tile = 56 }: { count?: number; tile?: n
           vec2 xz = uCenter + mod(aPos.xz + wander - uCenter + 0.5 * uTile, uTile) - 0.5 * uTile;
           float ground = sampleMap(xz).r;
           vec3 wp = vec3(xz.x, ground + 0.45 + aSeed.x * 2.4 + sin(uTime * 0.3 + aSeed.y * 9.0) * 0.25, xz.y);
-          // drift out of the ball's way
-          for (int i = 0; i < ${8}; i++) {
-            vec4 b = uTrail[i];
-            vec3 d = wp - b.xyz;
-            float dist = length(d);
-            float f = (1.0 - smoothstep(0.5, 3.2, dist)) * b.w;
-            wp += (d / max(dist, 0.001) + vec3(0.0, 0.6, 0.0)) * f * 1.4;
-          }
+          // drift out of the ball's way. Only from where Bob is right now: his
+          // trail gains a new point every few frames, and summing those made a
+          // nearby firefly hop about instead of gliding aside.
+          vec3 away = wp - uTrail[0].xyz;
+          float gapToBob = length(away);
+          vec3 push = (away / max(gapToBob, 0.001) + vec3(0.0, 0.6, 0.0)) * (1.0 - smoothstep(0.5, 3.2, gapToBob)) * uTrail[0].w;
+          float strength = length(push);
+          wp += (strength > 1.0 ? push / strength : push) * 1.4;
           float tiny = billboard(wp, 0.09 + aSeed.y * 0.06, 4.0);
           float dist = length(wp - cameraPosition);
           float edge = 1.0 - smoothstep(uTile * 0.38, uTile * 0.48, length(xz - uCenter));

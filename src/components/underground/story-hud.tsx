@@ -812,10 +812,13 @@ function Compass() {
       const m = Math.hypot(dx, dz);
       needle.current.style.opacity = "1";
       needle.current.style.transform = `rotate(${bearing - shown}rad)`;
-      if (dist.current) dist.current.textContent = m < 4 ? "here!" : `${Math.round(m)} m`;
+      // text only when it changes: rewriting it every frame makes the page re-lay itself out
+      const far = m < 4 ? "here!" : `${Math.round(m)} m`;
+      if (dist.current && dist.current.textContent !== far) dist.current.textContent = far;
       if (level.current) {
         const dy = aim.y === undefined ? 0 : aim.y - h.y;
-        level.current.textContent = m < 30 && dy > 4 ? "▲ up high" : m < 30 && dy < -4 ? "▼ down below" : "";
+        const lvl = m < 30 && dy > 4 ? "▲ up high" : m < 30 && dy < -4 ? "▼ down below" : "";
+        if (level.current.textContent !== lvl) level.current.textContent = lvl;
       }
     };
     raf = requestAnimationFrame(tick);
