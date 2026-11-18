@@ -27,16 +27,26 @@ import { guideStore } from "./guide-store";
  * Fish swim in the lakes; glow-snails creep around mushroom stems.
  */
 
+// scratch objects, reused every frame so posing ~150 critters doesn't churn the garbage collector
 const tmpM = new THREE.Matrix4();
 const tmpQ = new THREE.Quaternion();
 const tmpQ2 = new THREE.Quaternion();
+const tmpQ3 = new THREE.Quaternion();
+const tmpE = new THREE.Euler();
 const tmpV = new THREE.Vector3();
 const tmpS = new THREE.Vector3();
+const tmpA = new THREE.Vector3();
+const tmpB = new THREE.Vector3();
+const tmpC = new THREE.Vector3();
+const tmpDir = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
+const RIGHT = new THREE.Vector3(1, 0, 0);
 const FWD = new THREE.Vector3(0, 0, 1);
+/** A zero-size matrix: how an instance is hidden. */
 const HIDDEN = new THREE.Matrix4().makeScale(0, 0, 0);
 
 let lastSqueak = 0;
+/** Squeak, but no more than about four times a second, however many puffkins scatter at once. */
 function squeak(pitch: number) {
   const now = performance.now();
   if (now - lastSqueak < 260) return;
@@ -44,6 +54,7 @@ function squeak(pitch: number) {
   sound.squeak(pitch);
 }
 
+/** A soft, fluffy-looking material that glows a little in its own colour, more at the edges. */
 function softMaterial(emissive = 0.3) {
   const mat = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0 });
   mat.onBeforeCompile = (shader) => {
@@ -61,6 +72,7 @@ function softMaterial(emissive = 0.3) {
   return mat;
 }
 
+/** An instanced mesh whose instances move every frame (always drawn: they wander too far to cull safely). */
 function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, count: number) {
   const m = new THREE.InstancedMesh(geo, mat, count);
   m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -106,6 +118,7 @@ type Puff = {
 
 const PASTELS = ["#ffb3d9", "#aaf5d2", "#c9b6ff", "#ffcfa3", "#a8dcff", "#fff3a6"].map((h) => new THREE.Color(h));
 
+/** Families of 3–5 puffkins around 18 homes, each family mostly one pastel colour. */
 function buildPuffkins() {
   const r = mulberry32(1313);
   const list: Puff[] = [];
@@ -168,6 +181,7 @@ function buildPuffkins() {
   return list;
 }
 
+/** Can this puffkin hop here? (near home, not in water, not inside a mushroom stem) */
 function okSpot(p: Puff, x: number, z: number) {
   if (Math.hypot(x - p.homeX, z - p.homeZ) > p.homeR + 3) return false;
   const g = terrainHeight(x, z);
@@ -177,6 +191,7 @@ function okSpot(p: Puff, x: number, z: number) {
   return true;
 }
 
+/** The wild puffkins: they hop about, watch Bob, scatter when he gets close and tumble if bumped. */
 export function Puffkins() {
   const built = useMemo(() => {
     const list = buildPuffkins();
@@ -209,64 +224,64 @@ export function Puffkins() {
     const bvz = player.velocity.z;
     const ballSpeed = Math.hypot(bvx, bvz);
     const { list, body, eyes, pupils, shine, cheeks, stalks, bulbs } = built;
+    /** Pose one puffkin (body, eyes, cheeks, antenna) from its current state. */
     const draw = (i: number, p: Puff) => {
       const R = p.size;
-        // ---- pose
-        p.blink -= dt;
-        p.nextBlink -= dt;
-        if (p.nextBlink <= 0) {
-          p.blink = 0.13;
-          p.nextBlink = 2 + Math.random() * 4;
-        }
-        let lift = 0;
-        let sy = 1 + Math.sin(time * 2.2 + p.phase) * 0.03;
-        if (p.state === "hop") {
-          const t = p.hopT;
-          lift = Math.sin(Math.PI * t) * p.hopH;
-          sy = t < 0.12 || t > 0.88 ? 0.82 : 1 + Math.sin(Math.PI * t) * 0.16;
-        } else if (p.state === "tumble") {
-          lift = p.air;
-          sy = 1.05;
-        }
-        const sxz = 1 / Math.sqrt(sy);
-        const baseY = p.y + lift;
-        tmpQ.setFromAxisAngle(UP, p.yaw);
-        if (p.state === "tumble") tmpQ.multiply(tmpQ2.setFromAxisAngle(new THREE.Vector3(1, 0, 0), p.spin));
-        const center = tmpV.set(p.x, baseY + R * sy, p.z);
-        tmpM.compose(center, tmpQ, tmpS.set(R * sxz, R * sy, R * sxz));
-        body.setMatrixAt(i, tmpM);
+      p.blink -= dt;
+      p.nextBlink -= dt;
+      if (p.nextBlink <= 0) {
+        p.blink = 0.13;
+        p.nextBlink = 2 + Math.random() * 4;
+      }
+      // squash and stretch: a gentle breath, a squish at each end of a hop
+      let lift = 0;
+      let sy = 1 + Math.sin(time * 2.2 + p.phase) * 0.03;
+      if (p.state === "hop") {
+        const t = p.hopT;
+        lift = Math.sin(Math.PI * t) * p.hopH;
+        sy = t < 0.12 || t > 0.88 ? 0.82 : 1 + Math.sin(Math.PI * t) * 0.16;
+      } else if (p.state === "tumble") {
+        lift = p.air;
+        sy = 1.05;
+      }
+      const sxz = 1 / Math.sqrt(sy);
+      tmpQ.setFromAxisAngle(UP, p.yaw);
+      if (p.state === "tumble") tmpQ.multiply(tmpQ2.setFromAxisAngle(RIGHT, p.spin));
+      const center = tmpV.set(p.x, p.y + lift + R * sy, p.z);
+      tmpM.compose(center, tmpQ, tmpS.set(R * sxz, R * sy, R * sxz));
+      body.setMatrixAt(i, tmpM);
 
-        const blinkS = p.blink > 0 ? 0.12 : 1;
-        for (let e = 0; e < 2; e++) {
-          const side = e === 0 ? -1 : 1;
-          const a = side * 0.36;
-          const el = 0.22;
-          const dir = new THREE.Vector3(Math.sin(a) * Math.cos(el), Math.sin(el), Math.cos(a) * Math.cos(el)).applyQuaternion(tmpQ);
-          const eyeC = center.clone().addScaledVector(dir, R * 0.86 * sxz);
-          tmpM.compose(eyeC, tmpQ, tmpS.set(R * 0.25, R * 0.29 * blinkS, R * 0.2));
-          eyes.setMatrixAt(i * 2 + e, tmpM);
-          const pupC = center.clone().addScaledVector(dir, R * 1.0 * sxz);
-          tmpM.compose(pupC, tmpQ, tmpS.set(R * 0.15, R * 0.19 * blinkS, R * 0.1));
-          pupils.setMatrixAt(i * 2 + e, tmpM);
-          const shineC = pupC.clone().add(new THREE.Vector3(R * 0.05, R * 0.07, 0).applyQuaternion(tmpQ)).addScaledVector(dir, R * 0.06);
-          tmpM.compose(shineC, tmpQ, tmpS.setScalar(blinkS > 0.5 ? R * 0.05 : 0));
-          shine.setMatrixAt(i * 2 + e, tmpM);
-          const ca = side * 0.82;
-          const cdir = new THREE.Vector3(Math.sin(ca) * Math.cos(-0.12), Math.sin(-0.12), Math.cos(ca) * Math.cos(-0.12)).applyQuaternion(tmpQ);
-          const cheekC = center.clone().addScaledVector(cdir, R * 0.92 * sxz);
-          tmpQ2.setFromUnitVectors(FWD, cdir);
-          tmpM.compose(cheekC, tmpQ2, tmpS.set(R * 0.17, R * 0.1, R * 0.06));
-          cheeks.setMatrixAt(i * 2 + e, tmpM);
-        }
-        // antenna wobbles as they hop
-        const wob = Math.sin(time * 6 + p.phase) * (p.state === "hop" ? 0.35 : 0.1);
-        const top = center.clone().add(new THREE.Vector3(0, R * sy * 0.92, 0));
-        const tilt = tmpQ2.setFromEuler(new THREE.Euler(0.35 + wob, p.yaw, wob * 0.5, "YXZ"));
-        tmpM.compose(top, tilt, tmpS.set(R * 0.05, R * 0.85, R * 0.05));
-        stalks.setMatrixAt(i, tmpM);
-        const tip = top.clone().add(new THREE.Vector3(0, R * 0.85, 0).applyQuaternion(tilt));
-        tmpM.compose(tip, tmpQ, tmpS.setScalar(R * 0.17));
-        bulbs.setMatrixAt(i, tmpM);
+      const blinkS = p.blink > 0 ? 0.12 : 1;
+      for (let e = 0; e < 2; e++) {
+        const side = e === 0 ? -1 : 1;
+        // eyes sit a little up and to each side of the front
+        const a = side * 0.36;
+        const el = 0.22;
+        const dir = tmpDir.set(Math.sin(a) * Math.cos(el), Math.sin(el), Math.cos(a) * Math.cos(el)).applyQuaternion(tmpQ);
+        tmpM.compose(tmpA.copy(center).addScaledVector(dir, R * 0.86 * sxz), tmpQ, tmpS.set(R * 0.25, R * 0.29 * blinkS, R * 0.2));
+        eyes.setMatrixAt(i * 2 + e, tmpM);
+        const pupil = tmpB.copy(center).addScaledVector(dir, R * 1.0 * sxz);
+        tmpM.compose(pupil, tmpQ, tmpS.set(R * 0.15, R * 0.19 * blinkS, R * 0.1));
+        pupils.setMatrixAt(i * 2 + e, tmpM);
+        const glint = tmpA.copy(pupil).add(tmpC.set(R * 0.05, R * 0.07, 0).applyQuaternion(tmpQ)).addScaledVector(dir, R * 0.06);
+        tmpM.compose(glint, tmpQ, tmpS.setScalar(blinkS > 0.5 ? R * 0.05 : 0));
+        shine.setMatrixAt(i * 2 + e, tmpM);
+        // cheeks, lower and further round
+        const ca = side * 0.82;
+        const cdir = tmpDir.set(Math.sin(ca) * Math.cos(-0.12), Math.sin(-0.12), Math.cos(ca) * Math.cos(-0.12)).applyQuaternion(tmpQ);
+        tmpQ2.setFromUnitVectors(FWD, cdir);
+        tmpM.compose(tmpA.copy(center).addScaledVector(cdir, R * 0.92 * sxz), tmpQ2, tmpS.set(R * 0.17, R * 0.1, R * 0.06));
+        cheeks.setMatrixAt(i * 2 + e, tmpM);
+      }
+      // antenna wobbles as they hop
+      const wob = Math.sin(time * 6 + p.phase) * (p.state === "hop" ? 0.35 : 0.1);
+      const top = tmpB.copy(center).add(tmpC.set(0, R * sy * 0.92, 0));
+      const tilt = tmpQ2.setFromEuler(tmpE.set(0.35 + wob, p.yaw, wob * 0.5, "YXZ"));
+      tmpM.compose(top, tilt, tmpS.set(R * 0.05, R * 0.85, R * 0.05));
+      stalks.setMatrixAt(i, tmpM);
+      const tip = tmpA.copy(top).add(tmpC.set(0, R * 0.85, 0).applyQuaternion(tilt));
+      tmpM.compose(tip, tmpQ, tmpS.setScalar(R * 0.17));
+      bulbs.setMatrixAt(i, tmpM);
     };
     for (let i = 0; i < list.length; i++) {
       const p = list[i];
@@ -413,6 +428,7 @@ type Fish = {
   phase: number;
 };
 
+/** Lantern fish swirling around both lakes; they dart away from Bob. */
 export function Fishes() {
   const built = useMemo(() => {
     const r = mulberry32(777);
@@ -479,7 +495,7 @@ export function Fishes() {
       const bz = f.pos.z - ball.z;
       const bd = Math.hypot(bx, by, bz);
       if (bd < 7) guideStore.discover("fish");
-      if (bd < 3) desired.add(new THREE.Vector3(bx, by, bz).multiplyScalar(((3 - bd) / Math.max(bd, 0.1)) * 3));
+      if (bd < 3) desired.add(tmpA.set(bx, by, bz).multiplyScalar(((3 - bd) / Math.max(bd, 0.1)) * 3));
       f.vel.lerp(desired, Math.min(1, dt * 1.6));
       if (f.vel.length() > 3.2) f.vel.setLength(3.2);
       f.pos.addScaledVector(f.vel, dt);
@@ -499,8 +515,8 @@ export function Fishes() {
       tmpM.compose(f.pos, tmpQ, tmpS.set(s * 0.42, s * 0.5, s));
       body.setMatrixAt(i, tmpM);
       const wag = Math.sin(time * (6 + f.vel.length() * 3) + f.phase) * 0.45;
-      tmpQ2.copy(tmpQ).multiply(new THREE.Quaternion().setFromAxisAngle(UP, wag));
-      const tailPos = f.pos.clone().addScaledVector(dir, -s * 0.85);
+      tmpQ2.copy(tmpQ).multiply(tmpQ3.setFromAxisAngle(UP, wag));
+      const tailPos = tmpA.copy(f.pos).addScaledVector(dir, -s * 0.85);
       tmpM.compose(tailPos, tmpQ2, tmpS.set(s * 0.45, s * 0.12, s * 0.75));
       tail.setMatrixAt(i, tmpM);
     }
@@ -518,8 +534,10 @@ export function Fishes() {
 
 // ---------------------------------------------------------------- glow snails
 
+/** A glow-snail circling a mushroom stem. hide: 0 = out, 1 = tucked into its shell. */
 type Snail = { m: Mushroom; angle: number; dir: number; hide: number; size: number; hue: THREE.Color };
 
+/** Glow-snails creeping around mushroom stems; they hide in their shells when Bob comes close. */
 export function Snails() {
   const built = useMemo(() => {
     const r = mulberry32(4040);
@@ -566,8 +584,8 @@ export function Snails() {
       const out = 1 - s.hide;
       tmpM.compose(tmpV.set(x, y + k * 0.5, z), tmpQ, tmpS.set(k * 0.9 * (0.4 + out * 0.6), k * 0.55, k * 2.4 * (0.35 + out * 0.65)));
       body.setMatrixAt(i, tmpM);
-      tmpQ2.copy(tmpQ).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2));
-      const shellPos = new THREE.Vector3(0, k * 1.35, -k * 0.3).applyQuaternion(tmpQ).add(new THREE.Vector3(x, y, z));
+      tmpQ2.copy(tmpQ).multiply(tmpQ3.setFromAxisAngle(UP, Math.PI / 2));
+      const shellPos = tmpA.set(0, k * 1.35, -k * 0.3).applyQuaternion(tmpQ).add(tmpB.set(x, y, z));
       tmpM.compose(shellPos, tmpQ2, tmpS.set(k * 1.05, k * 1.05, k * 0.8));
       shell.setMatrixAt(i, tmpM);
       for (let e = 0; e < 2; e++) {
@@ -577,12 +595,13 @@ export function Snails() {
           tips.setMatrixAt(i * 2 + e, HIDDEN);
           continue;
         }
-        const base = new THREE.Vector3(side * k * 0.35, k * 0.8, k * 1.9).applyQuaternion(tmpQ).add(new THREE.Vector3(x, y, z));
-        const q = tmpQ2.copy(tmpQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0.5, 0, side * 0.3)));
+        // eye stalks, pulled in when scared
+        const base = tmpA.set(side * k * 0.35, k * 0.8, k * 1.9).applyQuaternion(tmpQ).add(tmpB.set(x, y, z));
+        const q = tmpQ2.copy(tmpQ).multiply(tmpQ3.setFromEuler(tmpE.set(0.5, 0, side * 0.3)));
         const len = k * 1.6 * out;
         tmpM.compose(base, q, tmpS.set(k * 0.12, len, k * 0.12));
         stalk.setMatrixAt(i * 2 + e, tmpM);
-        const tip = base.clone().add(new THREE.Vector3(0, len, 0).applyQuaternion(q));
+        const tip = tmpB.copy(base).add(tmpC.set(0, len, 0).applyQuaternion(q));
         tmpM.compose(tip, tmpQ, tmpS.setScalar(k * 0.28));
         tips.setMatrixAt(i * 2 + e, tmpM);
       }

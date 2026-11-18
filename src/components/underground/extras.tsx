@@ -5,16 +5,16 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { ORBS, TUNNEL_RADIUS, mulberry32, strands, tunnelDistance } from "./world-data";
 import {
-  AMBIENT,
   GLSL_BILLBOARD,
   billboardGeometry,
   GLSL_CAMERA_FADE,
   GLSL_COMMON,
   GLSL_LIGHTS,
   GLSL_MAP,
-  ensureFoliageMap,
-  lightUniforms,
+  TRAIL,
+  fieldUniforms,
   player,
+  scatterOffsets,
   shared,
 } from "./shared";
 import { orbStore } from "./orb-store";
@@ -22,40 +22,14 @@ import { sound } from "./audio";
 import { guideStore } from "./guide-store";
 
 /*
- * Everything in here glows slowly. Pulses run at a fraction of a hertz so
- * nothing ever reads as a flash.
+ * Glow flowers, the threads hanging under the caps, fireflies and the energy
+ * orbs. Everything in here glows slowly: pulses run at a fraction of a hertz
+ * so nothing ever reads as a flash.
  */
-
-function wrapUniforms(tile: number) {
-  ensureFoliageMap();
-  return {
-    ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),
-    uTime: shared.uTime,
-    uTrail: shared.uTrail,
-    uCenter: shared.uCenter,
-    uMap: shared.uMap,
-    uMapInfo: shared.uMapInfo,
-    uTile: { value: tile },
-    uAmbient: { value: AMBIENT },
-    ...lightUniforms(),
-  };
-}
-
-function randomOffsets(count: number, tile: number, seed: number) {
-  const r = mulberry32(seed);
-  const off = new Float32Array(count * 2);
-  const rnd = new Float32Array(count * 2);
-  for (let i = 0; i < count; i++) {
-    off[i * 2] = (r() - 0.5) * tile;
-    off[i * 2 + 1] = (r() - 0.5) * tile;
-    rnd[i * 2] = r();
-    rnd[i * 2 + 1] = r();
-  }
-  return { off, rnd };
-}
 
 // ---------------------------------------------------------------- glow flowers
 
+/** A flower: two crossed stalk strips with a round bulb on top (aPart: 0 stalk, 1 bulb). */
 function flowerGeometry() {
   const parts: THREE.BufferGeometry[] = [];
   for (const rot of [0, Math.PI / 2]) {
@@ -74,6 +48,7 @@ function flowerGeometry() {
   return mergeGeometries([...parts, bulb])!;
 }
 
+/** Little flowers with glowing bulbs, growing where the foliage map says (its alpha channel). */
 export function GlowFlowers({ count = 5000, tile = 90 }: { count?: number; tile?: number }) {
   const { geometry, material } = useMemo(() => {
     const base = flowerGeometry();
@@ -82,14 +57,14 @@ export function GlowFlowers({ count = 5000, tile = 90 }: { count?: number; tile?
     geometry.setAttribute("position", base.getAttribute("position"));
     geometry.setAttribute("normal", base.getAttribute("normal"));
     geometry.setAttribute("aPart", base.getAttribute("aPart"));
-    const { off, rnd } = randomOffsets(count, tile, 777);
+    const { off, rnd } = scatterOffsets(count, tile, 777);
     geometry.setAttribute("aOffset", new THREE.InstancedBufferAttribute(off, 2));
     geometry.setAttribute("aRand", new THREE.InstancedBufferAttribute(rnd, 2));
     geometry.instanceCount = count;
     const material = new THREE.ShaderMaterial({
       fog: true,
       side: THREE.DoubleSide,
-      uniforms: wrapUniforms(tile),
+      uniforms: fieldUniforms(tile),
       vertexShader: /* glsl */ `
         ${GLSL_COMMON}
         ${GLSL_MAP}
@@ -167,6 +142,7 @@ export function GlowFlowers({ count = 5000, tile = 90 }: { count?: number; tile?
 
 // ---------------------------------------------------------------- hanging strands
 
+/** Beaded glowing threads hanging from under the big caps; they part around Bob. */
 export function HangingStrands() {
   const { geometry, material } = useMemo(() => {
     const planes: THREE.BufferGeometry[] = [];
@@ -226,7 +202,7 @@ export function HangingStrands() {
           vec2 sway = vec2(sin(uTime * 0.32 + seed * 20.0), cos(uTime * 0.27 + seed * 13.0)) * 0.05 * len;
           wp.xz += sway * t * t;
           // part around the ball instead of passing through it
-          for (int i = 0; i < ${8}; i++) {
+          for (int i = 0; i < ${TRAIL}; i++) {
             vec4 b = uTrail[i];
             vec2 d = wp.xz - b.xz;
             float dist = length(d);
@@ -273,6 +249,7 @@ export function HangingStrands() {
 
 // ---------------------------------------------------------------- fireflies
 
+/** Fireflies wandering low over the ground near Bob, gliding out of his way. */
 export function Fireflies({ count = 260, tile = 56 }: { count?: number; tile?: number }) {
   const { geometry, material } = useMemo(() => {
     const r = mulberry32(2024);
@@ -290,7 +267,7 @@ export function Fireflies({ count = 260, tile = 56 }: { count?: number; tile?: n
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { ...wrapUniforms(tile), uProj: shared.uProj },
+      uniforms: { ...fieldUniforms(tile), uProj: shared.uProj },
       vertexShader: /* glsl */ `
         ${GLSL_COMMON}
         ${GLSL_MAP}

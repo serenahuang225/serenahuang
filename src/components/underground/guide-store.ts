@@ -3,6 +3,9 @@
  * open. Discoveries are remembered in this browser (a per-viewer convenience).
  */
 
+import { asRecord, listenerSet, readSaved, writeSaved } from "./store-utils";
+
+/** Every entry in the field guide. */
 export type GuideId =
   | "puffkin"
   | "snail"
@@ -26,7 +29,9 @@ export type GuideId =
 type GuideState = {
   open: boolean;
   found: GuideId[];
+  /** Names of the colour potions tried (the Potions page lists them). */
   colors: string[];
+  /** The latest discovery, for the "new entry" toast. */
   last: { id: GuideId; at: number } | null;
   /** Entry to show when the book opens (e.g. the one just discovered). */
   focus: GuideId | null;
@@ -35,54 +40,33 @@ type GuideState = {
 const KEY = "underground-guide-v1";
 let state: GuideState = { open: false, found: [], colors: [], last: null, focus: null };
 let loaded = false;
-const listeners = new Set<() => void>();
+const { emit, subscribe } = listenerSet();
 
-function emit() {
-  for (const l of listeners) l();
-}
-
-function save() {
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify({ found: state.found, colors: state.colors }));
-  } catch {
-    // storage blocked: discoveries just won't survive a reload
-  }
-}
+const save = () => writeSaved(KEY, { found: state.found, colors: state.colors });
 
 export const guideStore = {
   load() {
     if (loaded) return;
     loaded = true;
-    try {
-      const raw = window.localStorage.getItem(KEY);
-      if (raw) {
-        const p = JSON.parse(raw);
-        state = {
-          ...state,
-          found: Array.isArray(p.found) ? p.found : [],
-          colors: Array.isArray(p.colors) ? p.colors : [],
-        };
-      }
-    } catch {
-      // ignore
-    }
+    const p = asRecord(readSaved(KEY));
+    state = {
+      ...state,
+      found: Array.isArray(p.found) ? (p.found as GuideId[]) : [],
+      colors: Array.isArray(p.colors) ? (p.colors as string[]) : [],
+    };
     emit();
   },
   get() {
     return state;
   },
-  subscribe(fn: () => void) {
-    listeners.add(fn);
-    return () => {
-      listeners.delete(fn);
-    };
-  },
+  subscribe,
   isOpen() {
     return state.open;
   },
   has(id: GuideId) {
     return state.found.includes(id);
   },
+  /** Mark an entry found (ignored until the saved guide has loaded, so it can't be overwritten). */
   discover(id: GuideId) {
     if (!loaded || state.found.includes(id)) return;
     state = { ...state, found: [...state.found, id], last: { id, at: Date.now() }, focus: id };

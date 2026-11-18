@@ -1,4 +1,8 @@
 "use client";
+/**
+ * The ground and cave walls, the two lakes' water, the lights, and the
+ * glowworms and spores floating overhead.
+ */
 import { useFrame } from "@react-three/fiber";
 import { RigidBody } from "@react-three/rapier";
 import { useMemo } from "react";
@@ -29,6 +33,10 @@ import {
 
 // ---------------------------------------------------------------- rock material
 
+/**
+ * Dark cave rock with patches of faintly glowing moss. Meshes using it need an
+ * aMoss attribute (0..1 per vertex) as well as vertex colours.
+ */
 export function makeRockMaterial() {
   const mat = new THREE.MeshStandardMaterial({
     vertexColors: true,
@@ -36,8 +44,6 @@ export function makeRockMaterial() {
     metalness: 0,
   });
   mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uTime = shared.uTime;
-    shader.uniforms.uTrail = shared.uTrail;
     shader.vertexShader = shader.vertexShader
       .replace(
         "#include <common>",
@@ -56,7 +62,6 @@ export function makeRockMaterial() {
       .replace(
         "#include <common>",
         `#include <common>
-        ${GLSL_COMMON}
         varying float vMoss;
         varying vec3 vWP;`,
       )
@@ -74,6 +79,10 @@ export function makeRockMaterial() {
 
 // ---------------------------------------------------------------- ground
 
+/**
+ * The cave floor: one big grid mesh following heightGrid, coloured mossy where
+ * grass grows, with holes cut where the crystal tunnel opens.
+ */
 function buildGroundGeometry() {
   const N = GRID_N;
   const step = WORLD.size / WORLD.segments;
@@ -132,6 +141,7 @@ function buildGroundGeometry() {
   return geo;
 }
 
+/** The cave wall: a tall open cylinder, pushed in and out with noise and leaning inward as it rises. */
 function buildWallGeometry() {
   const noise = createNoise2D(mulberry32(808));
   const geo = new THREE.CylinderGeometry(222, 222, 170, 180, 48, true);
@@ -160,6 +170,7 @@ function buildWallGeometry() {
   return geo;
 }
 
+/** The floor (solid, so Bob can roll on it) and the wall around it. */
 export function Ground() {
   const { ground, wall, material } = useMemo(
     () => ({
@@ -186,6 +197,7 @@ export function Ground() {
 
 // ---------------------------------------------------------------- lights
 
+/** A soft sky-and-ground fill light, plus a real point light under each glowing landmark. */
 export function GlowLights() {
   return (
     <>
@@ -206,6 +218,10 @@ export function GlowLights() {
 
 // ---------------------------------------------------------------- water
 
+/**
+ * A water surface: dark with drifting caustics, rings around Bob when he's in
+ * it, and a soft edge. Also used for the waterfall's pool and the tunnel's exit pool.
+ */
 export function Lake({
   x = LAKE.x,
   z = LAKE.z,
@@ -219,6 +235,8 @@ export function Lake({
   level?: number;
   tint?: [number, number, number];
 }) {
+  // depend on the numbers, not the array: callers pass a new array literal every render
+  const [tr, tg, tb] = tint;
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -231,7 +249,7 @@ export function Lake({
           uTime: shared.uTime,
           uTrail: shared.uTrail,
           uCenter: { value: new THREE.Vector3(x, r * 1.45, z) },
-          uTint: { value: new THREE.Vector3(...tint) },
+          uTint: { value: new THREE.Vector3(tr, tg, tb) },
           ...lightUniforms(),
         },
         vertexShader: /* glsl */ `
@@ -273,7 +291,7 @@ export function Lake({
           }
         `,
       }),
-    [x, z, r, tint],
+    [x, z, r, tr, tg, tb],
   );
   return (
     <mesh position={[x, level, z]} rotation={[-Math.PI / 2, 0, 0]} material={material} renderOrder={2}>
@@ -288,6 +306,7 @@ export function DeepLake() {
 
 // ---------------------------------------------------------------- glowworm ceiling
 
+/** Thousands of tiny blue-green lights on the cave ceiling. */
 export function Glowworms() {
   const { geometry, material } = useMemo(() => {
     const r = mulberry32(3);
@@ -342,6 +361,10 @@ export function Glowworms() {
 
 // ---------------------------------------------------------------- floating spores
 
+/**
+ * Glowing spores drifting upward in a 70 m box that follows the camera
+ * (they wrap around its edges, faded so you never see them pop).
+ */
 export function Spores() {
   const { geometry, material } = useMemo(() => {
     const r = mulberry32(17);

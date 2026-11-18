@@ -24,7 +24,8 @@ class SoundEngine {
   private fallsGain!: GainNode;
   private swimGain!: GainNode;
   private flyGain!: GainNode;
-  private timers: number[] = [];
+  /** The pending drip and chime timers (each reschedules itself). */
+  private timers = { drip: 0, chime: 0 };
   muted = false;
   private listeners = new Set<() => void>();
 
@@ -36,15 +37,12 @@ class SoundEngine {
     }
   }
 
+  /** Be told when sound starts, stops or is muted. */
   subscribe(fn: () => void) {
     this.listeners.add(fn);
     return () => {
       this.listeners.delete(fn);
     };
-  }
-
-  get started() {
-    return !!this.ctx;
   }
 
   /** Call from a user gesture. Safe to call many times. */
@@ -91,7 +89,7 @@ class SoundEngine {
     const nd = this.noise.getChannelData(0);
     for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
 
-    // continuous layers, silent until something sets them
+    // continuous layers, silent until update() turns them up
     const loop = (filterType: BiquadFilterType, freq: number, q: number, dest: AudioNode) => {
       const src = ctx.createBufferSource();
       src.buffer = this.noise;
@@ -120,6 +118,7 @@ class SoundEngine {
     for (const l of this.listeners) l();
   }
 
+  /** Mute or unmute (remembered in this browser). */
   setMuted(m: boolean) {
     this.muted = m;
     try {
@@ -157,7 +156,7 @@ class SoundEngine {
     // water drips and far-off chimes, at gentle random intervals
     const drip = () => {
       this.plink(900 + Math.random() * 1300, 0.05 + Math.random() * 0.04);
-      this.timers.push(window.setTimeout(drip, 1400 + Math.random() * 4200));
+      this.timers.drip = window.setTimeout(drip, 1400 + Math.random() * 4200);
     };
     const chime = () => {
       const scale = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66];
@@ -166,10 +165,10 @@ class SoundEngine {
         const f = scale[Math.floor(Math.random() * scale.length)];
         this.bell(f, 0.025, 2.6, this.amb, i * 0.35);
       }
-      this.timers.push(window.setTimeout(chime, 7000 + Math.random() * 9000));
+      this.timers.chime = window.setTimeout(chime, 7000 + Math.random() * 9000);
     };
-    this.timers.push(window.setTimeout(drip, 1200));
-    this.timers.push(window.setTimeout(chime, 4000));
+    this.timers.drip = window.setTimeout(drip, 1200);
+    this.timers.chime = window.setTimeout(chime, 4000);
   }
 
   /** Called every frame with the live state of the world. */
@@ -200,12 +199,14 @@ class SoundEngine {
 
   // ------------------------------------------------------------ building blocks
 
+  /** A quick swell up to `peak` and an exponential fade back to silence. */
   private env(g: GainNode, at: number, peak: number, attack: number, decay: number) {
     g.gain.setValueAtTime(0.0001, at);
     g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), at + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, at + attack + decay);
   }
 
+  /** One oscillator note, optionally gliding from one pitch to another, with vibrato or echo. */
   private tone(o: {
     type?: OscillatorType;
     from: number;
@@ -247,6 +248,7 @@ class SoundEngine {
     osc.stop(at + (o.attack ?? 0.005) + o.decay + 0.05);
   }
 
+  /** A puff of filtered noise (whooshes, splashes, thumps). */
   private burst(o: { type: BiquadFilterType; from: number; to?: number; q?: number; peak: number; attack?: number; decay: number; delay?: number; reverb?: number }) {
     const ctx = this.ctx;
     if (!ctx) return;
@@ -270,11 +272,13 @@ class SoundEngine {
     src.stop(at + (o.attack ?? 0.005) + o.decay + 0.05);
   }
 
+  /** A bell: the note plus a quieter overtone, with echo. */
   private bell(freq: number, peak: number, decay: number, dest?: AudioNode, delay = 0) {
     this.tone({ from: freq, peak, attack: 0.004, decay, delay, reverb: 1, dest });
     this.tone({ from: freq * 2.01, peak: peak * 0.35, attack: 0.004, decay: decay * 0.6, delay, reverb: 1, dest });
   }
 
+  /** A water drip. */
   private plink(freq: number, peak: number) {
     this.tone({ from: freq, to: freq * 1.5, glide: 0.05, peak, attack: 0.002, decay: 0.16, reverb: 1.4, dest: this.amb });
   }
@@ -284,11 +288,6 @@ class SoundEngine {
   jump() {
     this.tone({ type: "sine", from: 380, to: 720, glide: 0.12, peak: 0.16, decay: 0.16 });
     this.burst({ type: "lowpass", from: 900, peak: 0.05, decay: 0.08 });
-  }
-
-  superJump() {
-    this.tone({ type: "triangle", from: 260, to: 980, glide: 0.3, peak: 0.16, decay: 0.32 });
-    this.burst({ type: "bandpass", from: 500, to: 3000, peak: 0.08, attack: 0.05, decay: 0.3 });
   }
 
   /** Soft fluffy thump on the ground. */
@@ -321,10 +320,12 @@ class SoundEngine {
     [1568, 2093, 2637].forEach((f, i) => this.bell(f, 0.03, 0.5, undefined, 0.35 + i * 0.07));
   }
 
+  /** Shrinking down to duck. */
   duck() {
     this.tone({ from: 300, to: 190, glide: 0.1, peak: 0.07, decay: 0.12 });
   }
 
+  /** Falling into (or leaping out of) the deep lake. */
   splash(strength: number) {
     const s = Math.min(1, strength / 12) * 0.8 + 0.2;
     this.burst({ type: "lowpass", from: 2400, to: 400, peak: 0.22 * s, attack: 0.01, decay: 0.45 });
@@ -376,6 +377,7 @@ class SoundEngine {
     [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => this.bell(f, 0.06, 2.5, undefined, 2 + i * 0.25));
   }
 
+  /** A little bubble, now and then while underwater. */
   bubble() {
     this.tone({ from: 260 + Math.random() * 300, to: 600 + Math.random() * 500, glide: 0.06, peak: 0.04, decay: 0.07 });
   }
@@ -392,10 +394,12 @@ class SoundEngine {
     this.tone({ type: "triangle", from: 330, to: 220, glide: 0.35, peak: 0.07, attack: 0.02, decay: 0.4 });
   }
 
+  /** Catching an energy orb or a rocket part: a rising sparkle. */
   collect() {
     [1046.5, 1318.5, 1568, 2093].forEach((f, i) => this.bell(f, 0.09, 1.4, undefined, i * 0.08));
   }
 
+  /** Drinking a potion: three gulps and a sparkle. */
   drink() {
     for (let i = 0; i < 3; i++) this.tone({ from: 240, to: 420, glide: 0.08, peak: 0.12, decay: 0.1, delay: i * 0.13 });
     [1318.5, 1760, 2349].forEach((f, i) => this.bell(f, 0.05, 0.9, undefined, 0.42 + i * 0.07));
@@ -408,9 +412,10 @@ class SoundEngine {
     this.tone({ type: "sine", from: f * 1.4, to: f * 1.05, glide: 0.08, peak: 0.05, decay: 0.1, delay: 0.09 });
   }
 
+  /** Shut sound down completely (leaving the page). */
   stop() {
-    for (const t of this.timers) window.clearTimeout(t);
-    this.timers = [];
+    window.clearTimeout(this.timers.drip);
+    window.clearTimeout(this.timers.chime);
     void this.ctx?.close();
     this.ctx = null;
     this.emit();

@@ -1,40 +1,45 @@
 "use client";
+/**
+ * The field guide: a book (I to open) with a page for every creature, potion
+ * and place you discover, your friends, a map that photos uncover, an album,
+ * and the controls. Pages turn with a little animation.
+ */
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { guideStore, type GuideId } from "./guide-store";
 import { orbStore } from "./orb-store";
 import { storyStore } from "./story-store";
-import { MAP, NPCS, PARTS, PHOTO_REVEAL, ROCKET } from "./story-data";
+import { MAP, NPCS, PARTS, PHOTO_REVEAL, POTION_COLORS, ROCKET } from "./story-data";
 import { Portrait } from "./story-hud";
 import { isTouchDevice } from "./touch";
 import styles from "./field-guide.module.css";
 
 type Tab = "creatures" | "friends" | "potions" | "places" | "map" | "controls";
 
+/** One page of the guide. */
 type Entry = {
   id: GuideId;
   tab: Exclude<Tab, "controls">;
   name: string;
+  /** The little line under the name (a mock Latin name for creatures). */
   latin: string;
   art: (props: { hidden: boolean }) => ReactNode;
   blurb: string;
+  /** Where to find it (also the hint shown before it's discovered). */
   where: string;
   tip: string;
+  /** The tip on a phone or tablet, when the keyboard version mentions keys. */
+  touchTip?: string;
 };
 
-const COLOR_POTIONS = [
-  { name: "Bubblegum", hex: "#ff7ac8" },
-  { name: "Sky blue", hex: "#6fc3ff" },
-  { name: "Mint", hex: "#5fffbe" },
-  { name: "Sunshine", hex: "#ffd45c" },
-  { name: "Lilac", hex: "#b48cff" },
-  { name: "Red panda", hex: "#d4532e" },
-];
+/** The colour swatches on the colour-flask page. */
+const COLOR_POTIONS = Object.values(POTION_COLORS);
 
 // ---------------------------------------------------------------- illustrations
 
 // undiscovered entries are drawn as faded ink silhouettes on the parchment
 const SIL = "#5c4a36";
 
+/** Drawings for each entry; `hidden` draws an ink silhouette for undiscovered ones. */
 function Puffkin({ hidden }: { hidden: boolean }) {
   const body = hidden ? SIL : "#ffb3d9";
   return (
@@ -290,8 +295,8 @@ const ENTRIES: Entry[] = [
     name: "Colour flask",
     latin: "Round bottle",
     art: ({ hidden }) => <Bottle hidden={hidden} shape="flask" color="#ff7ac8" />,
-    blurb: "A round flask that dyes your fur. Your red-panda rings and cream patches stay, just in a new shade.",
-    where: "Two by the arrival point, one on the bridge, one at the top of the falls, one in the crystal tunnel, and more hidden around.",
+    blurb: "A round flask that dyes your fur a new colour, until you find another.",
+    where: "One by the arrival point, one on the bridge, one at the top of the falls, one in the crystal tunnel, and more hidden around.",
     tip: "The Red panda flask (it's in a hollow log) turns you back to your usual colour.",
   },
   {
@@ -321,8 +326,9 @@ const ENTRIES: Entry[] = [
     latin: "Tall green vial",
     art: ({ hidden }) => <Bottle hidden={hidden} shape="vial" color="#9dff5a" />,
     blurb: "For 45 seconds your jumps are 30% higher and mushroom caps fling you 25% higher.",
-    where: "Near the lime giant mushroom, and south of the shallow lake.",
+    where: "Near the lime giant mushroom, and north of the shallow lake.",
     tip: "Combine it with a stomp (C in the air) onto a big cap.",
+    touchTip: "Combine it with a Stomp in the air onto a big cap.",
   },
   {
     id: "potion-fly",
@@ -331,8 +337,9 @@ const ENTRIES: Entry[] = [
     latin: "Teardrop bottle",
     art: ({ hidden }) => <Bottle hidden={hidden} shape="drop" color="#e9dcff" />,
     blurb: "A teardrop of pale lilac. Drink it and you sprout a pair of soft little wings for 40 seconds.",
-    where: "Near where you arrive, at the south end of the rope bridge, and east of the crystal garden.",
+    where: "Near where you arrive, at the north end of the rope bridge, and east of the crystal garden.",
     tip: "Tap Space in the air to flap higher and higher; hold Space to glide down gently.",
+    touchTip: "Tap Flap in the air to fly higher and higher; hold it to glide down gently.",
   },
   {
     id: "greatcap",
@@ -353,6 +360,7 @@ const ENTRIES: Entry[] = [
     blurb: "A springy, glowing puffball beside almost every big mushroom. Roll onto it and it launches you up and onto that mushroom's cap.",
     where: "Just outside the edge of each big mushroom's cap.",
     tip: "Hold C while rolling onto one if you want to sit on it without launching.",
+    touchTip: "Duck while rolling onto one if you want to sit on it without launching.",
   },
   {
     id: "logs",
@@ -363,6 +371,7 @@ const ENTRIES: Entry[] = [
     blurb: "Old hollow logs with tiny amber mushrooms growing inside. Too narrow for a normal ball.",
     where: "Scattered all over, with three close to where you arrive.",
     tip: "Hold C to duck and you'll fit through. Some have orbs inside.",
+    touchTip: "Hold Duck (it pops up beside a log) and you'll fit through. Some have orbs inside.",
   },
   {
     id: "deeplake",
@@ -371,8 +380,9 @@ const ENTRIES: Entry[] = [
     latin: "Swimmable",
     art: ({ hidden }) => <Place hidden={hidden} kind="deeplake" />,
     blurb: "A deep, cold, glowing lake. You can dive right to the bottom.",
-    where: "East of the Great Cap, with a rope bridge across it.",
+    where: "South-east of the Great Cap, with a rope bridge across it.",
     tip: "Underwater, Space swims up and C dives. Press Space at the surface to hop out.",
+    touchTip: "Underwater, Swim up and Dive move you up and down. Swim up at the surface hops you out.",
   },
   {
     id: "tunnel",
@@ -391,7 +401,7 @@ const ENTRIES: Entry[] = [
     latin: "Rock dome",
     art: ({ hidden }) => <Place hidden={hidden} kind="cave" />,
     blurb: "A quiet dome of rock with glowworms on its ceiling, crystals along its walls and a family of puffkins inside.",
-    where: "East of the deep lake. The doorway faces south, up a gentle ramp.",
+    where: "East of the deep lake. The doorway faces north, up a gentle ramp.",
     tip: "There's an orb, a glow vial and a fluff jar inside.",
   },
   {
@@ -421,7 +431,7 @@ const ENTRIES: Entry[] = [
     latin: "Violet and cyan",
     art: ({ hidden }) => <Place hidden={hidden} kind="crystals" />,
     blurb: "A cluster of huge crystals leaning out from one spot, glowing violet and cyan.",
-    where: "South-west of the Great Cap.",
+    where: "North of the Great Cap, a little to the west.",
     tip: "There's a gap in the middle with an orb and a lilac flask.",
   },
   {
@@ -436,6 +446,7 @@ const ENTRIES: Entry[] = [
   },
 ];
 
+/** The ribbon bookmarks, in order. */
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "creatures", label: "Creatures" },
   { id: "friends", label: "Friends" },
@@ -445,6 +456,8 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "controls", label: "Controls" },
 ];
 
+/** The Controls pages: [key, what it does]. The first CONTROLS_LEFT go on the left page. */
+const CONTROLS_LEFT = 6;
 const CONTROLS: Array<[string, string]> = [
   ["W A S D or ← ↑ → ↓", "Roll — W / ↑ goes the way the camera faces"],
   ["Shift", "Sprint"],
@@ -481,12 +494,11 @@ const TOUCH_CONTROLS: Array<[string, string]> = [
 
 const controlsList = () => (isTouchDevice() ? TOUCH_CONTROLS : CONTROLS);
 
-// ---------------------------------------------------------------- panel
-
 const EMPTY = { open: false, found: [] as GuideId[], colors: [] as string[], last: null, focus: null };
 
 // ---------------------------------------------------------------- friends + map pages
 
+/** A friend's page: their portrait, bio and what they helped with (or a hint if you haven't met). */
 function FriendPage({ id }: { id: string }) {
   const s = useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
   const n = NPCS.find((x) => x.id === id) ?? NPCS[0];
@@ -539,21 +551,25 @@ function FriendPage({ id }: { id: string }) {
                 : "Good company"}
         </dd>
         <dt>Tip</dt>
-        <dd>Roll up close and press T to chat again.</dd>
+        <dd>{isTouchDevice() ? "Roll up close and tap Talk to chat again." : "Roll up close and press T to chat again."}</dd>
       </dl>
     </>
   );
 }
 
+/** Handwritten margin notes on each friend's page. */
 const NOTES_FRIENDS: Record<string, string> = {
   pip: "my first friend down here!",
   moss: "talks very… very… slowly",
   finn: "calls me a terrible fish",
   elder: "knows the old story",
-  quartz: "the answer was mushrooms",
+  quartz: "I sang her song back! ♪",
 };
 
-/** World (x, z) straight onto the map: north (-z) is up. */
+/**
+ * The map: world (x, z) straight onto the page, north (-z) up. Fog covers
+ * everything except around the rocket, your photos, and places friends told you about.
+ */
 function MapView() {
   const s = useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
   const here = storyStore.here;
@@ -673,12 +689,19 @@ function MapView() {
         </g>
       </svg>
       <p className={styles.mapHint}>
-        Press <b>P</b> to take a photo — every photo uncovers that part of the map.
+        {isTouchDevice() ? (
+          <>Tap the camera button to take a photo — every photo uncovers that part of the map.</>
+        ) : (
+          <>
+            Press <b>P</b> to take a photo — every photo uncovers that part of the map.
+          </>
+        )}
       </p>
     </div>
   );
 }
 
+/** The landmark closest to a spot, for photo captions ("near the falls"). */
 function nearestPlace(x: number, z: number) {
   const places = [
     { name: "the rocket", x: ROCKET.x, z: ROCKET.z },
@@ -693,6 +716,7 @@ function nearestPlace(x: number, z: number) {
   return best.name;
 }
 
+/** The photo album: every snapshot, captioned with where it was taken. */
 function Album() {
   const s = useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
   if (!s.photos.length) {
@@ -700,7 +724,10 @@ function Album() {
       <div className={styles.albumEmpty}>
         <h3>Photographs</h3>
         <p className={styles.latin}>No pictures yet</p>
-        <p className={styles.blurb}>Press P anywhere in the cave to snap a photo. It gets tucked in here, and the area around it appears on the map.</p>
+        <p className={styles.blurb}>
+          {isTouchDevice() ? "Tap the camera button" : "Press P"} anywhere in the cave to snap a photo. It gets tucked in here, and the area around
+          it appears on the map.
+        </p>
       </div>
     );
   }
@@ -723,7 +750,8 @@ function Album() {
   );
 }
 
-const TAB_ORDER: Tab[] = ["creatures", "friends", "potions", "places", "map", "controls"];
+/** Section order, for which way a page turns. */
+const TAB_ORDER: Tab[] = TABS.map((t) => t.id);
 
 /** Little handwritten scribbles in the margin of each discovered page. */
 const NOTES: Record<GuideId, string> = {
@@ -747,14 +775,17 @@ const NOTES: Record<GuideId, string> = {
   orbs: "collect them all",
 };
 
+/** Which page is open: a section and an entry (or friend) id. */
 type Shown = { tab: Tab; id: string };
 
+/** The "Field guide" button, the "new entry" toast, and the book itself. */
 export function FieldGuide() {
   const g = useSyncExternalStore(guideStore.subscribe, guideStore.get, () => EMPTY);
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => ({ found: [] as string[], total: 0, last: null }));
+  const story = useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
+  // the bookmark that's selected (changes at once)…
   const [tab, setTab] = useState<Tab>("creatures");
-  const [selected, setSelected] = useState<string>("puffkin");
-  // what the pages currently show; it lags `tab`/`selected` while a page turns
+  // …and what the pages show, which lags behind while a page turns
   const [shown, setShown] = useState<Shown>({ tab: "creatures", id: "puffkin" });
   const [flip, setFlip] = useState<{ dir: 1 | -1; key: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -783,7 +814,6 @@ export function FieldGuide() {
   const turnTo = (next: Shown) => {
     if (next.tab === shown.tab && next.id === shown.id) return;
     setTab(next.tab);
-    setSelected(next.id);
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
       setShown(next);
@@ -809,7 +839,6 @@ export function FieldGuide() {
         const e = ENTRIES.find((x) => x.id === g.focus);
         if (e) {
           setTab(e.tab);
-          setSelected(e.id);
           setShown({ tab: e.tab, id: e.id });
         }
         guideStore.clearFocus();
@@ -835,8 +864,9 @@ export function FieldGuide() {
   const count = ENTRIES.filter((e) => known(e.id)).length;
   const list = useMemo(() => ENTRIES.filter((e) => e.tab === shown.tab), [shown.tab]);
   const current = ENTRIES.find((e) => e.id === shown.id && e.tab === shown.tab) ?? list[0];
+  // made-up page numbers that grow through the book
   const pageNo = (TAB_ORDER.indexOf(shown.tab) * 12 + Math.max(0, list.findIndex((e) => e.id === current?.id))) * 2 + 3;
-  const story = storyStore.get();
+  const touch = isTouchDevice();
 
   const rightPage =
     shown.tab === "friends" ? (
@@ -848,7 +878,7 @@ export function FieldGuide() {
         <h3>Handling your ball</h3>
         <p className={styles.latin}>Notes for the curious traveller</p>
         <dl className={styles.controlList}>
-          {controlsList().slice(6).map(([k, v]) => (
+          {controlsList().slice(CONTROLS_LEFT).map(([k, v]) => (
             <div key={k}>
               <dt>{k}</dt>
               <dd>{v}</dd>
@@ -868,7 +898,7 @@ export function FieldGuide() {
           <dt>Where</dt>
           <dd>{current.where}</dd>
           <dt>Tip</dt>
-          <dd>{current.tip}</dd>
+          <dd>{touch && current.touchTip ? current.touchTip : current.tip}</dd>
         </dl>
         {current.id === "potion-color" && (
           <div className={styles.swatches}>
@@ -876,7 +906,7 @@ export function FieldGuide() {
               const tried = g.colors.includes(c.name);
               return (
                 <span key={c.name} className={styles.swatch} title={tried ? c.name : "Not tried yet"}>
-                  <i style={{ background: tried ? c.hex : "transparent", borderColor: c.hex }} />
+                  <i style={{ background: tried ? c.color : "transparent", borderColor: c.color }} />
                   {tried ? c.name : "?"}
                 </span>
               );
@@ -1002,7 +1032,7 @@ export function FieldGuide() {
                       <MapView />
                     ) : shown.tab === "controls" ? (
                       <dl className={styles.controlList}>
-                        {controlsList().slice(0, 6).map(([k, v]) => (
+                        {controlsList().slice(0, CONTROLS_LEFT).map(([k, v]) => (
                           <div key={k}>
                             <dt>{k}</dt>
                             <dd>{v}</dd>

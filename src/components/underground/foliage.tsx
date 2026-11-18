@@ -2,16 +2,7 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { mulberry32 } from "./world-data";
-import {
-  AMBIENT,
-  GLSL_CAMERA_FADE,
-  GLSL_COMMON,
-  GLSL_LIGHTS,
-  GLSL_MAP,
-  ensureFoliageMap,
-  lightUniforms,
-  shared,
-} from "./shared";
+import { GLSL_CAMERA_FADE, GLSL_COMMON, GLSL_LIGHTS, GLSL_MAP, fieldUniforms, scatterOffsets } from "./shared";
 
 /**
  * Foliage lives in a field of fixed size that wraps around the ball. Every
@@ -20,22 +11,7 @@ import {
  * away from the ball and its recent path so nothing ever pokes through it.
  */
 
-function fieldUniforms(tile: number, fade: number) {
-  ensureFoliageMap();
-  return {
-    ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),
-    uTime: shared.uTime,
-    uTrail: shared.uTrail,
-    uCenter: shared.uCenter,
-    uMap: shared.uMap,
-    uMapInfo: shared.uMapInfo,
-    uTile: { value: tile },
-    uFade: { value: fade },
-    uAmbient: { value: AMBIENT },
-    ...lightUniforms(),
-  };
-}
-
+/** Shared start of each field's vertex shader: wrapField() gives an instance its spot near Bob. */
 const FIELD_VERTEX_HEAD = /* glsl */ `
   ${GLSL_COMMON}
   ${GLSL_MAP}
@@ -51,8 +27,21 @@ const FIELD_VERTEX_HEAD = /* glsl */ `
   }
 `;
 
+/** Turn a single plant mesh into `count` copies scattered over a square `tile` metres across. */
+function scatterField(base: THREE.BufferGeometry, count: number, tile: number, seed: number) {
+  const geometry = new THREE.InstancedBufferGeometry();
+  geometry.index = base.index;
+  for (const [name, attr] of Object.entries(base.attributes)) geometry.setAttribute(name, attr);
+  const { off, rnd } = scatterOffsets(count, tile, seed);
+  geometry.setAttribute("aOffset", new THREE.InstancedBufferAttribute(off, 2));
+  geometry.setAttribute("aRand", new THREE.InstancedBufferAttribute(rnd, 2));
+  geometry.instanceCount = count;
+  return geometry;
+}
+
 // ---------------------------------------------------------------- grass
 
+/** One blade: a strip that narrows to a point, 1 unit tall (scaled per blade in the shader). */
 function bladeGeometry() {
   const segs = 4;
   const pos: number[] = [];
@@ -78,24 +67,10 @@ function bladeGeometry() {
   return g;
 }
 
+/** Glowing grass: blades sway in the wind, part around Bob and lie flat under him. */
 export function Grass({ count = 60000, tile = 110 }: { count?: number; tile?: number }) {
   const { geometry, material } = useMemo(() => {
-    const base = bladeGeometry();
-    const geometry = new THREE.InstancedBufferGeometry();
-    geometry.index = base.index;
-    geometry.setAttribute("position", base.getAttribute("position"));
-    const r = mulberry32(404);
-    const off = new Float32Array(count * 2);
-    const rnd = new Float32Array(count * 2);
-    for (let i = 0; i < count; i++) {
-      off[i * 2] = (r() - 0.5) * tile;
-      off[i * 2 + 1] = (r() - 0.5) * tile;
-      rnd[i * 2] = r();
-      rnd[i * 2 + 1] = r();
-    }
-    geometry.setAttribute("aOffset", new THREE.InstancedBufferAttribute(off, 2));
-    geometry.setAttribute("aRand", new THREE.InstancedBufferAttribute(rnd, 2));
-    geometry.instanceCount = count;
+    const geometry = scatterField(bladeGeometry(), count, tile, 404);
     const material = new THREE.ShaderMaterial({
       fog: true,
       side: THREE.DoubleSide,
@@ -105,7 +80,6 @@ export function Grass({ count = 60000, tile = 110 }: { count?: number; tile?: nu
         ${FIELD_VERTEX_HEAD}
         varying float vT;
         varying vec3 vWP;
-        varying float vTipGlow;
         varying vec3 vTint;
         void main() {
           vec2 xz = wrapField(aOffset);
@@ -136,7 +110,6 @@ export function Grass({ count = 60000, tile = 110 }: { count?: number; tile?: nu
           wp.y = mix(wp.y, base.y + local.y * 0.25, pressed * 0.8);
           vT = t;
           vWP = wp;
-          vTipGlow = 0.0;
           vTint = mix(vec3(0.15, 1.0, 0.85), vec3(0.65, 0.4, 1.0), step(0.7, hash12(floor(xz * 0.05))));
           vec4 mvPosition = viewMatrix * vec4(wp, 1.0);
           gl_Position = projectionMatrix * mvPosition;
@@ -150,7 +123,6 @@ export function Grass({ count = 60000, tile = 110 }: { count?: number; tile?: nu
         uniform vec3 uAmbient;
         varying float vT;
         varying vec3 vWP;
-        varying float vTipGlow;
         varying vec3 vTint;
         #include <fog_pars_fragment>
         void main() {
@@ -158,10 +130,7 @@ export function Grass({ count = 60000, tile = 110 }: { count?: number; tile?: nu
           vec3 albedo = mix(vec3(0.04, 0.1, 0.1), vec3(0.13, 0.42, 0.38), vT);
           vec3 lit = albedo * (uAmbient * 3.0 + glowLights(vWP, vec3(0.0, 1.0, 0.0), 1.0) * 1.6);
           float shimmer = 0.8 + 0.2 * sin(uTime * 0.3 + vWP.x * 0.8 + vWP.z * 0.5);
-          // thin glowing tips turn into flickering sparkles far away; fade them
-          float tipFade = 1.0 - smoothstep(10.0, 24.0, length(vWP - cameraPosition));
           vec3 glow = vTint * (0.06 + 0.24 * vT * vT) * shimmer;
-          glow += vTint * smoothstep(0.7, 1.0, vT) * vTipGlow * 1.4 * shimmer * tipFade;
           // never bright enough to trigger the glow effect, so swaying blades can't flash
           gl_FragColor = vec4(min(lit + glow, vec3(0.55)), 1.0);
           #include <fog_fragment>
@@ -221,25 +190,10 @@ function rosetteGeometry(leaves: number) {
   return g;
 }
 
+/** Low rosettes of broad, glowing-veined leaves; one in ten is a big one. */
 export function Leaves({ count = 7000, tile = 100 }: { count?: number; tile?: number }) {
   const { geometry, material } = useMemo(() => {
-    const base = rosetteGeometry(6);
-    const geometry = new THREE.InstancedBufferGeometry();
-    geometry.index = base.index;
-    geometry.setAttribute("position", base.getAttribute("position"));
-    geometry.setAttribute("aLeaf", base.getAttribute("aLeaf"));
-    const r = mulberry32(505);
-    const off = new Float32Array(count * 2);
-    const rnd = new Float32Array(count * 2);
-    for (let i = 0; i < count; i++) {
-      off[i * 2] = (r() - 0.5) * tile;
-      off[i * 2 + 1] = (r() - 0.5) * tile;
-      rnd[i * 2] = r();
-      rnd[i * 2 + 1] = r();
-    }
-    geometry.setAttribute("aOffset", new THREE.InstancedBufferAttribute(off, 2));
-    geometry.setAttribute("aRand", new THREE.InstancedBufferAttribute(rnd, 2));
-    geometry.instanceCount = count;
+    const geometry = scatterField(rosetteGeometry(6), count, tile, 505);
     const material = new THREE.ShaderMaterial({
       fog: true,
       side: THREE.DoubleSide,
@@ -267,7 +221,7 @@ export function Leaves({ count = 7000, tile = 100 }: { count?: number; tile?: nu
           lp = vec3(lp.x * ca - lp.z * sa, lp.y, lp.x * sa + lp.z * ca);
           vec3 base = vec3(xz.x, ground - 0.02, xz.y);
           float t = aLeaf.x;
-          // each leaf is pushed on its own, from where its tip would be
+          // which way this leaf points (tilts its lighting normal outward)
           vec3 tipDir = normalize(vec3(lp.x, 0.0, lp.z) + 1e-4);
           float reach = 0.5 + size * 0.75;
           vec2 push = pushAt(base, size * 0.55, reach);

@@ -4,7 +4,9 @@
  * 3D world.
  */
 
+/** Where Bob's rocket crashed. */
 export const ROCKET = { x: -2.2, z: 45.8 };
+/** Energy orbs needed before the rocket can launch. */
 export const ENERGY_NEEDED = 10;
 
 /** Things conversations point the camera at. */
@@ -16,6 +18,7 @@ export const DEEP_LAKE = { x: 60, y: 2, z: 75 };
 export const HOLLOW = { x: 110, y: 7, z: 75 };
 export const LAKE_FLOOR = { x: 55, y: -8, z: 71 };
 export const TUNNEL_MOUTH_VIEW = { x: 66, y: -8, z: 75 };
+/** How far around the spot a photo uncovers the field-guide map, in metres. */
 export const PHOTO_REVEAL = 58;
 
 export type PartId = "hull" | "spring" | "lens" | "fins" | "nozzle" | "cone" | "wire";
@@ -29,6 +32,18 @@ export type Part = {
   from?: NpcId;
 };
 
+/** The colour potions: the colour each one dyes Bob's fur, and its name in the field guide. */
+export const POTION_COLORS = {
+  bubblegum: { color: "#ff7ac8", name: "Bubblegum" },
+  sky: { color: "#6fc3ff", name: "Sky blue" },
+  mint: { color: "#5fffbe", name: "Mint" },
+  sunny: { color: "#ffd45c", name: "Sunshine" },
+  lilac: { color: "#b48cff", name: "Lilac" },
+  // Bob's own colour: this one changes him back
+  panda: { color: "#d4532e", name: "Red panda" },
+} as const;
+
+/** The seven rocket parts, in the order the quest usually finds them. */
 export const PARTS: Part[] = [
   { id: "hull", name: "Hull plate", hint: "It bounced off near the rocket when Bob crashed.", at: { x: 3, z: 42 } },
   { id: "spring", name: "Spring coil", hint: "Pip found something boingy in a puffball.", from: "pip" },
@@ -41,6 +56,7 @@ export const PARTS: Part[] = [
 
 export type NpcId = "pip" | "moss" | "finn" | "elder" | "quartz";
 
+/** What a line of dialogue does when it's reached or chosen. */
 export type Effect =
   | { give: PartId }
   | { reveal: { x: number; z: number; r: number } }
@@ -67,6 +83,7 @@ export type Line = {
   choices: Choice[];
 };
 
+/** A friend Bob can talk to. lines["start"] opens the conversation; "hub" is "what else?". */
 export type Npc = {
   id: NpcId;
   name: string;
@@ -81,6 +98,7 @@ export type Npc = {
   lines: Record<string, Line>;
 };
 
+/** A choice that ends the conversation. */
 const bye = (text = "Bye for now!"): Choice => ({ text, next: null });
 
 export const NPCS: Npc[] = [
@@ -373,6 +391,7 @@ export const NPCS: Npc[] = [
 ];
 
 /** Bob talking to himself after the fall. */
+/** What Bob says to himself right after landing. */
 export const BOB_INTRO: Record<string, Line> = {
   start: {
     bob: true,
@@ -395,7 +414,12 @@ export const BOB_INTRO: Record<string, Line> = {
 
 // ---------------------------------------------------------------- map
 
-/** Landmarks for the field-guide map (x, z in world metres). */
+/**
+ * Landmarks for the field-guide map (x, z in world metres). These copy
+ * positions from world-data.ts (LAKE, DEEP, giantSpecs, CAVE, FALLS,
+ * CRYSTALS, BRIDGE, TUNNEL) so the HUD needn't load the 3D world: if you move
+ * a landmark there, update it here too.
+ */
 export const MAP = {
   radius: 200,
   lakes: [

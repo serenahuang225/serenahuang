@@ -124,25 +124,9 @@
   border: 1px solid rgba(120, 240, 230, 0.25);
 }
 
-.touchNote {
-  display: none;
-}
-
 @media (hover: none) and (pointer: coarse) {
   .hint {
     display: none;
-  }
-  .touchNote {
-    display: block;
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: 18px;
-    z-index: 2;
-    margin: 0;
-    text-align: center;
-    font-size: 0.85rem;
-    color: #a9d9d4;
   }
 }
 

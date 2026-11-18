@@ -8,17 +8,23 @@ import {
 } from "@react-three/drei";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-function Lens({
-  progress,
-  depth,
-  still,
-  docked,
-}: {
+
+/** What the home page passes in. The refs are updated on scroll / mouse move without re-rendering. */
+type SceneProps = {
+  /** Where the mouse is over the lens, -1..1 on each axis. */
+  pointer: React.RefObject<{ x: number; y: number }>;
+  /** How far you've scrolled through the hero, 0..1. */
   progress: React.RefObject<number>;
+  /** How far down the whole page you are (0 at the top, grows as you scroll). */
   depth: React.RefObject<number>;
+  /** Motion is off: hold everything still. */
   still: boolean;
+  /** The lens has docked in the corner as a small navigation button. */
   docked: boolean;
-}) {
+};
+
+/** The silver lens: a metal barrel, glass element and aperture blades. It turns slowly, and with scroll. */
+function Lens({ depth, still }: Pick<SceneProps, "depth" | "still">) {
   const group = useRef<THREE.Group>(null);
   const background = useMemo(() => new THREE.Color("#f0edf7"), []);
   const spin = useRef(0);
@@ -26,18 +32,15 @@ function Lens({
     if (!group.current) return;
     const dt = Math.min(delta, 0.05);
     if (!still) spin.current += dt * 0.18;
-    group.current.rotation.x = 0;
-    group.current.rotation.y = 0;
     group.current.rotation.z = THREE.MathUtils.damp(
       group.current.rotation.z,
       still ? 0 : spin.current + depth.current * Math.PI * 2,
       7,
       dt,
     );
-    group.current.scale.setScalar(1);
   });
   return (
-    <group ref={group} rotation={[0.12, -0.42, 0]}>
+    <group ref={group}>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[1.45, 1.45, 0.45, 96, 1, true]} />
         <meshStandardMaterial
@@ -47,6 +50,7 @@ function Lens({
           side={THREE.DoubleSide}
         />
       </mesh>
+      {/* metal rings around the front and back of the barrel */}
       {[
         { r: 1.45, z: 0.23, t: 0.065 },
         { r: 1.36, z: 0.26, t: 0.025 },
@@ -62,6 +66,7 @@ function Lens({
           />
         </mesh>
       ))}
+      {/* focus-ring tick marks, a longer one every fourth */}
       {Array.from({ length: 48 }, (_, i) => {
         const a = (i / 48) * Math.PI * 2;
         return (
@@ -79,6 +84,7 @@ function Lens({
           </mesh>
         );
       })}
+      {/* the glass */}
       <mesh scale={[1.26, 1.26, 0.22]} position={[0, 0, 0.12]}>
         <sphereGeometry args={[1, 64, 32]} />
         <MeshTransmissionMaterial
@@ -95,6 +101,7 @@ function Lens({
           attenuationDistance={5}
         />
       </mesh>
+      {/* seven-sided aperture behind the glass */}
       <mesh position={[0, 0, -0.15]}>
         <ringGeometry args={[0.6, 1.25, 7]} />
         <meshStandardMaterial
@@ -111,25 +118,20 @@ function Lens({
     </group>
   );
 }
-function CameraRig(props: {
-  pointer: React.RefObject<{ x: number; y: number }>;
-  progress: React.RefObject<number>;
-  depth: React.RefObject<number>;
-  still: boolean;
-  docked: boolean;
-}) {
+/**
+ * The camera body around the lens, and the camera that films it. Scrolling
+ * through the hero flies the camera into the glass; the mouse tilts the body
+ * a little. Once docked, only the lens shows.
+ */
+function CameraRig(props: SceneProps) {
   const body = useRef<THREE.Group>(null);
   useFrame(({ camera }, delta) => {
+    const dt = Math.min(delta, 0.05);
     const p = props.still || props.docked ? 0 : props.progress.current;
     const approach = THREE.MathUtils.smoothstep(p, 0.15, 0.92);
     camera.position.z = props.docked
       ? 5.8
-      : THREE.MathUtils.damp(
-          camera.position.z,
-          8.2 * (1 - approach) + 0.28 * approach,
-          8,
-          Math.min(delta, 0.05),
-        );
+      : THREE.MathUtils.damp(camera.position.z, 8.2 * (1 - approach) + 0.28 * approach, 8, dt);
     if (body.current) {
       body.current.rotation.y = THREE.MathUtils.damp(
         body.current.rotation.y,
@@ -138,7 +140,7 @@ function CameraRig(props: {
           : (-0.38 + (props.still ? 0 : props.pointer.current.x * 0.4)) *
               (1 - THREE.MathUtils.smoothstep(p, 0, 0.4)),
         8,
-        Math.min(delta, 0.05),
+        dt,
       );
       body.current.rotation.x = THREE.MathUtils.damp(
         body.current.rotation.x,
@@ -147,7 +149,7 @@ function CameraRig(props: {
           : (0.12 + (props.still ? 0 : props.pointer.current.y * 0.25)) *
               (1 - approach),
         8,
-        Math.min(delta, 0.05),
+        dt,
       );
     }
   });
@@ -294,13 +296,8 @@ function CameraRig(props: {
     </group>
   );
 }
-export default function GlassScene(props: {
-  pointer: React.RefObject<{ x: number; y: number }>;
-  progress: React.RefObject<number>;
-  depth: React.RefObject<number>;
-  still: boolean;
-  docked: boolean;
-}) {
+/** The 3D lens on the home page: lit by soft studio "light panels" for the metal reflections. */
+export default function GlassScene(props: SceneProps) {
   return (
     <Canvas
       dpr={[1, 1.5]}

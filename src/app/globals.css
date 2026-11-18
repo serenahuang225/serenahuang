@@ -1,3 +1,4 @@
+/* ================================================== Theme: colours and fonts used everywhere */
 :root {
   --ink: #44333e;
   --muted: #76666f;
@@ -7,6 +8,8 @@
   --entry: 0;
   color-scheme: light;
 }
+
+/* ================================================== Base elements */
 * {
   box-sizing: border-box;
 }
@@ -87,6 +90,8 @@ button {
 main {
   overflow: clip;
 }
+
+/* ================================================== Header and navigation */
 .skip-link {
   position: fixed;
   top: -100px;
@@ -116,7 +121,6 @@ main {
 .wordmark {
   font-family: var(--serif);
   font-size: 38px;
-  letter-spacing: -4px;
   display: flex;
   align-items: flex-start;
   gap: 9px;
@@ -182,8 +186,9 @@ main {
 .header-dark nav a.active {
   background: #ffffff20;
 }
+
+/* ================================================== Hero (home): the name, and the lens you scroll into */
 .hero {
-  height: 180svh;
   position: relative;
   background: linear-gradient(180deg, #f5f0e9, #efdfdd);
 }
@@ -199,10 +204,6 @@ main {
   position: absolute;
   inset: 0;
   z-index: -2;
-  background:
-    radial-gradient(ellipse at 75% 63%, #eac7af77, transparent 40%),
-    radial-gradient(ellipse at 63% 44%, #c9b4ce80, transparent 47%),
-    radial-gradient(ellipse at 8% 90%, #f0dfdc80, transparent 60%);
   opacity: calc(1 - var(--entry) * 0.1);
 }
 .hero-copy {
@@ -210,7 +211,6 @@ main {
   left: 12%;
   top: 25%;
   z-index: 2;
-  opacity: calc(1 - var(--entry) * 2.2);
   transform: translateY(calc(var(--entry) * -70px));
   pointer-events: auto;
 }
@@ -230,8 +230,6 @@ main {
   height: 5px;
   width: 5px;
   border-radius: 50%;
-  background: #9c8b67;
-  box-shadow: 0 0 0 4px #bfb3981c;
 }
 .hero h1 {
   font-size: clamp(105px, 11vw, 172px);
@@ -242,9 +240,6 @@ main {
 .hero h1 em {
   padding-left: 35px;
   color: #745263;
-}
-.name-period {
-  color: #a97d65;
 }
 .hero-description {
   font-size: 14px;
@@ -266,53 +261,6 @@ main {
 .text-link svg {
   transition: transform 0.25s;
 }
-.sculpture-wrap {
-  position: absolute;
-  left: 40%;
-  top: 8%;
-  width: 58%;
-  height: 80%;
-  transform: translateX(calc(var(--entry) * -16%));
-  z-index: 1;
-  opacity: clamp(0, calc((1 - var(--entry)) * 5), 1);
-  pointer-events: none;
-}
-.sculpture-wrap canvas {
-  position: relative;
-  z-index: 1;
-}
-.glass-fallback {
-  position: absolute;
-  width: 48%;
-  aspect-ratio: 1;
-  top: 26%;
-  left: 24%;
-  border-radius: 20%;
-  transform: rotate(-10deg);
-  background: linear-gradient(
-    130deg,
-    #fff9,
-    #dcbdcf44 25%,
-    #c2a2b840 65%,
-    #f4dfc599
-  );
-  box-shadow:
-    inset 4px 4px 15px #fff,
-    inset -8px -4px 14px #8a617633,
-    15px 45px 80px #62405c20;
-  border: 1px solid #fff7;
-}
-.glass-fallback div {
-  position: absolute;
-  inset: 15%;
-  border-radius: 50%;
-  border: 20px solid #d5b19555;
-  filter: blur(3px);
-}
-.behind-canvas {
-  opacity: 0.12;
-  filter: blur(25px);
-}
 .sculpture-caption {
   position: absolute;
   top: 77%;
@@ -330,7 +278,6 @@ main {
 }
 .hero-bottom {
   position: absolute;
-  bottom: 34px;
   left: 4.6%;
   right: 4.6%;
   display: flex;
@@ -345,17 +292,8 @@ main {
   align-items: center;
   gap: 16px;
 }
-.hero-margin {
-  position: absolute;
-  left: 3.1%;
-  top: 48%;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 8px;
-  letter-spacing: 0.18em;
-  color: #97828b;
-  opacity: calc(1 - var(--entry) * 3);
-}
+
+/* ================================================== Shared section layout */
 .section-pad {
   padding: 100px 9% 0;
   scroll-margin-top: 0;
@@ -370,6 +308,8 @@ main {
   font-size: 11px;
   opacity: 0.65;
 }
+
+/* ================================================== Work: project cards and their artwork */
 .work {
   background: linear-gradient(#efdfdd, #e7d3d5);
   padding-top: 65px;
@@ -527,21 +467,17 @@ main {
   font-size: 45px;
 }
 .lively {
-  background: linear-gradient(140deg, #bb8e71, #e5bd9f);
   display: grid;
   place-items: center;
 }
 .lively-note {
   width: 58%;
   height: 77%;
-  background: #f8edcf;
   transform: rotate(-8deg);
   padding: 23px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 10px 12px 25px #73554625;
-  color: #6c654a;
   border-radius: 3px;
   position: relative;
 }
@@ -569,19 +505,6 @@ main {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #c5ac79;
-}
-.note-dots i:nth-child(2) {
-  background: #d39879;
-}
-.note-dots i:nth-child(3) {
-  background: #acae8c;
-}
-.note-dots i:nth-child(4) {
-  background: #c6aa9d;
-}
-.note-dots i:nth-child(5) {
-  background: #e3c598;
 }
 .lively-orbit {
   position: absolute;
@@ -618,14 +541,14 @@ main {
   margin: auto;
   line-height: 1.5;
 }
+
+/* ================================================== Values section layout */
 .writing {
   background: linear-gradient(#e7d3d5, #cbb2c1);
   padding-top: 100px;
 }
 .writing-layout {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 10%;
   padding-top: 15px;
 }
 .writing-intro > p {
@@ -643,64 +566,9 @@ main {
   margin-top: 45px;
   color: #957883;
 }
-.axioms details {
-  border-top: 1px solid #80657542;
-}
-.axioms details:last-of-type {
-  border-bottom: 1px solid #80657542;
-}
-.axioms summary {
-  list-style: none;
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  padding: 26px 0;
-  cursor: pointer;
-  font-size: 17px;
-  letter-spacing: -0.02em;
-}
-.axioms summary::-webkit-details-marker {
-  display: none;
-}
-.axiom-number {
-  font-size: 9px;
-  color: #876c7b;
-  letter-spacing: 0.05em;
-}
-.axiom-plus {
-  margin-left: auto;
-  flex-shrink: 0;
-  transition: transform 0.3s;
-}
-.axioms details[open] .axiom-plus {
-  transform: rotate(45deg);
-}
-.axiom-body {
-  padding: 0 25px 28px 37px;
-  font-size: 13px;
-  line-height: 1.85;
-  color: #6e5667;
-}
-.axiom-body > svg {
-  margin-bottom: 15px;
-  color: #8b6278;
-}
-.axiom-statement {
-  font-weight: 500;
-  margin-bottom: 12px;
-  color: #503846;
-}
-.writing-note {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  font-size: 10px;
-  line-height: 1.8;
-  margin-top: 24px;
-  opacity: 0.65;
-}
+
+/* ================================================== Photos, listening and about: section backgrounds and copy */
 .photos {
-  background: linear-gradient(#cbb2c1, #796079);
   padding-top: 105px;
   color: #352639;
 }
@@ -716,97 +584,10 @@ main {
   margin-right: 8%;
   opacity: 0.7;
 }
-.photo-placeholder {
-  position: relative;
-  min-height: 570px;
-  border-radius: 6px;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse at 50% 85%, #d39b7d55, transparent 60%),
-    linear-gradient(130deg, #6a536c, #9b7e93 70%, #c09892);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 32px;
-  border: 1px solid #ecd9d02a;
-  color: #f2dfd8;
-}
-.photo-window {
-  position: relative;
-  width: 230px;
-  height: 280px;
-  border-radius: 110px 110px 12px 12px;
-  border: 1px solid #ffffff45;
-  background: linear-gradient(180deg, #9c8ba588, #edd2bb77 60%, #d39e8166);
-  box-shadow:
-    0 25px 100px #e5bd9930,
-    inset 0 0 35px #fff2;
-  overflow: hidden;
-}
-.horizon {
-  position: absolute;
-  left: -50%;
-  width: 200%;
-  bottom: -30%;
-  height: 70%;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #9a819499, #68577377);
-  filter: blur(6px);
-}
-.window-caption {
-  position: absolute;
-  bottom: 22px;
-  width: 100%;
-  text-align: center;
-  font-size: 7px;
-  letter-spacing: 0.17em;
-  color: #f6e4d6;
-}
-.photo-placeholder-note {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 12px;
-  font-size: 13px;
-}
-.photo-placeholder-note small {
-  font-size: 10px;
-  opacity: 0.65;
-}
-.photo-index {
-  position: absolute;
-  bottom: 24px;
-  left: 25px;
-  font-size: 8px;
-  letter-spacing: 0.12em;
-  opacity: 0.6;
-}
 .photos .section-whisper {
   color: #f0dce5;
 }
-.photo-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-.photo-entry {
-  padding: 0;
-  text-align: left;
-}
-.photo-entry img {
-  width: 100%;
-  height: 450px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-.photo-entry span {
-  display: block;
-  font-size: 11px;
-  padding-top: 12px;
-}
 .listening {
-  background: linear-gradient(#796079, #4a354f);
   color: #f0e2e4;
   padding-top: 100px;
 }
@@ -816,77 +597,6 @@ main {
   gap: 12%;
   align-items: center;
   padding: 35px 0;
-}
-.record-stage {
-  height: 365px;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.record-sleeve {
-  width: 70%;
-  aspect-ratio: 1;
-  background: linear-gradient(135deg, #b49192, #d8bba3);
-  position: relative;
-  z-index: 2;
-  transform: rotate(-9deg);
-  padding: 23px;
-  box-shadow: 0 22px 50px #1e162d30;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow: hidden;
-  color: #664a57;
-}
-.record-sleeve > span {
-  position: relative;
-  z-index: 2;
-  font-size: 8px;
-  letter-spacing: 0.15em;
-  line-height: 1.6;
-}
-.sleeve-orb {
-  position: absolute;
-  inset: 18%;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #e8d0b5, #b3899366 70%);
-  box-shadow:
-    inset -7px -8px 20px #77506355,
-    8px 12px 25px #7d5e7030;
-  border: 1px solid #fae0c966;
-}
-.vinyl {
-  position: absolute;
-  right: 0;
-  width: 67%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background:
-    repeating-radial-gradient(circle, #30252e 0 1px, #372a3522 1px 3px),
-    conic-gradient(from 20deg, #241c26, #736171, #241c26, #594551, #241c26);
-  box-shadow: 5px 18px 40px #21182435;
-  display: grid;
-  place-items: center;
-}
-.record-label {
-  height: 34%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #b8969a;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  color: #513f51;
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 40px;
-}
-.record-label small {
-  font-family: var(--sans);
-  font-style: normal;
-  font-size: 6px;
-  letter-spacing: 0.1em;
 }
 .listening-copy > .eyebrow {
   color: #c6a8ba;
@@ -899,40 +609,7 @@ main {
   line-height: 1.9;
   color: #d0b8c8;
 }
-.listening-status {
-  display: inline-flex;
-  gap: 9px;
-  align-items: center;
-  margin-top: 25px;
-  font-size: 8px;
-  letter-spacing: 0.14em;
-  color: #ceb7c3;
-}
-.listening-status > span {
-  height: 5px;
-  width: 5px;
-  background: #caad8e;
-  border-radius: 50%;
-}
-.tracks a {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  border-bottom: 1px solid #ffffff30;
-  padding: 16px 0;
-  font-size: 14px;
-}
-.tracks small {
-  display: block;
-  margin-top: 5px;
-  font-size: 11px;
-  opacity: 0.65;
-}
-.tracks svg {
-  margin-left: auto;
-}
 .about {
-  background: linear-gradient(#4a354f, #2b2031);
   color: #efdee5;
   padding-top: 100px;
 }
@@ -1067,6 +744,8 @@ footer > a:last-child {
   font-size: 13px;
   margin-left: 13px;
 }
+
+/* ================================================== Motion toggle (bottom left) */
 .motion-toggle {
   position: fixed;
   bottom: 17px;
@@ -1084,6 +763,8 @@ footer > a:last-child {
   color: #6a535f;
   box-shadow: 0 3px 15px #3a1f3708;
 }
+
+/* ================================================== Dialogs: project detail and photo viewer */
 dialog {
   border: 1px solid #e8d8dd90;
   border-radius: 12px;
@@ -1181,6 +862,8 @@ dialog::backdrop {
   padding: 20px;
   font-size: 13px;
 }
+
+/* ================================================== Responsive: wide screens, tablets, phones */
 @media (min-width: 1600px) {
   .section-pad {
     padding-left: max(9%, calc((100vw - 1320px) / 2));
@@ -1210,12 +893,6 @@ dialog::backdrop {
   .hero h1 {
     font-size: 120px;
   }
-  .sculpture-wrap {
-    left: 41%;
-    width: 65%;
-    top: 12%;
-    height: 72%;
-  }
   .hero-description {
     font-size: 12px;
   }
@@ -1241,18 +918,8 @@ dialog::backdrop {
   .pool-word {
     font-size: 65px;
   }
-  .writing-layout {
-    gap: 7%;
-  }
-  .axioms summary {
-    font-size: 15px;
-    gap: 15px;
-  }
   .photo-heading > p {
     margin-right: 0;
-  }
-  .record-stage {
-    height: 300px;
   }
   .listening-layout {
     gap: 8%;
@@ -1297,9 +964,6 @@ dialog::backdrop {
   .header nav a:first-child {
     display: none;
   }
-  .hero {
-    height: 145svh;
-  }
   .hero-sticky {
     min-height: 720px;
   }
@@ -1330,13 +994,6 @@ dialog::backdrop {
     padding-bottom: 8px;
     gap: 20px;
   }
-  .sculpture-wrap {
-    top: 40%;
-    left: 25%;
-    width: 83%;
-    height: 53%;
-    transform: translateX(calc(var(--entry) * -10%));
-  }
   .sculpture-caption {
     top: auto;
     bottom: 8.3%;
@@ -1349,11 +1006,7 @@ dialog::backdrop {
   .sculpture-caption span:first-child {
     font-size: 7px;
   }
-  .hero-margin {
-    display: none;
-  }
   .hero-bottom {
-    bottom: 24px;
     left: 8%;
     right: 8%;
     font-size: 7px;
@@ -1440,25 +1093,12 @@ dialog::backdrop {
     padding: 48px 0 26px;
     max-width: 90%;
   }
-  .writing-layout {
-    grid-template-columns: 1fr;
-    gap: 36px;
-  }
   .writing-intro > p {
     font-size: 13px;
     margin-top: 22px;
   }
   .handwritten {
     display: none;
-  }
-  .axioms summary {
-    font-size: 16px;
-    padding: 24px 0;
-    min-height: 68px;
-  }
-  .axiom-body {
-    padding-left: 29px;
-    padding-right: 5px;
   }
   .photo-heading {
     display: block;
@@ -1468,38 +1108,10 @@ dialog::backdrop {
     margin-top: 22px;
     font-size: 12px;
   }
-  .photo-placeholder {
-    min-height: 440px;
-  }
-  .photo-window {
-    height: 230px;
-    width: 185px;
-  }
-  .photo-placeholder-note {
-    font-size: 11px;
-  }
-  .photo-placeholder-note small {
-    font-size: 9px;
-  }
-  .photo-grid {
-    grid-template-columns: 1fr;
-  }
-  .photo-entry img {
-    height: auto;
-  }
   .listening-layout {
     grid-template-columns: 1fr;
     gap: 20px;
     padding: 0;
-  }
-  .record-stage {
-    max-width: 365px;
-    width: 100%;
-    height: 330px;
-    margin: auto;
-  }
-  .record-sleeve {
-    width: 69%;
   }
   .listening-copy {
     margin-top: 15px;
@@ -1615,13 +1227,12 @@ dialog::backdrop {
   .project-art {
     height: 310px;
   }
-  .axioms summary {
-    font-size: 14px;
-  }
   .about-layout h2 {
     font-size: 49px;
   }
 }
+
+/* ================================================== Reduced motion: the toggle sets html[data-motion="still"] */
 html[data-motion="still"] {
   scroll-behavior: auto;
 }
@@ -1653,9 +1264,7 @@ html[data-motion="still"] .project:hover .project-art {
   }
 }
 @supports (animation-timeline: view()) {
-  html[data-motion="full"] .project .art-wrap,
-  html[data-motion="full"] .photo-window,
-  html[data-motion="full"] .record-stage {
+  html[data-motion="full"] .project .art-wrap {
     animation: arrive linear both;
     animation-timeline: view();
     animation-range: entry 0% entry 70%;
@@ -1692,20 +1301,11 @@ html[data-motion="still"] .project:hover .project-art {
   bottom: 60px;
 }
 @media (max-width: 700px) {
-  .sculpture-wrap {
-    left: 12%;
-    top: 44%;
-    width: 88%;
-    height: 44%;
-  }
   .hero-bottom {
     bottom: 48px;
   }
 }
 @media (min-width: 500px) and (max-width: 700px) {
-  .hero {
-    min-height: 1250px;
-  }
   .hero-sticky {
     min-height: 900px;
   }
@@ -1715,16 +1315,14 @@ html[data-motion="still"] .project:hover .project-art {
   .hero-copy {
     top: 16%;
   }
-  .sculpture-wrap {
-    top: 47%;
-    height: 40%;
-  }
 }
 @media (max-width: 700px) {
   .sculpture-caption {
     bottom: 13%;
   }
 }
+
+/* ================================================== Silver palette (later restyle: overrides colours above) */
 /* Silver optics: a persistent navigation instrument, rather than a hero ornament. */
 .wordmark {
   letter-spacing: -0.08em;
@@ -1754,38 +1352,6 @@ html[data-motion="still"] .project:hover .project-art {
 .about {
   background: linear-gradient(#23142e, #09050f 88%);
 }
-.photo-placeholder {
-  background:
-    radial-gradient(ellipse at 50% 85%, #b5a8d044, transparent 60%),
-    linear-gradient(130deg, #483b5c, #837190 70%, #ada2b6);
-  color: #eee8f8;
-}
-.photo-window {
-  background: linear-gradient(180deg, #9a91b788, #dcd7ec77 60%, #a5a0c666);
-  box-shadow:
-    0 25px 100px #b8b8d530,
-    inset 0 0 35px #fff2;
-}
-.window-caption {
-  color: #f0edf8;
-}
-.record-sleeve {
-  background: linear-gradient(135deg, #9190a9, #d1cedf);
-  color: #43394f;
-}
-.sleeve-orb {
-  background: radial-gradient(circle at 30% 30%, #eeedf5, #9c97b366 70%);
-  box-shadow:
-    inset -7px -8px 20px #60577055,
-    8px 12px 25px #645e7830;
-  border-color: #f4f1ff66;
-}
-.record-label {
-  background: #aea7c4;
-}
-.listening-status > span {
-  background: #c5c2dd;
-}
 .lively {
   background: linear-gradient(135deg, #2369de, #6ba8ff 70%, #b9dbff);
 }
@@ -1812,21 +1378,20 @@ html[data-motion="still"] .project:hover .project-art {
 .note-dots i:nth-child(5) {
   background: #86b6ed;
 }
+
+/* ================================================== Lens navigation and its menu */
+/* The lens: one fixed 600px box. page.tsx moves and scales it with a
+   transform as you scroll, so the WebGL canvas inside never resizes. */
 .lens-navigation {
   position: fixed;
   z-index: 12;
+  left: 0;
+  top: 0;
+  width: 600px;
+  height: 600px;
+  transform-origin: 0 0;
+  will-change: transform;
   pointer-events: none;
-  transition:
-    width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
-    height 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
-    right 0.8s,
-    top 0.8s;
-}
-.lens-intro {
-  width: 55vw;
-  height: 72svh;
-  right: 3%;
-  top: 10svh;
 }
 .lens-render {
   position: absolute;
@@ -1835,23 +1400,23 @@ html[data-motion="still"] .project:hover .project-art {
 }
 .lens-trigger {
   position: absolute;
-  inset: 20%;
+  inset: 15%;
   border-radius: 50%;
   pointer-events: auto;
   padding: 0;
 }
 .lens-trigger > span {
   position: absolute;
-  bottom: -32px;
+  bottom: -38px;
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.13em;
   color: #6f617c;
   background: #f5f2fa99;
   backdrop-filter: blur(12px);
-  padding: 9px 14px;
+  padding: 12px 18px;
   border: 1px solid #fff7;
   border-radius: 30px;
 }
@@ -1859,37 +1424,15 @@ html[data-motion="still"] .project:hover .project-art {
   outline: 2px solid #a8a0bf;
   outline-offset: 10px;
 }
-.lens-docked {
-  width: 135px;
-  height: 135px;
-  right: 15px;
-  top: calc(100svh - 170px);
-}
-.lens-docked .lens-trigger {
-  inset: 12%;
-}
+/* once docked in the corner, the lens has no label */
 .lens-docked .lens-trigger > span {
-  bottom: -12px;
-  font-size: 8px;
-  padding: 6px 10px;
-  letter-spacing: 0.08em;
-  background: #21152bdd;
-  color: #eee9f5;
-  border-color: #bdb3d345;
+  display: none;
 }
 .lens-fallback {
   position: absolute;
   inset: 15%;
   border-radius: 50%;
   border: 8px solid #c9c9d3;
-  background: radial-gradient(
-    circle,
-    #8d819f33 28%,
-    #48375399 29%,
-    #b1a5c94d 43%,
-    #e9e5f366 65%,
-    #6d657c55
-  );
   box-shadow:
     inset 2px 2px 4px #fff,
     0 15px 50px #57466320;
@@ -1909,16 +1452,6 @@ html[data-motion="still"] .project:hover .project-art {
 }
 .lens-fallback-muted {
   opacity: 0.08;
-}
-.lens-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  background: #0d071b66;
-  backdrop-filter: blur(16px);
-  z-index: 45;
-  display: grid;
-  place-items: center;
-  padding: 25px;
 }
 .lens-menu {
   width: min(400px, 100%);
@@ -1966,6 +1499,8 @@ html[data-motion="still"] .project:hover .project-art {
 .lens-menu > a:hover {
   color: #795a92;
 }
+
+/* ================================================== Silver cursor (mouse only) */
 .silver-cursor-ring,
 .silver-cursor-dot {
   position: fixed;
@@ -2034,45 +1569,12 @@ html[data-cursor="silver"] body:has(dialog[open]) button,
 html[data-cursor="silver"] body:has(dialog[open]) a {
   cursor: pointer !important;
 }
-@media (max-width: 1000px) {
-  .lens-intro {
-    width: 61vw;
-    right: 0;
-  }
-}
 @media (max-width: 700px) {
-  .lens-intro {
-    width: 88vw;
-    height: 40svh;
-    right: 6%;
-    top: 46svh;
-  }
-  .lens-intro .lens-trigger > span {
-    bottom: -13px;
-    font-size: 7px;
-    padding: 7px 10px;
-  }
   .sculpture-caption {
     display: none;
   }
-  .lens-docked {
-    width: 95px;
-    height: 95px;
-    right: 8px;
-    top: calc(100svh - 130px);
-  }
-  .lens-docked .lens-trigger > span {
-    font-size: 7px;
-    bottom: -12px;
-  }
   .about footer {
     padding-bottom: 145px;
-  }
-}
-@media (min-width: 500px) and (max-width: 700px) {
-  .lens-intro {
-    height: 350px;
-    top: 465px;
   }
 }
 @media (pointer: coarse) {
@@ -2097,30 +1599,6 @@ html[data-cursor="silver"] body:has(dialog[open]) a {
   background: #0d071b88;
   backdrop-filter: blur(16px);
 }
-/* Keep the WebGL drawing surface constant: only composite its transform. */
-.lens-navigation.lens-intro,
-.lens-navigation.lens-docked {
-  width: 600px;
-  height: 600px;
-  left: 0;
-  top: 0;
-  right: auto;
-  bottom: auto;
-  transform-origin: 0 0;
-  transition: none;
-  will-change: transform;
-}
-.lens-navigation .lens-trigger {
-  inset: 15%;
-}
-.lens-navigation .lens-trigger > span {
-  bottom: -38px;
-  font-size: 14px;
-  padding: 12px 18px;
-}
-.lens-docked .lens-trigger > span {
-  display: none;
-}
 .lens-fallback {
   background: radial-gradient(
     circle,
@@ -2131,23 +1609,8 @@ html[data-cursor="silver"] body:has(dialog[open]) a {
     #b4adca55
   );
 }
-.photo-grid {
-  align-items: start;
-  gap: 35px 24px;
-}
-.photo-entry img {
-  height: auto;
-  aspect-ratio: 4/3;
-  object-fit: cover;
-}
-.photo-entry:nth-child(3n + 2) img {
-  aspect-ratio: 3/4;
-}
-.photo-entry span {
-  line-height: 1.6;
-  font-size: 12px;
-  color: #eee5f2;
-}
+
+/* ================================================== Photo gallery toggle and music track list */
 .gallery-toggle {
   display: flex;
   align-items: center;
@@ -2207,17 +1670,12 @@ html[data-cursor="silver"] audio * {
   cursor: auto !important;
 }
 @media (max-width: 700px) {
-  .photo-grid {
-    gap: 28px;
-  }
-  .photo-entry img,
-  .photo-entry:nth-child(3n + 2) img {
-    aspect-ratio: auto;
-  }
   .hero h1 {
     font-size: clamp(86px, 18vw, 105px);
   }
 }
+
+/* ================================================== Hero scroll: the work section slides up over the hero */
 /* Travel through the camera as the next chapter comes into view. */
 .hero {
   height: 200svh;
@@ -2230,9 +1688,7 @@ html[data-cursor="silver"] audio * {
 .hero-copy {
   opacity: calc(1 - var(--entry) * 3.8);
 }
-.lens-intro .lens-trigger > span {
-  opacity: 1;
-}
+/* page.tsx turns pointer events off while the lens zooms past: hide the label then */
 .lens-navigation[style*="pointer-events: none"] .lens-trigger {
   pointer-events: none;
 }
@@ -2246,6 +1702,8 @@ html[data-motion="still"] .work {
   grid-template-columns: 0.8fr 1.4fr;
   gap: 7%;
 }
+
+/* ================================================== Values: flip cards */
 .values-explorer {
   min-width: 0;
 }
@@ -2254,45 +1712,12 @@ html[data-motion="still"] .work {
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
-.value-choice {
-  text-align: left;
-  padding: 20px;
-  border: 1px solid #ffffff55;
-  border-radius: 18px;
-  background: #ffffff12;
-  transition:
-    background 0.3s,
-    transform 0.3s,
-    box-shadow 0.3s;
-}
-.value-choice:hover {
-  transform: translateY(-3px);
-  background: #ffffff30;
-}
-.value-selected {
-  background: #ffffff60;
-  box-shadow: 0 15px 35px #6341580c;
-  border-color: #fff9;
-}
 .value-card-top {
   display: flex;
   justify-content: space-between;
   color: #876d81;
   font-size: 10px;
   letter-spacing: 0.1em;
-}
-.value-choice h3 {
-  font-family: var(--serif);
-  font-size: 27px;
-  font-weight: 400;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-.value-choice > p {
-  font-size: 11px;
-  line-height: 1.6;
-  color: #826d7b;
-  margin-top: 8px;
 }
 .value-symbol {
   position: relative;
@@ -2325,18 +1750,6 @@ html[data-motion="still"] .work {
 .value-0 .value-symbol i:nth-child(3) {
   transform: translate(31px, 20px) rotate(-20deg);
 }
-.value-0.value-selected .value-symbol i {
-  transform: translate(-32px, 20px) rotate(0);
-}
-.value-0.value-selected .value-symbol i:nth-child(2) {
-  transform: translate(5px, 20px) rotate(0);
-}
-.value-0.value-selected .value-symbol i:nth-child(3) {
-  transform: translate(42px, 20px) rotate(0);
-}
-.value-0.value-selected .value-symbol svg {
-  transform: translateY(-6px) rotate(-12deg);
-}
 .value-1 .value-symbol i {
   width: 46px;
   height: 60px;
@@ -2349,15 +1762,6 @@ html[data-motion="still"] .work {
 }
 .value-1 .value-symbol i:nth-child(3) {
   transform: rotate(18deg);
-}
-.value-1.value-selected .value-symbol i {
-  transform: translateX(-26px) rotate(-25deg);
-}
-.value-1.value-selected .value-symbol i:nth-child(2) {
-  transform: translateX(26px) rotate(25deg);
-}
-.value-1.value-selected .value-symbol i:nth-child(3) {
-  transform: translateY(-8px);
 }
 .value-2 .value-symbol i {
   width: 63px;
@@ -2373,13 +1777,6 @@ html[data-motion="still"] .work {
   width: 94px;
   height: 94px;
 }
-.value-2.value-selected .value-symbol i {
-  opacity: 1;
-  transform: scale(1.06);
-}
-.value-2.value-selected .value-symbol svg {
-  transform: scale(1.15);
-}
 .value-3 .value-symbol i {
   width: 85px;
   height: 38px;
@@ -2393,32 +1790,8 @@ html[data-motion="still"] .work {
   height: 70px;
   width: 70px;
 }
-.value-3.value-selected .value-symbol i {
-  transform: rotate(0);
-}
-.value-3.value-selected .value-symbol svg {
-  transform: scale(1.2);
-}
-.value-reflection {
-  padding: 28px 4px 0;
-  min-height: 290px;
-}
-.value-reflection > .eyebrow {
-  color: #8c7084;
-  font-size: 9px;
-}
-.value-reflection h3 {
-  font-family: var(--serif);
-  font-size: 28px;
-  font-weight: 400;
-  line-height: 1.2;
-  margin: 15px 0;
-}
-.value-reflection > p {
-  font-size: 13px;
-  line-height: 1.9;
-  color: #705868;
-}
+
+/* ================================================== Experience: the chapter book */
 .experience {
   margin-top: 90px;
   display: grid;
@@ -2437,57 +1810,6 @@ html[data-motion="still"] .work {
   margin-top: 20px;
   letter-spacing: -0.03em;
 }
-.experience-list details {
-  border-top: 1px solid #b9a6c529;
-}
-.experience-list details:last-child {
-  border-bottom: 1px solid #b9a6c529;
-}
-.experience-list summary {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  list-style: none;
-  cursor: pointer;
-  padding: 24px 0;
-}
-.experience-list summary::-webkit-details-marker {
-  display: none;
-}
-.experience-index {
-  font-size: 9px;
-  color: #aa90b6;
-}
-.experience-title {
-  font-size: 16px;
-  line-height: 1.4;
-}
-.experience-title small {
-  display: block;
-  font-size: 11px;
-  color: #aa94b6;
-  margin-top: 5px;
-}
-.experience-date {
-  margin-left: auto;
-  font-size: 9px;
-  letter-spacing: 0.04em;
-  color: #baabc4;
-  white-space: nowrap;
-}
-.experience-list summary > svg {
-  flex-shrink: 0;
-  transition: transform 0.25s;
-}
-.experience-list details[open] summary > svg {
-  transform: rotate(45deg);
-}
-.experience-list details > p {
-  font-size: 13px;
-  color: #c2b0cd;
-  line-height: 1.9;
-  padding: 0 28px 25px 32px;
-}
 @media (max-width: 850px) {
   .writing-layout {
     grid-template-columns: 1fr;
@@ -2505,37 +1827,12 @@ html[data-motion="still"] .work {
   }
 }
 @media (max-width: 500px) {
-  .value-choice {
-    padding: 15px;
-  }
-  .value-choice h3 {
-    font-size: 24px;
-  }
-  .value-choice > p {
-    font-size: 10px;
-  }
   .value-symbol {
     height: 85px;
   }
-  .value-reflection {
-    min-height: 0;
-  }
-  .experience-date {
-    font-size: 8px;
-    white-space: normal;
-    max-width: 67px;
-    text-align: right;
-  }
-  .experience-title {
-    font-size: 14px;
-  }
-  .experience-list summary {
-    gap: 12px;
-  }
-  .experience-list details > p {
-    padding-left: 25px;
-  }
 }
+
+/* ================================================== Lens aperture: the glass opens as you scroll in */
 .lens-intro .lens-render {
   mask-image: radial-gradient(
     circle at 50% 50%,
@@ -2543,6 +1840,8 @@ html[data-motion="still"] .work {
     #000 var(--aperture-edge, 0%)
   );
 }
+
+/* ================================================== Photo ribbons */
 .photo-ribbons {
   display: flex;
   flex-direction: column;
@@ -2969,7 +2268,8 @@ html[data-motion="still"] .work {
   }
 }
 
-/* A small, tactile record collection. */
+
+/* ================================================== Record collection: a small, tactile stack of sleeves */
 .record-collection {
   min-width: 0;
   padding: 45px 35px 0 5px;
@@ -3136,11 +2436,8 @@ html[data-motion="still"] .work {
     animation: none;
   }
 }
-html[data-motion="reduced"] .collection-vinyl {
-  animation: none;
-}
 
-/* ---------------------------------------------------------------- the hole at the bottom */
+/* ================================================== The hole at the bottom (fall-hole.tsx) */
 
 .fall-hole-wrap {
   display: grid;

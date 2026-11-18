@@ -1,6 +1,11 @@
+/**
+ * Things every part of the 3D world shares: uniforms updated once a frame,
+ * live player state, story hooks into the ball, and reusable GLSL snippets.
+ */
 import * as THREE from "three";
-import { LIGHTS, MAP_INFO, buildFoliageMap } from "./world-data";
+import { LIGHTS, MAP_INFO, buildFoliageMap, mulberry32 } from "./world-data";
 
+/** How many points of Bob's recent path the plants react to (uTrail[0] is where he is now). */
 export const TRAIL = 8;
 
 /**
@@ -11,9 +16,12 @@ export const shared = {
   uTime: { value: 0 },
   /** xyz = ball position (current + recent past), w = push strength. */
   uTrail: { value: Array.from({ length: TRAIL }, () => new THREE.Vector4(0, -9999, 0, 0)) },
+  /** Bob's xz position: wrapping fields of plants are centred on it. */
   uCenter: { value: new THREE.Vector2() },
   uMap: { value: null as THREE.DataTexture | null },
   uMapInfo: { value: MAP_INFO },
+  // the glow lights for custom shaders. Light 0 is Bob's own warm glow (moved
+  // every frame by the ball); the rest are the landmark lights from world-data.
   uLightPos: { value: [new THREE.Vector3(), ...LIGHTS.map((l) => l.pos.clone())] },
   uLightCol: {
     value: [
@@ -41,6 +49,7 @@ export function sampleFoliage(x: number, z: number) {
 }
 
 let mapReady = false;
+/** Build the foliage map texture the first time anything needs it. */
 export function ensureFoliageMap() {
   if (!mapReady) {
     shared.uMap.value = buildFoliageMap();
@@ -56,6 +65,40 @@ export const player = {
   ducking: false,
   grounded: false,
 };
+
+/** Uniforms for a field of plants `tile` metres across that wraps around Bob, thinning out beyond `fade` metres. */
+export function fieldUniforms(tile: number, fade = tile) {
+  ensureFoliageMap();
+  return {
+    ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),
+    uTime: shared.uTime,
+    uTrail: shared.uTrail,
+    uCenter: shared.uCenter,
+    uMap: shared.uMap,
+    uMapInfo: shared.uMapInfo,
+    uTile: { value: tile },
+    uFade: { value: fade },
+    uAmbient: { value: AMBIENT },
+    ...lightUniforms(),
+  };
+}
+
+/**
+ * Random spots for `count` plants in a square `tile` metres across (offsets,
+ * 2 per plant) and two random 0..1 numbers per plant (size, and whether it grows).
+ */
+export function scatterOffsets(count: number, tile: number, seed: number) {
+  const r = mulberry32(seed);
+  const off = new Float32Array(count * 2);
+  const rnd = new Float32Array(count * 2);
+  for (let i = 0; i < count; i++) {
+    off[i * 2] = (r() - 0.5) * tile;
+    off[i * 2 + 1] = (r() - 0.5) * tile;
+    rnd[i * 2] = r();
+    rnd[i * 2 + 1] = r();
+  }
+  return { off, rnd };
+}
 
 // ---------------------------------------------------------------- GLSL
 
@@ -190,6 +233,7 @@ vec3 glowLights(vec3 wp, vec3 n, float wrap) {
 }
 `;
 
+/** The glow-light uniforms, for any custom shader that uses GLSL_LIGHTS. */
 export function lightUniforms() {
   return {
     uLightPos: shared.uLightPos,
@@ -198,6 +242,7 @@ export function lightUniforms() {
   };
 }
 
+/** The cave's dim blue ambient light, for custom shaders. */
 export const AMBIENT = new THREE.Color("#12223a");
 
 /**

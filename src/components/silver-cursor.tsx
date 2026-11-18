@@ -1,16 +1,23 @@
 "use client";
 import { useEffect, useRef } from "react";
+/**
+ * A custom cursor for mice: a dot that follows exactly and a ring that trails
+ * behind, growing (with a label like "View") over things you can click.
+ * Setting html[data-cursor="silver"] hides the normal cursor (see globals.css).
+ * Never used for touch, keyboard use, text fields, or with motion off.
+ */
 export default function SilverCursor({ still }: { still: boolean }) {
   const ring = useRef<HTMLDivElement>(null);
   const dot = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const media = matchMedia("(pointer: fine) and (hover: hover)");
     if (still || !media.matches) return;
-    let x = -100,
-      y = -100,
-      rx = -100,
-      ry = -100,
-      frame = 0;
+    // the mouse (x, y) and the trailing ring (rx, ry)
+    let x = -100;
+    let y = -100;
+    let rx = -100;
+    let ry = -100;
+    let frame = 0;
     const hide = () => {
       document.documentElement.removeAttribute("data-cursor");
     };
@@ -35,6 +42,7 @@ export default function SilverCursor({ still }: { still: boolean }) {
         return;
       }
       if (ring.current) {
+        // the ring's label: an explicit data-cursor-label, else a sensible default
         ring.current.dataset.interactive = String(!!interactive);
         ring.current.textContent =
           interactive?.getAttribute("data-cursor-label") ||
@@ -46,6 +54,7 @@ export default function SilverCursor({ still }: { still: boolean }) {
       }
       if (!frame) frame = requestAnimationFrame(draw);
     };
+    // ease the ring toward the mouse; stop animating once it has caught up
     const draw = () => {
       rx += (x - rx) * 0.24;
       ry += (y - ry) * 0.24;

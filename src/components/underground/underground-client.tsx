@@ -1,4 +1,9 @@
 "use client";
+/**
+ * The /underground page: the 3D scene (loaded in the browser only), a loader
+ * until it's ready, and the overlays on top: orb counter, potion effects,
+ * sound, field guide, story HUD, touch controls and the starter hint.
+ */
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -15,6 +20,10 @@ const UndergroundScene = dynamic(() => import("./scene"), { ssr: false });
 
 const EMPTY = { found: [] as string[], total: 0, last: null };
 
+/**
+ * Top right: energy collected for the rocket, then (once it's charged) how
+ * many of all the orbs you've found. A toast celebrates each catch.
+ */
 function OrbCounter() {
   const s = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY);
   const [toast, setToast] = useState<string | null>(null);
@@ -23,17 +32,17 @@ function OrbCounter() {
 
   useEffect(() => {
     if (!s.last) return;
-    const n = s.found.length;
+    const found = s.found.length;
     setToast(
-      n === s.total
-        ? `You found every light · ${n} / ${s.total}`
-        : n === ENERGY_NEEDED
+      found === s.total
+        ? `You found every energy orb · ${found} / ${s.total}`
+        : found === ENERGY_NEEDED
           ? "The rocket has all the energy it needs!"
-          : n < ENERGY_NEEDED
-            ? `Energy for the rocket · ${n} / ${ENERGY_NEEDED}`
-            : `Found an extra light · ${n} / ${s.total}`,
+          : found < ENERGY_NEEDED
+            ? `Energy for the rocket · ${found} / ${ENERGY_NEEDED}`
+            : `Found an extra orb · ${found} / ${s.total}`,
     );
-    const t = window.setTimeout(() => setToast(null), n === s.total || n === ENERGY_NEEDED ? 5000 : 2600);
+    const t = window.setTimeout(() => setToast(null), found === s.total || found === ENERGY_NEEDED ? 5000 : 2600);
     return () => window.clearTimeout(t);
   }, [s.last, s.found.length, s.total]);
 
@@ -43,7 +52,7 @@ function OrbCounter() {
       <div
         className={styles.counter}
         aria-live="polite"
-        title={charged ? "Extra lights you've found, out of all of them" : "Energy orbs the rocket needs to fly home"}
+        title={charged ? "Energy orbs you've found, out of all of them" : "Energy orbs the rocket needs to fly home"}
       >
         <span className={styles.counterOrb} aria-hidden="true" />
         <span>
@@ -55,7 +64,7 @@ function OrbCounter() {
             type="button"
             className={styles.counterReset}
             onClick={() => {
-              if (window.confirm("Put all the lights back and start collecting again?")) orbStore.reset();
+              if (window.confirm("Put all the energy orbs back and start collecting again?")) orbStore.reset();
             }}
           >
             reset
@@ -69,6 +78,7 @@ function OrbCounter() {
   );
 }
 
+/** Sound on / off (M). Also starts the sound engine on the first click or key press. */
 function SoundButton() {
   const muted = useSyncExternalStore(
     (fn) => sound.subscribe(fn),
@@ -108,14 +118,23 @@ function SoundButton() {
 
 const EMPTY_LOOK = { tint: null, fluff: 0, glowUntil: 0, bounceUntil: 0, flyUntil: 0, last: null };
 
+/** Chips for what the potions are doing (fluff level, seconds left of glow / bounce / wings). */
 function PotionStatus() {
   const look = useSyncExternalStore(lookStore.subscribe, lookStore.get, () => EMPTY_LOOK);
   const [now, setNow] = useState(() => Date.now());
   const [toast, setToast] = useState<string | null>(null);
+  // count down once a second, only while a timed potion is working
+  const until = Math.max(look.glowUntil, look.bounceUntil, look.flyUntil);
   useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    if (until <= Date.now()) return;
+    setNow(Date.now());
+    const t = window.setInterval(() => {
+      const time = Date.now();
+      setNow(time);
+      if (time > until) window.clearInterval(t);
+    }, 1000);
     return () => window.clearInterval(t);
-  }, []);
+  }, [until]);
   useEffect(() => {
     if (!look.last) return;
     setToast(look.last.text);
@@ -147,6 +166,7 @@ function PotionStatus() {
 }
 
 export default function UndergroundClient() {
+  // the starter hint fades after 14 s (hover brings it back)
   const [ready, setReady] = useState(false);
   const [hintHidden, setHintHidden] = useState(false);
   const [locked, setLocked] = useState(false);
