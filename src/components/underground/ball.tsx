@@ -26,6 +26,7 @@ import {
   pads,
   terrainHeight,
   tunnelDistance,
+  TUNNEL_APRON,
   tunnelNearest,
   TUNNEL_RADIUS,
   TUNNEL_SAMPLES,
@@ -38,6 +39,7 @@ import { sound } from "./audio";
 import { lookStore } from "./look-store";
 import { guideStore } from "./guide-store";
 import { storyStore } from "./story-store";
+import { bobState, stick } from "./touch";
 
 const FLUFF_LENGTH = [0.085, 0.13, 0.18, 0.24];
 
@@ -50,7 +52,7 @@ function useKeys() {
   useEffect(() => {
     const game = new Set([
       "KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
-      "Space", "ShiftLeft", "ShiftRight", "KeyC", "KeyR", "KeyQ", "KeyE",
+      "Space", "ShiftLeft", "ShiftRight", "KeyC", "KeyH", "KeyQ", "KeyE",
     ]);
     const down = (e: KeyboardEvent) => {
       if (guideStore.isOpen() || storyStore.inputBlocked()) {
@@ -93,23 +95,41 @@ function useLook() {
   useEffect(() => {
     const el = gl.domElement;
     let dragging = false;
+    // a finger dragging on the scene (the stick and buttons sit on top, so
+    // they never reach here); tracked by id so a second finger can't steer
+    let finger: { id: number; x: number; y: number } | null = null;
+    const turn = (dx: number, dy: number, speed: number) => {
+      const l = look.current;
+      l.yaw -= dx * speed;
+      // wide range: from looking steeply down to looking almost straight up
+      l.pitch = THREE.MathUtils.clamp(l.pitch + dy * speed * 0.92, -1.3, 1.35);
+      l.lastManual = performance.now() / 1000;
+    };
     const onDown = (e: PointerEvent) => {
+      if (e.pointerType === "touch") {
+        if (!finger) finger = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        return;
+      }
       dragging = true;
       if (e.pointerType === "mouse" && document.pointerLockElement !== el) {
         el.requestPointerLock?.()?.catch?.(() => {});
       }
     };
-    const onUp = () => {
-      dragging = false;
+    const onUp = (e: PointerEvent) => {
+      if (finger && e.pointerId === finger.id) finger = null;
+      if (e.pointerType !== "touch") dragging = false;
     };
     const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") {
+        if (!finger || e.pointerId !== finger.id) return;
+        turn(e.clientX - finger.x, e.clientY - finger.y, 0.0055);
+        finger.x = e.clientX;
+        finger.y = e.clientY;
+        return;
+      }
       const locked = document.pointerLockElement === el;
       if (!locked && !dragging) return;
-      const l = look.current;
-      l.yaw -= e.movementX * 0.0024;
-      // wide range: from looking steeply down to looking almost straight up
-      l.pitch = THREE.MathUtils.clamp(l.pitch + e.movementY * 0.0022, -1.3, 1.35);
-      l.lastManual = performance.now() / 1000;
+      turn(e.movementX, e.movementY, 0.0024);
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -118,11 +138,13 @@ function useLook() {
     };
     el.addEventListener("pointerdown", onDown);
     window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
     window.addEventListener("pointermove", onMove);
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       el.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
       window.removeEventListener("pointermove", onMove);
       el.removeEventListener("wheel", onWheel);
     };
@@ -139,23 +161,19 @@ function furTexture(tint: string | null) {
         const hex = (col: THREE.Color) => `#${col.getHexString()}`;
         const rgba = (col: THREE.Color, a: number) => `rgba(${Math.round(col.r * 255)},${Math.round(col.g * 255)},${Math.round(col.b * 255)},${a})`;
         return {
-          top: hex(c.clone().offsetHSL(0, 0, -0.08)),
+          top: hex(c),
           mid: hex(c),
-          bottom: hex(c.clone().offsetHSL(0, 0, -0.14)),
-          ring: (a: number) => rgba(c.clone().offsetHSL(0, 0.05, -0.32), a),
-          cream: (a: number) => rgba(c.clone().lerp(new THREE.Color("#ffffff"), 0.78), a),
-          light: (a: number) => rgba(c.clone().lerp(new THREE.Color("#ffffff"), 0.45), a),
-          dark: (a: number) => rgba(c.clone().offsetHSL(0, 0, -0.4), a),
+          bottom: hex(c),
+          light: (a: number) => rgba(c.clone().lerp(new THREE.Color("#ffffff"), 0.35), a),
+          dark: (a: number) => rgba(c.clone().offsetHSL(0, 0, -0.18), a),
         };
       })()
     : {
-        top: "#b8452a",
+        top: "#d4532e",
         mid: "#d4532e",
-        bottom: "#a63a24",
-        ring: (a: number) => `rgba(70,22,14,${a})`,
-        cream: (a: number) => `rgba(255,232,206,${a})`,
-        light: (a: number) => `rgba(255,170,120,${a})`,
-        dark: (a: number) => `rgba(60,15,10,${a})`,
+        bottom: "#d4532e",
+        light: (a: number) => `rgba(255,150,110,${a})`,
+        dark: (a: number) => `rgba(170,55,35,${a})`,
       };
   const w = 1024;
   const h = 512;
@@ -169,29 +187,6 @@ function furTexture(tint: string | null) {
   grad.addColorStop(1, pal.bottom);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
-  // soft rings, like a red panda's tail
-  for (const y of [0.3, 0.7]) {
-    const g = ctx.createLinearGradient(0, h * (y - 0.07), 0, h * (y + 0.07));
-    g.addColorStop(0, pal.ring(0));
-    g.addColorStop(0.5, pal.ring(0.8));
-    g.addColorStop(1, pal.ring(0));
-    ctx.fillStyle = g;
-    ctx.fillRect(0, h * (y - 0.07), w, h * 0.14);
-  }
-  // cream patches
-  for (const [x, y] of [
-    [0.22, 0.5],
-    [0.72, 0.5],
-  ]) {
-    const g = ctx.createRadialGradient(w * x, h * y, 0, w * x, h * y, h * 0.2);
-    g.addColorStop(0, pal.cream(1));
-    g.addColorStop(0.55, pal.cream(0.85));
-    g.addColorStop(1, pal.cream(0));
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(w * x, h * y, h * 0.24, h * 0.2, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
   // strands
   let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -201,7 +196,7 @@ function furTexture(tint: string | null) {
     const len = 4 + rnd() * 9;
     const a = Math.PI / 2 + (rnd() - 0.5) * 0.9;
     const light = rnd() < 0.5;
-    ctx.strokeStyle = light ? pal.light(0.08 + rnd() * 0.12) : pal.dark(0.08 + rnd() * 0.14);
+    ctx.strokeStyle = light ? pal.light(0.05 + rnd() * 0.08) : pal.dark(0.05 + rnd() * 0.08);
     ctx.lineWidth = 0.8 + rnd() * 1.2;
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -297,10 +292,10 @@ function furShellMaterial(fur: THREE.Texture) {
         float taper = (1.0 - vS / strandLen);
         if (length(f) > 0.62 * taper + 0.04) discard;
         vec3 fur = texture2D(uFur, vUv).rgb;
-        float ao = mix(0.35, 1.0, vS);
+        float ao = mix(0.6, 1.0, vS);
         float tip = vS * vS;
         vec3 col = mix(fur, fur * 1.35 + vec3(0.05, 0.03, 0.02), tip) * ao;
-        float light = 0.5 + 0.5 * clamp(vN.y * 0.6 + 0.4, 0.0, 1.0);
+        float light = 0.74 + 0.26 * clamp(vN.y * 0.6 + 0.4, 0.0, 1.0);
         float rim = pow(1.0 - max(dot(vN, vV), 0.0), 2.0);
         col = col * light * 0.95 + fur * (0.22 + uGlow * 0.6) + mix(vec3(1.0, 0.55, 0.38), fur, 0.5) * rim * (0.35 + uGlow) * vS;
         gl_FragColor = vec4(col, 1.0);
@@ -400,6 +395,9 @@ export function Ball() {
     /** physics steps left in which a landing is soft (no trampoline) */
     softLand: 0,
     padFlight: null as null | { target: THREE.Vector3; steering: boolean; t: number },
+    /** recent spots where Bob stood safely on the ground (oldest first) */
+    safe: [] as THREE.Vector3[],
+    safeClock: 0,
   });
 
   // ---- physics-rate control
@@ -483,13 +481,20 @@ export function Ball() {
     if (k.KeyS || k.ArrowDown) iz -= 1;
     if (k.KeyD || k.ArrowRight) ix += 1;
     if (k.KeyA || k.ArrowLeft) ix -= 1;
+    // the on-screen stick (phones): analog, so a light push rolls slowly
+    const stickOn = stick.mag > 0.12 && !storyStore.inputBlocked() && !guideStore.isOpen();
+    if (stickOn) {
+      ix += stick.x;
+      iz += stick.y;
+    }
     const dir = tmpV.set(fx * iz + -fz * ix, 0, fz * iz + fx * ix);
     // while a puffball is carrying you onto a cap, it does the steering
     const hasInput = dir.lengthSq() > 0 && !st.padFlight;
     if (hasInput) dir.normalize();
     const sprint = !!(k.ShiftLeft || k.ShiftRight);
     const flyingNow = Date.now() < look0.flyUntil && !st.swimming && !st.grounded;
-    const maxSpeed = st.swimming ? (sprint ? 9 : 6.5) : st.ducking ? 4.4 : sprint ? 13 : flyingNow ? 10 : 7.6;
+    const analog = stickOn && !(k.KeyW || k.KeyA || k.KeyS || k.KeyD) ? THREE.MathUtils.clamp((stick.mag - 0.12) / 0.75, 0.3, 1) : 1;
+    const maxSpeed = (st.swimming ? (sprint ? 9 : 6.5) : st.ducking ? 4.4 : sprint ? 13 : flyingNow ? 10 : 7.6) * analog;
     const accel = st.swimming ? 24 : st.grounded ? (sprint ? 40 : 32) : flyingNow ? 26 : 16;
     const m = b.mass();
     if (hasInput) {
@@ -581,6 +586,8 @@ export function Ball() {
         b.applyImpulse({ x: tn.tangent.x * 3 * m * dt, y: tn.tangent.y * 3 * m * dt, z: tn.tangent.z * 3 * m * dt }, true);
         const off = new THREE.Vector3(pos.x - tn.point.x, pos.y - tn.point.y, pos.z - tn.point.z);
         const o = off.length();
+        // (steering is stronger than this pull, so you can still swim for a
+        // crystal gate's gap; but you won't drift into it by accident)
         if (o > 0.6) off.multiplyScalar(-((o - 0.6) * 9) / o);
         else off.set(0, 0, 0);
         b.applyImpulse({ x: off.x * m * dt, y: off.y * m * dt, z: off.z * m * dt }, true);
@@ -683,13 +690,24 @@ export function Ball() {
       b.applyImpulse({ x: (-pos.x / r) * push * m * dt, y: 0, z: (-pos.z / r) * push * m * dt }, true);
     }
 
-    // respawn on R, or if something went very wrong
-    const underground = pos.y < terrainHeight(pos.x, pos.z) - 6 && tunnelDistance(pos.x, pos.y, pos.z) > 7;
-    if (k.KeyR || underground || pos.y < -80) {
-      b.setTranslation(spawn, true);
+    // remember where Bob last stood safely, a few times a second
+    const ground = terrainHeight(pos.x, pos.z);
+    st.safeClock += dt;
+    if (st.grounded && st.safeClock > 0.6 && pos.y > ground - 1 && tunnelDistance(pos.x, pos.y, pos.z) > TUNNEL_APRON + 1) {
+      st.safeClock = 0;
+      st.safe.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+      if (st.safe.length > 4) st.safe.shift();
+    }
+
+    // H takes Bob home; if he ever slips under the world, put him back where he last stood
+    const underground = pos.y < ground - 6 && tunnelDistance(pos.x, pos.y, pos.z) > 7;
+    if (k.KeyH || underground || pos.y < -80) {
+      const back = !k.KeyH && st.safe.length ? st.safe[0].clone().add(new THREE.Vector3(0, 0.6, 0)) : spawn;
+      if (!k.KeyH) st.safe = st.safe.slice(0, 1);
+      b.setTranslation(back, true);
       b.setLinvel({ x: 0, y: 0, z: 0 }, true);
       b.setAngvel({ x: 0, y: 0, z: 0 }, true);
-      k.KeyR = false;
+      k.KeyH = false;
     }
   });
 
@@ -800,6 +818,10 @@ export function Ball() {
     player.velocity.set(vel.x, vel.y, vel.z);
     player.ducking = st.ducking;
     player.grounded = st.grounded;
+    bobState.grounded = st.grounded;
+    bobState.swimming = st.swimming;
+    bobState.flying = Date.now() < lookStore.get().flyUntil;
+    bobState.nearLog = HOLLOW_LOGS.some((l) => Math.hypot(center.x - l.x, center.z - l.z) < l.length * 0.5 + 3);
 
     // squash & stretch spring
     let target = 0;

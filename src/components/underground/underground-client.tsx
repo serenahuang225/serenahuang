@@ -7,6 +7,8 @@ import { lookStore } from "./look-store";
 import { sound } from "./audio";
 import { FieldGuide } from "./field-guide";
 import { StoryHud } from "./story-hud";
+import { TouchControls } from "./touch-controls";
+import { ENERGY_NEEDED } from "./story-data";
 import styles from "./underground.module.css";
 
 const UndergroundScene = dynamic(() => import("./scene"), { ssr: false });
@@ -16,24 +18,39 @@ const EMPTY = { found: [] as string[], total: 0, last: null };
 function OrbCounter() {
   const s = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY);
   const [toast, setToast] = useState<string | null>(null);
+  const n = s.found.length;
+  const charged = n >= ENERGY_NEEDED;
 
   useEffect(() => {
     if (!s.last) return;
     const n = s.found.length;
-    setToast(n === s.total ? `You found every light · ${n} / ${s.total}` : `Found a light · ${n} / ${s.total}`);
-    const t = window.setTimeout(() => setToast(null), n === s.total ? 6000 : 2600);
+    setToast(
+      n === s.total
+        ? `You found every light · ${n} / ${s.total}`
+        : n === ENERGY_NEEDED
+          ? "The rocket has all the energy it needs!"
+          : n < ENERGY_NEEDED
+            ? `Energy for the rocket · ${n} / ${ENERGY_NEEDED}`
+            : `Found an extra light · ${n} / ${s.total}`,
+    );
+    const t = window.setTimeout(() => setToast(null), n === s.total || n === ENERGY_NEEDED ? 5000 : 2600);
     return () => window.clearTimeout(t);
   }, [s.last, s.found.length, s.total]);
 
   if (!s.total) return null;
   return (
     <>
-      <div className={styles.counter} aria-live="polite">
+      <div
+        className={styles.counter}
+        aria-live="polite"
+        title={charged ? "Extra lights you've found, out of all of them" : "Energy orbs the rocket needs to fly home"}
+      >
         <span className={styles.counterOrb} aria-hidden="true" />
         <span>
-          {s.found.length} <span className={styles.counterOf}>/ {s.total}</span>
+          {n} <span className={styles.counterOf}>/ {charged ? s.total : ENERGY_NEEDED}</span>
         </span>
-        {s.found.length > 0 && (
+        <span className={styles.counterLabel}>{charged ? "found" : "energy"}</span>
+        {n > 0 && (
           <button
             type="button"
             className={styles.counterReset}
@@ -155,7 +172,7 @@ export default function UndergroundClient() {
       </div>
 
       <Link href="/" className={styles.back}>
-        ← Back through the glass
+        ←<span className={styles.backWords}> Back through the glass</span>
       </Link>
 
       {ready && <OrbCounter />}
@@ -163,6 +180,7 @@ export default function UndergroundClient() {
       <SoundButton />
       {ready && <FieldGuide />}
       {ready && <StoryHud />}
+      {ready && <TouchControls />}
 
       <div
         className={`${styles.hint} ${hintHidden ? styles.hintHidden : ""}`}
@@ -187,28 +205,14 @@ export default function UndergroundClient() {
             <kbd>→</kbd>
           </span>
           <span>
-            <b>roll</b> — W/↑ forward (the way the camera faces), S/↓ back, A/← left, D/→ right
+            <b>roll</b> (W / ↑ goes the way the camera faces)
           </span>
         </span>
-        <span><kbd>Shift</kbd> sprint</span>
         <span><kbd>Space</kbd> jump</span>
-        <span><kbd>C</kbd> duck (fit through logs)</span>
-        <span><kbd>C</kbd> in the air to stomp</span>
-        <span><kbd>Q</kbd><kbd>E</kbd> turn camera</span>
-        <span><kbd>R</kbd> respawn</span>
-        <span>In deep water: <kbd>Space</kbd> swim up, <kbd>C</kbd> dive</span>
-        <span>Roll into a bottle to drink it</span>
-        <span><kbd>T</kbd> talk</span>
-        <span><kbd>P</kbd> photo</span>
-        <span><kbd>I</kbd> field guide</span>
-        <span><kbd>F</kbd> full screen</span>
-        <span><kbd>M</kbd> sound</span>
-        <span>Roll onto a glowing puffball to reach the top of its mushroom</span>
-        <span>Gold pillars mark energy orbs · blue beams mark rocket parts</span>
-        <span>{locked ? "Esc to free the mouse" : "Click to look around"}</span>
+        <span>{locked ? <><kbd>Esc</kbd> frees the mouse</> : "click, then move the mouse to look"}</span>
+        <span>New controls pop up as you need them · all of them: <kbd>I</kbd> field guide</span>
       </div>
 
-      <p className={styles.touchNote}>This little world is best explored with a keyboard.</p>
     </main>
   );
 }

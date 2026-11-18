@@ -168,6 +168,13 @@
   color: #c9b98f;
 }
 
+.counterLabel {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c9b98f;
+}
+
 .counterOrb {
   width: 12px;
   height: 12px;
@@ -336,4 +343,55 @@
 .or {
   color: #8fb8b2;
   font-style: italic;
+}
+
+/* narrow windows: the compass sits bottom-left, so the starter line moves over */
+@media (max-width: 760px) {
+  .hint {
+    left: 128px;
+    right: 16px;
+    width: auto;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------- phones and tablets */
+
+.backWords {
+  display: inline;
+}
+
+@media (max-width: 520px) {
+  .backWords {
+    display: none;
+  }
+  .back {
+    padding: 9px 13px;
+  }
+}
+
+/* the bottom of the screen belongs to the stick and buttons */
+@media (hover: none) and (pointer: coarse) {
+  .soundButton {
+    top: 18px;
+    bottom: auto;
+  }
+  .counter {
+    top: 18px;
+    right: 12px;
+    padding: 7px 12px;
+  }
+  .counterReset {
+    display: none;
+  }
+  .effects {
+    top: 236px;
+    right: 12px;
+  }
+  .toast {
+    top: 112px;
+  }
+  .toastLow {
+    top: 156px;
+  }
 }

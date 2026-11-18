@@ -4,6 +4,8 @@
  * Progress is kept in this browser (a per-viewer convenience).
  */
 import { BOB_INTRO, NPCS, PARTS, type Effect, type Line, type NpcId, type PartId } from "./story-data";
+import { redirectLine, type Goal } from "./quest";
+import { orbStore } from "./orb-store";
 
 export type Phase = "card" | "falling" | "intro" | "play" | "launch" | "ended" | "free";
 
@@ -18,11 +20,15 @@ type State = {
   photos: Photo[];
   reveals: Array<{ x: number; z: number; r: number }>;
   met: NpcId[];
-  /** Conversation on screen: who (or "bob") and which line. */
-  talk: { who: NpcId | "bob"; node: string } | null;
+  /** Conversation on screen: who (or "bob") and which line (or a line made up on the spot). */
+  talk: { who: NpcId | "bob"; node: string; line?: Line } | null;
   action: Action;
   prompt: string | null;
   note: { text: string; at: number } | null;
+  /** A puzzle on screen (Quartz's crystal song). */
+  puzzle: "song" | null;
+  /** A one-time control tip, shown when that control first becomes useful. */
+  tip: { id: string; text: string; at: number } | null;
   flash: number;
   photoRequest: number;
   startedAt: number;
@@ -30,6 +36,21 @@ type State = {
 };
 
 const KEY = "underground-story-v1";
+const TIPS_KEY = "underground-tips-v1";
+const TIP_MS = 7000;
+let tipsSeen: Set<string> | null = null;
+
+function seenTips() {
+  if (tipsSeen) return tipsSeen;
+  tipsSeen = new Set();
+  try {
+    const raw = window.localStorage.getItem(TIPS_KEY);
+    if (raw) for (const id of JSON.parse(raw)) tipsSeen.add(String(id));
+  } catch {
+    // storage blocked: tips just show again next visit
+  }
+  return tipsSeen;
+}
 const MAX_PHOTOS = 16;
 
 let state: State = {
@@ -43,6 +64,8 @@ let state: State = {
   action: null,
   prompt: null,
   note: null,
+  puzzle: null,
+  tip: null,
   flash: 0,
   photoRequest: 0,
   startedAt: 0,
@@ -87,13 +110,24 @@ const partName = (id: PartId) => PARTS.find((p) => p.id === id)?.name ?? id;
 
 export function lineFor(talk: State["talk"]): Line | null {
   if (!talk) return null;
+  if (talk.line) return talk.line;
   if (talk.who === "bob") return BOB_INTRO[talk.node] ?? null;
   return NPCS.find((n) => n.id === talk.who)?.lines[talk.node] ?? null;
 }
 
 export const storyStore = {
   /** Where Bob is right now (updated quietly every frame, for the map). */
-  here: { x: 0, z: 58 },
+  here: {
+    x: 0,
+    y: 0,
+    z: 58,
+    /** Which way the camera looks, clockwise from north (-z), in radians. */
+    heading: 0,
+    /** What the HUD wants the compass to point at… */
+    goal: null as Goal | null,
+    /** …and where that actually is (the scene resolves "nearest orb"). */
+    aim: null as { x: number; z: number; y?: number } | null,
+  },
   load() {
     if (loaded) return;
     loaded = true;
@@ -129,7 +163,7 @@ export const storyStore = {
 
   /** True while the game shouldn't take movement keys. */
   inputBlocked() {
-    return state.talk !== null || state.phase === "card" || state.phase === "launch" || state.phase === "ended";
+    return state.talk !== null || state.puzzle !== null || state.phase === "card" || state.phase === "launch" || state.phase === "ended";
   },
   has(id: PartId) {
     return state.carried.includes(id) || state.delivered.includes(id);
@@ -154,7 +188,7 @@ export const storyStore = {
   },
   restart() {
     set(
-      { phase: "card", carried: [], delivered: [], photos: [], reveals: [], met: [], talk: null, startedAt: 0, endedAt: 0 },
+      { phase: "card", carried: [], delivered: [], photos: [], reveals: [], met: [], talk: null, puzzle: null, startedAt: 0, endedAt: 0 },
       true,
     );
   },
@@ -183,8 +217,10 @@ export const storyStore = {
     if (!same) set({ action, prompt });
   },
   talkTo(npc: NpcId) {
+    // a friend whose part is done sends Bob on to whatever's next
+    const again = redirectLine(npc, state, orbStore.get().found.length);
     const met = state.met.includes(npc) ? state.met : [...state.met, npc];
-    set({ talk: { who: npc, node: "start" }, met }, true);
+    set({ talk: again ? { who: npc, node: "again", line: again } : { who: npc, node: "start" }, met }, true);
   },
   choose(next: string | null, effect?: Effect) {
     if (effect) storyStore.apply(effect);
@@ -202,9 +238,19 @@ export const storyStore = {
     if ("give" in effect) storyStore.pickUp(effect.give);
     else if ("reveal" in effect) set({ reveals: [...state.reveals, effect.reveal] }, true);
     else if ("startPlay" in effect) set({ phase: "play" }, true);
+    else if ("puzzle" in effect) set({ puzzle: effect.puzzle, talk: null });
   },
   closeTalk() {
     set({ talk: null });
+  },
+  /** Quartz's song sung right: she hands over the lens. */
+  solvePuzzle() {
+    set({ puzzle: null, talk: { who: "quartz", node: "songDone" } });
+    const line = lineFor(state.talk);
+    if (line?.effect) storyStore.apply(line.effect);
+  },
+  leavePuzzle() {
+    set({ puzzle: null });
   },
 
   // ---- photos
@@ -218,5 +264,26 @@ export const storyStore = {
   },
   notify(text: string) {
     set({ note: { text, at: Date.now() } });
+  },
+  /** Has this tip been shown before (on this browser)? */
+  tipSeen(id: string) {
+    return seenTips().has(id);
+  },
+  /**
+   * Show a one-time tip. Returns false if another tip is still on screen, so
+   * the caller can try again a moment later.
+   */
+  tip(id: string, text: string) {
+    const seen = seenTips();
+    if (seen.has(id)) return true;
+    if (state.tip && Date.now() - state.tip.at < TIP_MS) return false;
+    seen.add(id);
+    try {
+      window.localStorage.setItem(TIPS_KEY, JSON.stringify([...seen]));
+    } catch {
+      // ignore
+    }
+    set({ tip: { id, text, at: Date.now() } });
+    return true;
   },
 };

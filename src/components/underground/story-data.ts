@@ -5,17 +5,17 @@
  */
 
 export const ROCKET = { x: -2.2, z: 45.8 };
-export const ENERGY_NEEDED = 20;
+export const ENERGY_NEEDED = 10;
 
 /** Things conversations point the camera at. */
 const SKY_EYE = { x: -2.2, y: 131, z: 45.8 };
-const ROCKET_VIEW = { x: -2.2, y: 3.6, z: 45.8 };
-const GREAT_CAP = { x: 0.8, y: 34, z: 0.7 };
-const GREAT_CAP_TOP = { x: 0.8, y: 39.5, z: 0.7 };
-const DEEP_LAKE = { x: 60, y: 2, z: 75 };
-const HOLLOW = { x: 110, y: 7, z: 75 };
-const LAKE_FLOOR = { x: 55, y: -8, z: 71 };
-const TUNNEL_MOUTH_VIEW = { x: 66, y: -8, z: 75 };
+export const ROCKET_VIEW = { x: -2.2, y: 3.6, z: 45.8 };
+export const GREAT_CAP = { x: 0.8, y: 34, z: 0.7 };
+export const GREAT_CAP_TOP = { x: 0.8, y: 39.5, z: 0.7 };
+export const DEEP_LAKE = { x: 60, y: 2, z: 75 };
+export const HOLLOW = { x: 110, y: 7, z: 75 };
+export const LAKE_FLOOR = { x: 55, y: -8, z: 71 };
+export const TUNNEL_MOUTH_VIEW = { x: 66, y: -8, z: 75 };
 export const PHOTO_REVEAL = 58;
 
 export type PartId = "hull" | "spring" | "lens" | "fins" | "nozzle" | "cone" | "wire";
@@ -36,7 +36,7 @@ export const PARTS: Part[] = [
   { id: "fins", name: "Tail fins", hint: "Finn dropped them at the bottom of the deep lake.", at: { x: 55, z: 71, y: -8.4 } },
   { id: "wire", name: "Copper wire", hint: "Snagged on crystals halfway along the flooded tunnel.", at: { x: 96.2, z: 74.4, y: -15.6 } },
   { id: "nozzle", name: "Engine nozzle", hint: "Elder Puff keeps an odd whistling thing in the cave.", from: "elder" },
-  { id: "lens", name: "Window lens", hint: "Quartz can grow one, if you answer her riddle.", from: "quartz" },
+  { id: "lens", name: "Window lens", hint: "Quartz can grow one, if you sing her crystal song back to her.", from: "quartz" },
 ];
 
 export type NpcId = "pip" | "moss" | "finn" | "elder" | "quartz";
@@ -44,7 +44,8 @@ export type NpcId = "pip" | "moss" | "finn" | "elder" | "quartz";
 export type Effect =
   | { give: PartId }
   | { reveal: { x: number; z: number; r: number } }
-  | { startPlay: true };
+  | { startPlay: true }
+  | { puzzle: "song" };
 
 export type Choice = {
   text: string;
@@ -254,7 +255,7 @@ export const NPCS: Npc[] = [
         choices: [{ text: "Those are my rocket's fins!", next: "hub" }],
       },
       deep: {
-        text: "There's a hole in the lake floor that leads into the crystal tunnel. Swim with the current and it carries you to the Hollow. A coil of copper wire is stuck in the crystals halfway along!",
+        text: "There's a hole in the lake floor that leads into the crystal tunnel, all the way to the Hollow. Crystals grow across it in four places — find the glowing gap in each and squeeze through. Your copper wire is stuck just past the last one!",
         focus: TUNNEL_MOUTH_VIEW,
         effect: { reveal: { x: 90, z: 74, r: 22 } },
         choices: [{ text: "Thanks, Finn!", next: "hub" }],
@@ -326,13 +327,13 @@ export const NPCS: Npc[] = [
     z: -98.5,
     talkRange: 3.6,
     color: "#b48cff",
-    bio: "A floating sprite of living crystal who keeps the crystal garden humming. Loves riddles.",
+    bio: "A floating sprite of living crystal who keeps the crystal garden humming. Loves a good tune.",
     lines: {
       start: {
         text: "Hmmmmm… (the crystals hum)… Oh! A guest. I am Quartz. I keep the crystals singing.",
         choices: [
           { text: "Crystals can sing?", next: "sing" },
-          { text: "Could you make a glass window for my rocket?", next: "riddle", unlessHas: "lens" },
+          { text: "Could you make a glass window for my rocket?", next: "song", unlessHas: "lens" },
           { text: "What's around here?", next: "place" },
           bye("Goodbye, Quartz."),
         ],
@@ -340,7 +341,7 @@ export const NPCS: Npc[] = [
       hub: {
         text: "Hmmm?",
         choices: [
-          { text: "About that window…", next: "riddle", unlessHas: "lens" },
+          { text: "About that window…", next: "song", unlessHas: "lens" },
           { text: "What's around here?", next: "place" },
           bye("Goodbye, Quartz."),
         ],
@@ -350,32 +351,22 @@ export const NPCS: Npc[] = [
         choices: [{ text: "I'll listen.", next: "hub" }],
       },
       place: {
-        text: "West, the shallow glowing lake. North, the Great Cap. Far to the east, the deep lake, the falls, and the Hollow beyond.",
+        text: "South, past the Great Cap, your rocket, and the shallow glowing lake beyond it. Far to the south-east, the deep lake, the falls, and the Hollow.",
         focus: GREAT_CAP,
         effect: { reveal: { x: -70, z: 62, r: 34 } },
         choices: [{ text: "Thanks!", next: "hub" }],
       },
-      riddle: {
-        text: "I can grow you a lens. But first, a riddle: what grows in the dark, yet glows like the day?",
+      song: {
+        text: "I can grow you a lens… if you can sing my crystals' song back to me. I hum it, you repeat it. Three verses, each a little longer. Ready?",
         choices: [
-          { text: "Mushrooms!", next: "right" },
-          { text: "Socks?", next: "wrong" },
-          { text: "Me, after a glow potion.", next: "clever" },
+          { text: "I'm ready!", next: null, effect: { puzzle: "song" } },
+          { text: "Not yet…", next: "hub" },
         ],
       },
-      wrong: {
-        text: "…Socks. Hmm. No. Listen to the hum and try again.",
-        choices: [{ text: "Let me think…", next: "riddle" }],
-      },
-      right: {
-        text: "Correct! Here is your lens, clear as a raindrop.",
+      songDone: {
+        text: "Oh! The whole garden is singing with you. Here is your lens, clear as a raindrop.",
         effect: { give: "lens" },
         choices: [{ text: "It's beautiful. Thank you!", next: "hub" }],
-      },
-      clever: {
-        text: "Ha! Clever. That counts. Here is your lens.",
-        effect: { give: "lens" },
-        choices: [{ text: "Thank you, Quartz!", next: "hub" }],
       },
     },
   },
@@ -426,9 +417,9 @@ export const MAP = {
   bridge: { x: 60, z0: 47, z1: 103 },
   tunnel: [
     [66, 75],
-    [74, 76.5],
-    [86, 73.5],
-    [97, 74.5],
-    [106, 75],
+    [75, 76],
+    [87, 73.8],
+    [96.5, 74.5],
+    [105, 75],
   ] as Array<[number, number]>,
 };

@@ -3,11 +3,12 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { CylinderCollider, RigidBody } from "@react-three/rapier";
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as THREE from "three";
-import { DEEP_LEVEL, TUNNEL_RADIUS, inDeepWater, terrainHeight, tunnelDistance } from "./world-data";
+import { DEEP_LEVEL, HOLLOW_LOGS, TUNNEL_GATES, ORBS, POTIONS, TUNNEL_RADIUS, inDeepWater, pads, terrainHeight, tunnelDistance } from "./world-data";
 import { GLSL_BILLBOARD, billboardGeometry, control, player, shared } from "./shared";
 import { makeRockMaterial } from "./terrain";
 import { sound } from "./audio";
 import { orbStore } from "./orb-store";
+import { isTouchDevice } from "./touch";
 import { lineFor, storyStore } from "./story-store";
 import { ENERGY_NEEDED, NPCS, PARTS, ROCKET, type Npc, type PartId } from "./story-data";
 
@@ -815,8 +816,10 @@ export function PhotoCapture() {
 
 // ---------------------------------------------------------------- the director: intro fall, prompts
 
+const compassDir = new THREE.Vector3();
+
 export function StoryDirector() {
-  const clock = useRef({ t: 0, fellAt: 0, airborne: false, startX: NaN, startZ: NaN, moved: false });
+  const clock = useRef({ t: 0, fellAt: 0, airborne: false, startX: NaN, startZ: NaN, moved: false, movedAt: 0, metAt: 0 });
   useEffect(() => {
     storyStore.load();
     // already mid-adventure? start beside the rocket
@@ -859,8 +862,29 @@ export function StoryDirector() {
       camState.current.active = false;
       if (st.phase !== "launch") control.camera = null;
     }
-    storyStore.here.x = p.x;
-    storyStore.here.z = p.z;
+    const here = storyStore.here;
+    here.x = p.x;
+    here.y = p.y;
+    here.z = p.z;
+    // compass: which way the camera faces, and where the current goal is
+    camera.getWorldDirection(compassDir);
+    here.heading = Math.atan2(compassDir.x, -compassDir.z);
+    if (here.goal === "orb") {
+      const found = orbStore.get().found;
+      let best: THREE.Vector3 | null = null;
+      let bestD = Infinity;
+      for (const o of ORBS) {
+        if (found.includes(o.id)) continue;
+        const d = (o.pos.x - p.x) ** 2 + (o.pos.z - p.z) ** 2;
+        if (d < bestD) {
+          bestD = d;
+          best = o.pos;
+        }
+      }
+      here.aim = best ? { x: best.x, y: best.y, z: best.z } : null;
+    } else {
+      here.aim = here.goal;
+    }
 
     if (st.phase === "falling") {
       if (!c.fellAt) {
@@ -908,10 +932,15 @@ export function StoryDirector() {
       }
     }
     if (!prompt && inDeepWater(p.x, p.y, p.z)) {
+      const touch = isTouchDevice();
       prompt =
         tunnelDistance(p.x, p.y, p.z) < 4
-          ? "Swimming — W follows the tunnel · the current carries you to the cave · Space up · C down"
-          : "Swimming — W A S D to swim · Space to rise · C to dive";
+          ? touch
+            ? "Swimming — push the stick up to follow the tunnel · steer with it sideways"
+            : "Swimming — W follows the tunnel · Space up · C down · A / D sideways"
+          : touch
+            ? "Swimming — the stick swims you around"
+            : "Swimming — W A S D to swim · Space to rise · C to dive";
     } else if (!prompt && p.y > DEEP_LEVEL + 0.5 && st.carried.length) {
       prompt = `Carrying ${st.carried.length} part${st.carried.length > 1 ? "s" : ""} — bring ${st.carried.length > 1 ? "them" : "it"} to the rocket under the beam of light`;
     }
@@ -920,9 +949,49 @@ export function StoryDirector() {
       c.startX = p.x;
       c.startZ = p.z;
     }
-    if (!c.moved && Math.hypot(p.x - c.startX, p.z - c.startZ) > 6) c.moved = true;
-    if (!c.moved && !action) prompt = "Roll with W A S D or the arrow keys — W / ↑ goes the way the camera faces";
+    if (!c.moved && Math.hypot(p.x - c.startX, p.z - c.startZ) > 6) {
+      c.moved = true;
+      c.movedAt = c.t;
+    }
+    if (!c.moved && !action)
+      prompt = isTouchDevice()
+        ? "Push the stick on the left to roll"
+        : "Roll with W A S D or the arrow keys — W / ↑ goes the way the camera faces";
     storyStore.setAction(action, prompt);
+    if (c.moved) showTips(c, p, st.met.length > 0);
   });
   return null;
+}
+
+/**
+ * Controls are taught one at a time, the first time each becomes useful,
+ * instead of all at once. Each tip shows once per browser.
+ */
+function showTips(c: { t: number; movedAt: number; metAt: number }, p: THREE.Vector3, metSomeone: boolean) {
+  // wait for the starter line at the bottom to fade (about 14 s) first
+  if (c.t < 16) return;
+  const since = c.t - c.movedAt;
+  const near = (x: number, z: number, r: number) => Math.hypot(p.x - x, p.z - z) < r;
+  const ground = terrainHeight(p.x, p.z);
+  if (metSomeone && !c.metAt) c.metAt = c.t;
+  const tips: Array<[string, boolean, string, string | null]> = [
+    ["jump", since > 14, "Hold [Space] longer to jump higher, and keep holding it as you land on a mushroom cap for a bigger bounce.", "Hold [Jump] longer to jump higher, and keep holding it as you land on a mushroom cap for a bigger bounce."],
+    ["log", HOLLOW_LOGS.some((l) => near(l.x, l.z, l.length * 0.5 + 4)), "[C] means go down. Hold [C] to duck small and squeeze through the hollow log.", "Near a hollow log a [Duck] button pops up. Hold it to squeeze through."],
+    ["pad", pads.some((q) => near(q.x, q.z, 5)), "Roll onto a glowing puffball and it bounces you up onto its mushroom.", "Roll onto a glowing puffball and it bounces you up onto its mushroom."],
+    ["potion", POTIONS.some((q) => near(q.pos.x, q.pos.z, 4)), "Roll into a bottle to drink it. Potions change Bob for a while.", "Roll into a bottle to drink it. Potions change Bob for a while."],
+    ["stomp", !player.grounded && p.y > ground + 4 && !inDeepWater(p.x, p.y, p.z), "Up high? Press [C] in mid-air to stomp: you bounce higher off a mushroom cap.", "Up high? Tap [Stomp] in mid-air: you bounce higher off a mushroom cap."],
+    ["gate", TUNNEL_GATES.some((g) => p.distanceTo(g.center) < 9), "Crystal gate! Swim through the glowing ring: [Space] up, [C] down, [A] / [D] sideways.", "Crystal gate! Swim through the glowing ring: Swim up, Dive, or steer sideways with the stick."],
+    ["dive", inDeepWater(p.x, p.y, p.z), "[C] goes down here too: hold it to dive. [Space] swims back up.", "Hold [Dive] to swim down. [Swim up] takes you back up."],
+    ["photo", c.metAt > 0 && c.t - c.metAt > 8, "Press [P] to take a photo. Each one fills in more of the map in your field guide ([I]).", "Tap the camera button to take a photo. Each one fills in more of the map in your field guide."],
+    ["sprint", since > 25, "Hold [Shift] to sprint.", null],
+    ["camera", since > 50, "Move the mouse or press [Q] / [E] to turn the camera. Scroll to zoom.", null],
+    ["home", since > 160, "Lost? Follow the gold needle on the compass, or press [H] to roll home to your rocket.", "Lost? Follow the gold needle on the compass: it always points at your next goal."],
+  ];
+  const touch = isTouchDevice();
+  for (const [id, when, text, touchText] of tips) {
+    if (!when || storyStore.tipSeen(id)) continue;
+    if (touch && touchText === null) continue;
+    storyStore.tip(id, touch ? touchText! : text);
+    return;
+  }
 }

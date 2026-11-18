@@ -1059,3 +1059,20 @@
     display: none;
   }
 }
+
+/* phones: no keyboard, so no key hint on the button */
+@media (hover: none) and (pointer: coarse) {
+  .openButton kbd {
+    display: none;
+  }
+}
+
+/* phones: the bottom belongs to the stick and buttons */
+@media (hover: none) and (pointer: coarse) {
+  .toast {
+    top: 250px;
+    bottom: auto;
+    width: max-content;
+    max-width: calc(100% - 32px);
+  }
+}

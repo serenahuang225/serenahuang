@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { lineFor, storyStore } from "./story-store";
-import { ENERGY_NEEDED, NPCS, PARTS, type NpcId } from "./story-data";
+import { ENERGY_NEEDED, NPCS, type NpcId } from "./story-data";
+import { nextStep, questSteps, type Step } from "./quest";
 import { orbStore } from "./orb-store";
 import { guideStore } from "./guide-store";
 import { sound } from "./audio";
+import { isTouchDevice } from "./touch";
 import styles from "./story-hud.module.css";
 
 const EMPTY_ORBS = { found: [] as string[], total: 0, last: null };
@@ -146,7 +148,7 @@ function Dialogue() {
   const name = who === "bob" ? "Bob" : NPCS.find((n) => n.id === who)?.name;
   return (
     <div className={styles.dialogue} role="dialog" aria-label={`Talking with ${name}`}>
-      <div className={styles.bubble}>
+      <div className={styles.bubble} onClick={() => typing && setShown(line.text.length)}>
         <div className={styles.portrait}>
           <Portrait who={who} />
         </div>
@@ -170,40 +172,212 @@ function Dialogue() {
           ))}
         </ol>
       )}
-      {typing && <p className={styles.skip}>Space to skip</p>}
+      {typing && <p className={styles.skip}>{isTouchDevice() ? "Tap to skip" : "Space to skip"}</p>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Quartz's crystal song
+
+const CRYSTALS = [
+  { name: "blue", color: "#7fe8ff" },
+  { name: "violet", color: "#b48cff" },
+  { name: "pink", color: "#ff8be0" },
+  { name: "mint", color: "#8cffd9" },
+];
+const VERSES = [3, 4, 5];
+
+/**
+ * Quartz hums a little tune on four crystals; Bob sings it back. Three
+ * verses, each one note longer. A wrong note just means she hums it again.
+ */
+function SongPuzzle() {
+  const s = useStory();
+  const open = s.puzzle === "song";
+  const [song, setSong] = useState<number[]>([]);
+  const [verse, setVerse] = useState(0);
+  const [mode, setMode] = useState<"listen" | "play" | "oops" | "done">("listen");
+  const [step, setStep] = useState(0);
+  const [lit, setLit] = useState<number | null>(null);
+  const timers = useRef<number[]>([]);
+  const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
+  const clear = () => {
+    timers.current.forEach((t) => window.clearTimeout(t));
+    timers.current = [];
+  };
+
+  // a fresh tune each time the puzzle opens
+  useEffect(() => {
+    if (!open) return;
+    const tune: number[] = [];
+    for (let i = 0; i < VERSES[VERSES.length - 1]; i++) {
+      let n = Math.floor(Math.random() * 4);
+      if (i > 0 && n === tune[i - 1]) n = (n + 1 + Math.floor(Math.random() * 3)) % 4;
+      tune.push(n);
+    }
+    setSong(tune);
+    setVerse(0);
+    setMode("listen");
+    if (document.pointerLockElement) document.exitPointerLock();
+    return clear;
+  }, [open]);
+
+  // Quartz hums the verse
+  useEffect(() => {
+    if (!open || mode !== "listen" || !song.length) return;
+    clear();
+    const len = VERSES[verse];
+    const gap = verse === 0 ? 720 : 620;
+    for (let i = 0; i < len; i++) {
+      later(() => {
+        setLit(song[i]);
+        sound.crystal(song[i]);
+      }, 900 + i * gap);
+      later(() => setLit(null), 900 + i * gap + gap * 0.6);
+    }
+    later(() => {
+      setStep(0);
+      setMode("play");
+    }, 900 + len * gap);
+    return clear;
+  }, [open, mode, verse, song]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sing = (n: number) => {
+    if (mode !== "play") return;
+    sound.crystal(n);
+    setLit(n);
+    later(() => setLit(null), 260);
+    if (song[step] !== n) {
+      sound.oops();
+      setMode("oops");
+      later(() => setMode("listen"), 1300);
+      return;
+    }
+    if (step + 1 < VERSES[verse]) {
+      setStep(step + 1);
+      return;
+    }
+    if (verse + 1 < VERSES.length) {
+      setMode("listen");
+      setVerse(verse + 1);
+      return;
+    }
+    setMode("done");
+    later(() => storyStore.solvePuzzle(), 1100);
+  };
+
+  // keys 1–4 sing, Esc leaves
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      const n = Number(e.key);
+      if (n >= 1 && n <= 4) sing(n - 1);
+      else if (e.code === "Escape") storyStore.leavePuzzle();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  if (!open) return null;
+  const say =
+    mode === "listen"
+      ? verse === 0
+        ? "Listen closely…"
+        : "Lovely! Now a little longer… listen."
+      : mode === "play"
+        ? "Your turn. Sing it back!"
+        : mode === "oops"
+          ? "Hmm, not quite. I'll hum it again…"
+          : "Yes! That's the song!";
+  const touch = isTouchDevice();
+  return (
+    <div className={styles.dialogue} role="dialog" aria-label="Quartz's crystal song">
+      <div className={styles.bubble}>
+        <div className={styles.portrait}>
+          <Portrait who="quartz" />
+        </div>
+        <div className={styles.speech}>
+          <p className={styles.speaker}>
+            Quartz <span className={styles.verse}>verse {verse + 1} of {VERSES.length}</span>
+          </p>
+          <p className={styles.say} aria-live="polite">
+            {say}
+          </p>
+          <p className={styles.songDots} aria-hidden="true">
+            {Array.from({ length: VERSES[verse] }, (_, i) => (
+              <i key={i} className={mode === "play" && i < step ? styles.dotOn : mode === "done" ? styles.dotOn : ""} />
+            ))}
+          </p>
+        </div>
+      </div>
+      <div className={styles.crystals}>
+        {CRYSTALS.map((c, i) => (
+          <button
+            key={c.name}
+            type="button"
+            className={`${styles.crystalKey} ${lit === i ? styles.crystalLit : ""}`}
+            style={{ "--c": c.color } as React.CSSProperties}
+            onClick={() => sing(i)}
+            disabled={mode !== "play"}
+            aria-label={`${c.name} crystal`}
+          >
+            <span className={styles.gem} aria-hidden="true" />
+            {!touch && <kbd>{i + 1}</kbd>}
+          </button>
+        ))}
+      </div>
+      <button type="button" className={styles.songLeave} onClick={() => storyStore.leavePuzzle()}>
+        Maybe later{touch ? "" : " (Esc)"}
+      </button>
     </div>
   );
 }
 
 // ---------------------------------------------------------------- objectives + prompts
 
-type Step = { text: string; done: boolean; optional?: boolean; final?: boolean };
+const OBJ_KEY = "underground-objectives-open";
 
-/** The adventure as a chain of small, concrete steps, in a sensible order. */
-function questSteps(s: ReturnType<typeof storyStore.get>, energy: number): Step[] {
-  const has = (id: Parameters<typeof storyStore.has>[0]) => s.carried.includes(id) || s.delivered.includes(id);
-  const allParts = s.delivered.length === PARTS.length;
-  return [
-    { text: "Say hi to Pip, the little pink puffkin by your rocket (press T)", done: s.met.includes("pip") },
-    { text: "Grab the hull plate glowing in the grass near the rocket", done: has("hull") },
-    { text: "Roll to the big blue mushroom and visit Moss at its foot", done: s.met.includes("moss") },
-    { text: "Bounce up the spiral of caps to the top of the big blue mushroom for the nose cone", done: has("cone") },
-    { text: "Head east and cross the rope bridge — find Finn in the deep lake", done: s.met.includes("finn") },
-    { text: "Dive to the bottom of the deep lake for the tail fins (hold C)", done: has("fins") },
-    { text: "Swim into the crystal tunnel in the lake floor and grab the copper wire", done: has("wire") },
-    { text: "Follow the tunnel to the Hollow and ask Elder Puff about your rocket", done: has("nozzle") },
-    { text: "Find Quartz among the crystals in the south-west and solve her riddle", done: has("lens") },
-    { text: `Collect glowing energy orbs: ${Math.min(energy, ENERGY_NEEDED)}/${ENERGY_NEEDED}`, done: energy >= ENERGY_NEEDED, final: true },
-    { text: `Bring the parts back to the rocket: ${s.delivered.length}/${PARTS.length} fitted${s.carried.length ? ` (carrying ${s.carried.length})` : ""}`, done: allParts, final: true },
-    { text: "Go to the rocket and press T to launch!", done: s.phase === "free", final: true },
-    { text: `Take photos with P to fill in your map (${s.photos.length})`, done: s.photos.length >= 5, optional: true },
-  ];
+/** On a replay (once there's a best time to beat), a small running clock. */
+function RunClock() {
+  const s = useStory();
+  const [now, setNow] = useState(() => Date.now());
+  const [best, setBest] = useState<number | null>(null);
+  useEffect(() => setBest(readBest()), [s.phase]);
+  useEffect(() => {
+    if (s.phase !== "play" || !best) return;
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [s.phase, best]);
+  if (s.phase !== "play" || !best || !s.startedAt) return null;
+  const ms = now - s.startedAt;
+  return (
+    <span className={`${styles.runClock} ${ms > best ? styles.runSlow : ""}`} title={`Best time ${clock(best)}`}>
+      {clock(ms)} <small>/ {clock(best)}</small>
+    </span>
+  );
 }
 
 function Objectives() {
   const s = useStory();
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY_ORBS);
-  const [open, setOpen] = useState(true);
+  const [open, setOpenState] = useState(false);
+  useEffect(() => {
+    try {
+      setOpenState(window.localStorage.getItem(OBJ_KEY) === "1");
+    } catch {
+      // ignore
+    }
+  }, []);
+  const setOpen = (fn: (o: boolean) => boolean) =>
+    setOpenState((o) => {
+      const v = fn(o);
+      try {
+        window.localStorage.setItem(OBJ_KEY, v ? "1" : "0");
+      } catch {
+        // ignore
+      }
+      return v;
+    });
   const lastNext = useRef<string | null>(null);
   const active = s.phase === "play" || s.phase === "free";
   const steps = questSteps(s, orbs.found.length);
@@ -214,7 +388,7 @@ function Objectives() {
   // ...while the three goals for getting home are always shown together
   const finale = steps.filter((x) => x.final);
   const extras = steps.filter((x) => x.optional);
-  const next = current ?? finale.find((x) => !x.done) ?? null;
+  const next = nextStep(steps);
 
   // when a step is finished, say what's next
   const nextKey = next ? next.text.replace(/\d+\/\d+.*$/, "") : null;
@@ -238,7 +412,8 @@ function Objectives() {
     <section className={styles.objectives} aria-label="Objectives">
       <button type="button" className={styles.objHead} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span>{s.phase === "free" ? "Bob made it home!" : "Help Bob get home"}</span>
-        <span className={styles.objCount}>{open ? "–" : "+"}</span>
+        <RunClock />
+        <span className={styles.objCount}>{open ? "hide steps –" : "all steps +"}</span>
       </button>
       {/* finished story steps, then the one you're on now */}
       {open && revealed.some((x) => x.done) && <ul>{revealed.filter((x) => x.done).map(row)}</ul>}
@@ -261,7 +436,8 @@ function Objectives() {
 
 function Prompt() {
   const s = useStory();
-  if (!s.prompt || s.talk) return null;
+  if (!s.prompt || s.talk || s.puzzle) return null;
+  if (s.prompt.startsWith("T —") && isTouchDevice()) return null;
   return (
     <div className={styles.prompt} role="status">
       {s.prompt.startsWith("T —") ? (
@@ -288,6 +464,31 @@ function Notes() {
   return (
     <div className={`${styles.note} ${text ? styles.noteShown : ""}`} role="status">
       {text}
+    </div>
+  );
+}
+
+/** Turns "Press [Space] to jump" into text with key caps. */
+export function withKeys(text: string) {
+  return text.split(/(\[[^\]]+\])/).map((part, i) =>
+    part.startsWith("[") && part.endsWith("]") ? <kbd key={i}>{part.slice(1, -1)}</kbd> : <span key={i}>{part}</span>,
+  );
+}
+
+function Tip() {
+  const s = useStory();
+  const [tip, setTip] = useState<string | null>(null);
+  useEffect(() => {
+    if (!s.tip) return;
+    setTip(s.tip.text);
+    const t = window.setTimeout(() => setTip(null), 6800);
+    return () => window.clearTimeout(t);
+  }, [s.tip]);
+  const hidden = !tip || !!s.talk;
+  return (
+    <div className={`${styles.tip} ${hidden ? "" : styles.tipShown}`} role="status" aria-hidden={hidden}>
+      <span className={styles.tipLabel}>Tip</span>
+      <p>{tip ? withKeys(tip) : null}</p>
     </div>
   );
 }
@@ -340,11 +541,47 @@ function IntroCard() {
   );
 }
 
+const BEST_KEY = "underground-best-v1";
+
+function readBest() {
+  try {
+    const v = Number(window.localStorage.getItem(BEST_KEY));
+    return v > 0 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clock(ms: number) {
+  const t = Math.max(0, Math.round(ms / 1000));
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const sec = String(t % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+}
+
 function Ending() {
   const s = useStory();
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY_ORBS);
+  const [best, setBest] = useState<{ prev: number | null; isNew: boolean }>({ prev: null, isNew: false });
+  const time = s.startedAt && s.endedAt ? s.endedAt - s.startedAt : null;
+
+  // remember the fastest flight home (on this browser)
+  useEffect(() => {
+    if (s.phase !== "ended" || !time) return;
+    const prev = readBest();
+    const isNew = prev === null || time < prev;
+    if (isNew) {
+      try {
+        window.localStorage.setItem(BEST_KEY, String(time));
+      } catch {
+        // ignore
+      }
+    }
+    setBest({ prev, isNew: isNew && prev !== null });
+  }, [s.phase, time]);
+
   if (s.phase !== "ended") return null;
-  const minutes = s.startedAt ? Math.max(1, Math.round((s.endedAt - s.startedAt) / 60000)) : null;
   return (
     <div className={`${styles.cardWrap} ${styles.endingWrap}`}>
       <div className={styles.card}>
@@ -356,31 +593,36 @@ function Ending() {
           The little rocket roared up through the Sky Eye and out into the sunshine. Bob will never forget the Glowdeep — or the
           friends who helped him.
         </p>
+        {time && (
+          <p className={styles.endTime}>
+            <span>Your time</span>
+            <strong>{clock(time)}</strong>
+            {best.isNew ? <em>New best! (was {clock(best.prev!)})</em> : best.prev ? <em>Best {clock(best.prev)}</em> : null}
+          </p>
+        )}
         <ul className={styles.stats}>
-          {minutes && <li>{minutes} minute{minutes === 1 ? "" : "s"} underground</li>}
           <li>{s.met.length} of {NPCS.length} friends met</li>
           <li>
-            {orbs.found.length} energy orb{orbs.found.length === 1 ? "" : "s"} found
+            {orbs.found.length} of {orbs.total} lights found
           </li>
           <li>
             {s.photos.length} photo{s.photos.length === 1 ? "" : "s"} taken
           </li>
         </ul>
+        <p className={styles.endAsk}>Explore more of the Glowdeep, or go back and collect the parts faster?</p>
         <div className={styles.endButtons}>
           <button type="button" className={styles.begin} onClick={() => storyStore.keepExploring()} autoFocus>
-            Keep exploring
+            Explore more
           </button>
           <button
             type="button"
             className={styles.secondary}
             onClick={() => {
-              if (window.confirm("Start Bob's adventure over from the beginning?")) {
-                orbStore.reset();
-                storyStore.restart();
-              }
+              orbStore.reset();
+              storyStore.restart();
             }}
           >
-            Play again
+            Collect them faster
           </button>
         </div>
       </div>
@@ -392,6 +634,12 @@ function Ending() {
 
 function FullscreenButton() {
   const [fs, setFs] = useState(false);
+  const [can, setCan] = useState(true);
+  const [touch, setTouch] = useState(false);
+  useEffect(() => {
+    setCan(!!document.fullscreenEnabled);
+    setTouch(isTouchDevice());
+  }, []);
   const [showEsc, setShowEsc] = useState(false);
   useEffect(() => {
     const on = () => {
@@ -407,6 +655,7 @@ function FullscreenButton() {
     const t = window.setTimeout(() => setShowEsc(false), 5000);
     return () => window.clearTimeout(t);
   }, [showEsc]);
+  if (!can) return null;
   return (
     <>
       <button
@@ -417,11 +666,12 @@ function FullscreenButton() {
         title={fs ? "Exit full screen (Esc)" : "Full screen (F)"}
       >
         <span className={styles.fsIcon} aria-hidden="true" />
-        {fs ? "Exit full screen" : "Full screen"} <kbd>F</kbd>
+        {touch ? (fs ? "Exit" : "Full screen") : fs ? "Exit full screen" : "Full screen"}
+        {!touch && <kbd>F</kbd>}
       </button>
       {fs && (
         <div className={`${styles.escNote} ${showEsc ? styles.escNoteShown : ""}`} role="status">
-          Press <kbd>Esc</kbd> to exit full screen
+          {touch ? "Tap Exit to leave full screen" : <>Press <kbd>Esc</kbd> to exit full screen</>}
         </div>
       )}
     </>
@@ -447,10 +697,19 @@ function LookHint() {
       setLearned(false);
     }
     const onLock = () => setLocked(!!document.pointerLockElement);
+    let last: { x: number; y: number } | null = null;
     const onMove = (e: PointerEvent) => {
-      if (!document.pointerLockElement) return;
-      moved.current += Math.abs(e.movementX) + Math.abs(e.movementY);
-      if (moved.current > 600) {
+      if (e.pointerType === "touch") {
+        // a finger dragging the scene counts too (not the stick or buttons)
+        if (!(e.target instanceof HTMLCanvasElement)) return;
+        if (last) moved.current += Math.abs(e.clientX - last.x) + Math.abs(e.clientY - last.y);
+        last = { x: e.clientX, y: e.clientY };
+      } else if (!document.pointerLockElement) {
+        return;
+      } else {
+        moved.current += Math.abs(e.movementX) + Math.abs(e.movementY);
+      }
+      if (moved.current > (e.pointerType === "touch" ? 220 : 600)) {
         setLearned(true);
         try {
           window.localStorage.setItem(LOOKED_KEY, "1");
@@ -459,14 +718,19 @@ function LookHint() {
         }
       }
     };
+    const onUp = () => {
+      last = null;
+    };
     document.addEventListener("pointerlockchange", onLock);
     window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
     return () => {
       document.removeEventListener("pointerlockchange", onLock);
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
     };
   }, []);
-  if ((s.phase !== "play" && s.phase !== "free") || s.talk) return null;
+  if ((s.phase !== "play" && s.phase !== "free") || s.talk || s.puzzle) return null;
   if (locked) {
     return (
       <div className={styles.lookChip}>
@@ -475,12 +739,120 @@ function LookHint() {
       </div>
     );
   }
+  if (isTouchDevice()) {
+    if (learned) return null;
+    return (
+      <div className={styles.lookHint}>
+        <span className={styles.fingerIcon} aria-hidden="true" />
+        <span>
+          <strong>Drag anywhere</strong> to look around
+        </span>
+      </div>
+    );
+  }
   return (
     <div className={`${styles.lookHint} ${learned ? styles.lookHintQuiet : ""}`}>
       <span className={styles.mouseIcon} aria-hidden="true" />
       <span>
-        <strong>Click the cave</strong>, then move your mouse to look around
+        <strong>Click anywhere</strong>, then move your mouse to look around
       </span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- compass
+
+const POINTS = [
+  { a: 0, t: "N" },
+  { a: Math.PI / 2, t: "E" },
+  { a: Math.PI, t: "S" },
+  { a: -Math.PI / 2, t: "W" },
+];
+
+/** A little compass: the rose turns with the camera, the gold needle points at the next goal. */
+function Compass() {
+  const s = useStory();
+  const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY_ORBS);
+  const active = (s.phase === "play" || s.phase === "free") && !s.talk && !s.puzzle;
+  const next = nextStep(questSteps(s, orbs.found.length));
+  const goal = s.phase === "play" ? (next?.goal ?? null) : null;
+  const label = goal ? next?.label : null;
+  const rose = useRef<HTMLDivElement>(null);
+  const needle = useRef<HTMLDivElement>(null);
+  const dist = useRef<HTMLSpanElement>(null);
+  const level = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    storyStore.here.goal = goal;
+    return () => {
+      storyStore.here.goal = null;
+    };
+  }, [goal]);
+
+  useEffect(() => {
+    if (!active) return;
+    let raf = 0;
+    let shown = NaN;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const h = storyStore.here;
+      // ease the dial a little so it doesn't jitter with the camera
+      const d = Number.isNaN(shown) ? 0 : Math.atan2(Math.sin(h.heading - shown), Math.cos(h.heading - shown));
+      shown = Number.isNaN(shown) ? h.heading : shown + d * 0.35;
+      if (rose.current) rose.current.style.transform = `rotate(${-shown}rad)`;
+      const aim = h.aim;
+      if (!needle.current) return;
+      if (!aim) {
+        needle.current.style.opacity = "0";
+        return;
+      }
+      const dx = aim.x - h.x;
+      const dz = aim.z - h.z;
+      const bearing = Math.atan2(dx, -dz);
+      const m = Math.hypot(dx, dz);
+      needle.current.style.opacity = "1";
+      needle.current.style.transform = `rotate(${bearing - shown}rad)`;
+      if (dist.current) dist.current.textContent = m < 4 ? "here!" : `${Math.round(m)} m`;
+      if (level.current) {
+        const dy = aim.y === undefined ? 0 : aim.y - h.y;
+        level.current.textContent = m < 30 && dy > 4 ? "▲ up high" : m < 30 && dy < -4 ? "▼ down below" : "";
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [active]);
+
+  if (!active) return null;
+  return (
+    <div className={styles.compass} aria-label={label ? `Compass pointing to ${label}` : "Compass"} role="img">
+      <div className={styles.dial}>
+        <div ref={rose} className={styles.rose}>
+          {Array.from({ length: 16 }, (_, i) => (
+            <i key={i} className={i % 4 === 0 ? styles.tickBig : styles.tick} style={{ transform: `rotate(${i * 22.5}deg)` }} />
+          ))}
+          {POINTS.map((p) => (
+            <span
+              key={p.t}
+              className={`${styles.cardinal} ${p.t === "N" ? styles.north : ""}`}
+              style={{ transform: `rotate(${p.a}rad) translateY(-34px) rotate(${-p.a}rad)` }}
+            >
+              {p.t}
+            </span>
+          ))}
+        </div>
+        <div ref={needle} className={styles.needle} style={{ opacity: 0 }}>
+          <b />
+        </div>
+        <span className={styles.facing} aria-hidden="true" />
+        <span className={styles.hub} aria-hidden="true" />
+      </div>
+      {label && (
+        <p className={styles.compassLabel}>
+          <span className={styles.compassName}>{label}</span>
+          <span ref={dist} className={styles.compassDist} />
+          <span ref={level} className={styles.compassLevel} />
+        </p>
+      )}
     </div>
   );
 }
@@ -496,7 +868,7 @@ export function StoryHud() {
       const st = storyStore.get();
       if (e.code === "KeyF" && !e.metaKey && !e.ctrlKey) {
         toggleFullscreen();
-      } else if (st.talk) {
+      } else if (st.talk || st.puzzle) {
         return;
       } else if (e.code === "KeyT" && st.action) {
         e.preventDefault();
@@ -518,12 +890,15 @@ export function StoryHud() {
   return (
     <>
       <Objectives />
+      <Compass />
       <Prompt />
       <Notes />
+      <Tip />
       <Flash />
       <LookHint />
       <FullscreenButton />
       <Dialogue />
+      <SongPuzzle />
       <IntroCard />
       <Ending />
     </>

@@ -11,7 +11,9 @@
   background: rgba(8, 18, 30, 0.6);
   border: 1px solid rgba(255, 220, 150, 0.22);
   backdrop-filter: blur(8px);
-  overflow: hidden;
+  overflow: hidden auto;
+  max-height: calc(100% - 82px);
+  scrollbar-width: thin;
 }
 
 .objHead {
@@ -81,6 +83,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  width: max-content;
   max-width: calc(100% - 32px);
   padding: 10px 18px;
   border-radius: 999px;
@@ -122,6 +125,7 @@
   left: 50%;
   z-index: 3;
   transform: translate(-50%, 6px);
+  width: max-content;
   max-width: calc(100% - 32px);
   padding: 9px 18px;
   border-radius: 999px;
@@ -465,7 +469,7 @@
 .lookHint {
   position: absolute;
   left: 50%;
-  top: 28%;
+  top: max(28%, 240px);
   z-index: 2;
   transform: translate(-50%, -50%);
   display: flex;
@@ -552,6 +556,7 @@
 @media (max-width: 760px) {
   .objectives {
     top: 110px;
+    max-height: calc(100% - 290px);
   }
   .fsButton {
     top: auto;
@@ -618,4 +623,519 @@
 
 .objectives ul + ul {
   padding-top: 0;
+}
+
+/* ---------------------------------------------------------------- compass */
+
+.compass {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.dial {
+  position: relative;
+  flex: none;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 220, 150, 0.06) 0 38%, transparent 39%),
+    radial-gradient(circle at 35% 30%, rgba(30, 52, 70, 0.92), rgba(6, 14, 24, 0.92) 70%);
+  border: 2px solid rgba(255, 210, 122, 0.55);
+  box-shadow:
+    0 0 0 4px rgba(8, 18, 30, 0.55),
+    inset 0 0 14px rgba(0, 0, 0, 0.6),
+    0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.rose {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.tick,
+.tickBig {
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 1px;
+  height: 5px;
+  margin-left: -0.5px;
+  background: rgba(255, 230, 180, 0.35);
+  transform-origin: 50% 43px;
+}
+
+.tickBig {
+  height: 7px;
+  width: 2px;
+  margin-left: -1px;
+  background: rgba(255, 230, 180, 0.6);
+}
+
+.cardinal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  display: grid;
+  place-items: center;
+  font-family: var(--serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #cfe9e5;
+}
+
+.north {
+  color: #ff8a6a;
+  text-shadow: 0 0 6px rgba(255, 120, 90, 0.6);
+}
+
+.needle {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.4s;
+  will-change: transform;
+}
+
+.needle b {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  width: 0;
+  height: 0;
+  margin-left: -6px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 30px solid #ffd27a;
+  filter: drop-shadow(0 0 5px rgba(255, 210, 122, 0.85));
+}
+
+.facing {
+  position: absolute;
+  left: 50%;
+  top: -7px;
+  width: 0;
+  height: 0;
+  margin-left: -5px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid #e9fffc;
+}
+
+.hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff4d6, #c9953e);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
+.compassLabel {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 6px 11px;
+  border-radius: 10px;
+  background: rgba(8, 18, 30, 0.6);
+  border: 1px solid rgba(255, 220, 150, 0.22);
+  backdrop-filter: blur(8px);
+  font-size: 0.78rem;
+  color: #e3d8c0;
+}
+
+.compassName {
+  font-family: var(--serif);
+  font-size: 0.98rem;
+  color: #fff3d6;
+}
+
+.compassDist {
+  font-variant-numeric: tabular-nums;
+  color: #ffd27a;
+}
+
+.compassLevel:empty {
+  display: none;
+}
+
+.compassLevel {
+  font-size: 0.72rem;
+  color: #9ee9e2;
+}
+
+@media (max-width: 760px) {
+  .compass {
+    right: auto;
+    left: 18px;
+    align-items: flex-start;
+  }
+}
+
+/* ---------------------------------------------------------------- one-time control tips */
+
+.tip {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: min(560px, calc(100% - 32px));
+  padding: 10px 16px 10px 12px;
+  border-radius: 14px;
+  color: #efe6d2;
+  background: rgba(8, 18, 30, 0.78);
+  border: 1px solid rgba(255, 220, 150, 0.3);
+  backdrop-filter: blur(8px);
+  transform: translate(-50%, 14px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.tipShown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.tipLabel {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1a1408;
+  background: #ffd27a;
+}
+
+.tip p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.tip kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.6em;
+  margin: 0 2px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.78rem;
+  color: #fff3d6;
+  background: rgba(255, 220, 150, 0.14);
+  border: 1px solid rgba(255, 220, 150, 0.4);
+}
+
+@media (max-width: 760px) {
+  .tip {
+    bottom: 196px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tip {
+    transition: opacity 0.3s ease;
+  }
+}
+
+@media (max-width: 760px) {
+  .lookHint {
+    top: max(34%, 300px);
+    max-width: calc(100% - 32px);
+  }
+}
+
+/* ---------------------------------------------------------------- phones and tablets */
+
+.fingerIcon {
+  position: relative;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #ffd27a;
+  animation: fingerDrag 1.8s ease-in-out infinite;
+}
+
+@keyframes fingerDrag {
+  0%,
+  100% {
+    transform: translateX(-8px);
+  }
+  50% {
+    transform: translateX(8px);
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .objectives {
+    top: 110px;
+    width: min(320px, calc(100% - 124px));
+  }
+  .compass {
+    top: 110px;
+    right: 12px;
+    bottom: auto;
+    left: auto;
+    flex-direction: column;
+    align-items: flex-end;
+    transform: scale(0.8);
+    transform-origin: top right;
+  }
+  .fsButton {
+    top: 64px;
+    right: 12px;
+    bottom: auto;
+    left: auto;
+    padding: 7px 12px;
+  }
+  .tip {
+    bottom: 214px;
+  }
+  .lookHint {
+    top: max(40%, 300px);
+    width: max-content;
+    max-width: calc(100% - 32px);
+    font-size: 0.95rem;
+  }
+  .prompt {
+    top: 56%;
+  }
+  .note {
+    top: 64%;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) and (prefers-reduced-motion: reduce) {
+  .fingerIcon {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------- Quartz's crystal song */
+
+.verse {
+  margin-left: 8px;
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a7a60;
+}
+
+.songDots {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.songDots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid #b48cff;
+  transition: background 0.2s ease;
+}
+
+.songDots .dotOn {
+  background: #b48cff;
+}
+
+.crystals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.crystalKey {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 92px;
+  border-radius: 16px;
+  font: inherit;
+  color: #fff3d6;
+  background: rgba(8, 18, 30, 0.78);
+  border: 1.5px solid color-mix(in srgb, var(--c) 45%, transparent);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.12s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.crystalKey:disabled {
+  cursor: default;
+}
+
+.crystalKey:not(:disabled):hover,
+.crystalKey:not(:disabled):focus-visible {
+  border-color: var(--c);
+}
+
+.crystalKey:not(:disabled):active {
+  transform: scale(0.94);
+}
+
+.gem {
+  width: 30px;
+  height: 52px;
+  clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
+  background: linear-gradient(160deg, #ffffff 0%, var(--c) 35%, color-mix(in srgb, var(--c) 55%, #10202c) 100%);
+  opacity: 0.55;
+  transition: opacity 0.18s ease, transform 0.18s ease, filter 0.18s ease;
+}
+
+.crystalLit {
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 22%, rgba(8, 18, 30, 0.78));
+}
+
+.crystalLit .gem {
+  opacity: 1;
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 10px var(--c));
+}
+
+.crystalKey kbd {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  min-width: 1.4em;
+  padding: 0 4px;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 0.68rem;
+  color: #c9b98f;
+  background: rgba(255, 220, 150, 0.08);
+  border: 1px solid rgba(255, 220, 150, 0.22);
+}
+
+.songLeave {
+  display: block;
+  margin: 10px auto 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.8rem;
+  color: #c9b98f;
+  background: rgba(8, 18, 30, 0.6);
+  border: 1px solid rgba(255, 220, 150, 0.2);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gem,
+  .crystalKey {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------- ending time + replay clock */
+
+.endTime {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  margin: 4px 0 2px;
+}
+
+.endTime span {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a6a3a;
+}
+
+.endTime strong {
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: #3a2c1c;
+}
+
+.endTime em {
+  font-style: normal;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a5502a;
+}
+
+.endAsk {
+  margin-top: 6px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: #5a4630;
+}
+
+.runClock {
+  margin-left: auto;
+  margin-right: 10px;
+  align-self: center;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: #ffd27a;
+}
+
+.runClock small {
+  color: #a99d83;
+}
+
+.runSlow {
+  color: #e3d8c0;
+}
+
+/* the header holds the title, the replay clock and the toggle on one line */
+.objHead {
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.objHead > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.objCount,
+.runClock {
+  flex: none;
+  white-space: nowrap;
+}
+
+.runClock {
+  margin: 0;
+}
+
+@media (max-width: 520px) {
+  .objHead {
+    font-size: 1.02rem;
+  }
+  .runClock small {
+    display: none;
+  }
 }
