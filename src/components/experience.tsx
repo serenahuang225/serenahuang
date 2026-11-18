@@ -1,6 +1,9 @@
 "use client";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { pad2 } from "@/lib/format";
+
+/** The chapters, newest first. */
 const experience = [
   {
     organization: "Jane Street",
@@ -38,9 +41,14 @@ const experience = [
       "Built image similarity models for a logo search pipeline, working with more than 10,000 images. Earlier work included automated data collection and an NLP pipeline for redacting personal information.",
   },
 ];
+/**
+ * "Places I've learned by doing", laid out as a book: contents on the left,
+ * one chapter per page on the right. Arrow keys turn the page.
+ */
 export default function Experience() {
   const [chapter, setChapter] = useState(0);
-  const [direction, setDirection] = useState("forward");
+  // which way the page turns (picks the turn-forward / turn-backward animation)
+  const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const item = experience[chapter];
   const turn = (next: number) => {
     if (next < 0 || next >= experience.length || next === chapter) return;
@@ -82,7 +90,7 @@ export default function Experience() {
               aria-controls="chapter-page"
               onClick={() => turn(i)}
             >
-              <span>0{i + 1}</span>
+              <span>{pad2(i + 1)}</span>
               {entry.organization}
             </button>
           ))}
@@ -94,19 +102,19 @@ export default function Experience() {
           <article
             className={`chapter-page turn-${direction}`}
             id="chapter-page"
+            // a new key remounts the page, which replays the page-turn animation
             key={chapter}
             aria-live="polite"
           >
             <span className="chapter-kicker">
-              CHAPTER {String(chapter + 1).padStart(2, "0")}
+              CHAPTER {pad2(chapter + 1)}
             </span>
             <span className="chapter-date">{item.date}</span>
             <h4>{item.organization}</h4>
             <span className="chapter-role">{item.role}</span>
             <p>{item.description}</p>
             <span className="page-number">
-              {String(chapter + 1).padStart(2, "0")} /{" "}
-              {String(experience.length).padStart(2, "0")}
+              {pad2(chapter + 1)} / {pad2(experience.length)}
             </span>
           </article>
           <div className="chapter-controls">

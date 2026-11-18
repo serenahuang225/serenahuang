@@ -1,24 +1,32 @@
 "use client";
+/**
+ * Everything drawn over the 3D view during the story: conversations, Quartz's
+ * song puzzle, the objectives panel, the prompt under Bob, notes and tips,
+ * the compass, the opening and ending cards, full screen and the look hint.
+ */
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { lineFor, storyStore } from "./story-store";
-import { ENERGY_NEEDED, NPCS, type NpcId } from "./story-data";
+import { ENERGY_NEEDED, NPCS, POTION_COLORS, type NpcId } from "./story-data";
 import { nextStep, questSteps, type Step } from "./quest";
 import { orbStore } from "./orb-store";
 import { guideStore } from "./guide-store";
 import { sound } from "./audio";
 import { isTouchDevice } from "./touch";
+import { readSaved, writeSaved } from "./store-utils";
 import styles from "./story-hud.module.css";
 
 const EMPTY_ORBS = { found: [] as string[], total: 0, last: null };
 
+/** The story state, re-rendering whenever it changes. */
 function useStory() {
   return useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
 }
 
 // ---------------------------------------------------------------- portraits
 
+/** A little drawn face for each character, used in conversations and the field guide. */
 export function Portrait({ who }: { who: NpcId | "bob" }) {
-  const color = who === "bob" ? "#d4532e" : NPCS.find((n) => n.id === who)?.color ?? "#ccc";
+  const color = who === "bob" ? POTION_COLORS.panda.color : NPCS.find((n) => n.id === who)?.color ?? "#ccc";
   return (
     <svg viewBox="0 0 80 80" aria-hidden="true" className={styles.portraitSvg}>
       <defs>
@@ -94,8 +102,10 @@ export function Portrait({ who }: { who: NpcId | "bob" }) {
 
 // ---------------------------------------------------------------- conversation bubble
 
+/** How high each character's "voice" blips are. */
 const PITCH: Record<string, number> = { bob: 0.9, pip: 1.5, moss: 0.65, finn: 1.2, elder: 0.75, quartz: 1.8 };
 
+/** The conversation on screen: the line types out, then the choices appear. */
 function Dialogue() {
   const s = useStory();
   const line = lineFor(s.talk);
@@ -179,12 +189,14 @@ function Dialogue() {
 
 // ---------------------------------------------------------------- Quartz's crystal song
 
+/** Quartz's four singing crystals, in key order (1–4). */
 const CRYSTALS = [
   { name: "blue", color: "#7fe8ff" },
   { name: "violet", color: "#b48cff" },
   { name: "pink", color: "#ff8be0" },
   { name: "mint", color: "#8cffd9" },
 ];
+/** Notes in each verse. */
 const VERSES = [3, 4, 5];
 
 /**
@@ -266,7 +278,7 @@ function SongPuzzle() {
     later(() => storyStore.solvePuzzle(), 1100);
   };
 
-  // keys 1–4 sing, Esc leaves
+  // keys 1–4 sing, Esc leaves (re-attached every render so `sing` sees the latest state)
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -335,6 +347,7 @@ function SongPuzzle() {
 
 // ---------------------------------------------------------------- objectives + prompts
 
+/** Remembers whether the objectives panel was left open (saved as 1 / 0). */
 const OBJ_KEY = "underground-objectives-open";
 
 /** On a replay (once there's a best time to beat), a small running clock. */
@@ -357,26 +370,16 @@ function RunClock() {
   );
 }
 
+/** The "Help Bob get home" panel: the next step, and (opened) every step so far. */
 function Objectives() {
   const s = useStory();
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY_ORBS);
   const [open, setOpenState] = useState(false);
-  useEffect(() => {
-    try {
-      setOpenState(window.localStorage.getItem(OBJ_KEY) === "1");
-    } catch {
-      // ignore
-    }
-  }, []);
-  const setOpen = (fn: (o: boolean) => boolean) =>
+  useEffect(() => setOpenState(readSaved(OBJ_KEY) === 1), []);
+  const toggle = () =>
     setOpenState((o) => {
-      const v = fn(o);
-      try {
-        window.localStorage.setItem(OBJ_KEY, v ? "1" : "0");
-      } catch {
-        // ignore
-      }
-      return v;
+      writeSaved(OBJ_KEY, o ? 0 : 1);
+      return !o;
     });
   const lastNext = useRef<string | null>(null);
   const active = s.phase === "play" || s.phase === "free";
@@ -410,7 +413,7 @@ function Objectives() {
   );
   return (
     <section className={styles.objectives} aria-label="Objectives">
-      <button type="button" className={styles.objHead} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+      <button type="button" className={styles.objHead} onClick={toggle} aria-expanded={open}>
         <span>{s.phase === "free" ? "Bob made it home!" : "Help Bob get home"}</span>
         <RunClock />
         <span className={styles.objCount}>{open ? "hide steps –" : "all steps +"}</span>
@@ -434,6 +437,7 @@ function Objectives() {
   );
 }
 
+/** The hint under Bob. "T — …" prompts show T as a key (and are hidden on touch, where a Talk button pops up). */
 function Prompt() {
   const s = useStory();
   if (!s.prompt || s.talk || s.puzzle) return null;
@@ -452,6 +456,7 @@ function Prompt() {
   );
 }
 
+/** Short messages ("Found the nose cone!") that fade after a few seconds. */
 function Notes() {
   const s = useStory();
   const [text, setText] = useState<string | null>(null);
@@ -469,12 +474,13 @@ function Notes() {
 }
 
 /** Turns "Press [Space] to jump" into text with key caps. */
-export function withKeys(text: string) {
+function withKeys(text: string) {
   return text.split(/(\[[^\]]+\])/).map((part, i) =>
     part.startsWith("[") && part.endsWith("]") ? <kbd key={i}>{part.slice(1, -1)}</kbd> : <span key={i}>{part}</span>,
   );
 }
 
+/** A one-time control tip, shown for about seven seconds. */
 function Tip() {
   const s = useStory();
   const [tip, setTip] = useState<string | null>(null);
@@ -493,6 +499,7 @@ function Tip() {
   );
 }
 
+/** The white camera flash when a photo is taken. */
 function Flash() {
   const s = useStory();
   const [on, setOn] = useState(false);
@@ -507,6 +514,7 @@ function Flash() {
 
 // ---------------------------------------------------------------- opening card + ending
 
+/** The title card before the fall. */
 function IntroCard() {
   const s = useStory();
   if (s.phase !== "card") return null;
@@ -541,18 +549,16 @@ function IntroCard() {
   );
 }
 
+/** The fastest flight home on this browser, in milliseconds. */
 const BEST_KEY = "underground-best-v1";
 
 function readBest() {
-  try {
-    const v = Number(window.localStorage.getItem(BEST_KEY));
-    return v > 0 ? v : null;
-  } catch {
-    return null;
-  }
+  const v = Number(readSaved(BEST_KEY));
+  return v > 0 ? v : null;
 }
 
-export function clock(ms: number) {
+/** A duration as m:ss (or h:mm:ss). */
+function clock(ms: number) {
   const t = Math.max(0, Math.round(ms / 1000));
   const h = Math.floor(t / 3600);
   const m = Math.floor((t % 3600) / 60);
@@ -560,6 +566,7 @@ export function clock(ms: number) {
   return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
 }
 
+/** The ending card: your time, a few stats, and "explore more or play again faster?". */
 function Ending() {
   const s = useStory();
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, () => EMPTY_ORBS);
@@ -571,13 +578,7 @@ function Ending() {
     if (s.phase !== "ended" || !time) return;
     const prev = readBest();
     const isNew = prev === null || time < prev;
-    if (isNew) {
-      try {
-        window.localStorage.setItem(BEST_KEY, String(time));
-      } catch {
-        // ignore
-      }
-    }
+    if (isNew) writeSaved(BEST_KEY, time);
     setBest({ prev, isNew: isNew && prev !== null });
   }, [s.phase, time]);
 
@@ -603,7 +604,7 @@ function Ending() {
         <ul className={styles.stats}>
           <li>{s.met.length} of {NPCS.length} friends met</li>
           <li>
-            {orbs.found.length} of {orbs.total} lights found
+            {orbs.found.length} of {orbs.total} energy orbs found
           </li>
           <li>
             {s.photos.length} photo{s.photos.length === 1 ? "" : "s"} taken
@@ -632,6 +633,7 @@ function Ending() {
 
 // ---------------------------------------------------------------- full screen + mouse hint
 
+/** Full-screen toggle (F), with a brief "Esc to exit" note. Hidden where full screen isn't allowed (iPhone). */
 function FullscreenButton() {
   const [fs, setFs] = useState(false);
   const [can, setCan] = useState(true);
@@ -678,24 +680,22 @@ function FullscreenButton() {
   );
 }
 
-export function toggleFullscreen() {
+function toggleFullscreen() {
   if (document.fullscreenElement) void document.exitFullscreen?.();
   else void document.documentElement.requestFullscreen?.().catch(() => {});
 }
 
+/** Set once the player has looked around enough that they've clearly got it. */
 const LOOKED_KEY = "underground-looked-v1";
 
+/** "Click anywhere, then move your mouse to look around" (or "drag" on touch) until they've done it. */
 function LookHint() {
   const s = useStory();
   const [locked, setLocked] = useState(false);
   const [learned, setLearned] = useState(true);
   const moved = useRef(0);
   useEffect(() => {
-    try {
-      setLearned(window.localStorage.getItem(LOOKED_KEY) === "1");
-    } catch {
-      setLearned(false);
-    }
+    setLearned(readSaved(LOOKED_KEY) === 1);
     const onLock = () => setLocked(!!document.pointerLockElement);
     let last: { x: number; y: number } | null = null;
     const onMove = (e: PointerEvent) => {
@@ -711,11 +711,7 @@ function LookHint() {
       }
       if (moved.current > (e.pointerType === "touch" ? 220 : 600)) {
         setLearned(true);
-        try {
-          window.localStorage.setItem(LOOKED_KEY, "1");
-        } catch {
-          // ignore
-        }
+        writeSaved(LOOKED_KEY, 1);
       }
     };
     const onUp = () => {
@@ -793,12 +789,15 @@ function Compass() {
     if (!active) return;
     let raf = 0;
     let shown = NaN;
-    const tick = () => {
+    let last = performance.now();
+    const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
       const h = storyStore.here;
-      // ease the dial a little so it doesn't jitter with the camera
+      // ease the dial a little so it doesn't jitter with the camera (by time, so it's the same at 60 or 120 Hz)
+      const ease = 1 - Math.exp(-Math.min(now - last, 100) * 0.026);
+      last = now;
       const d = Number.isNaN(shown) ? 0 : Math.atan2(Math.sin(h.heading - shown), Math.cos(h.heading - shown));
-      shown = Number.isNaN(shown) ? h.heading : shown + d * 0.35;
+      shown = Number.isNaN(shown) ? h.heading : shown + d * ease;
       if (rose.current) rose.current.style.transform = `rotate(${-shown}rad)`;
       const aim = h.aim;
       if (!needle.current) return;
@@ -862,6 +861,7 @@ function Compass() {
 
 // ---------------------------------------------------------------- keys + everything
 
+/** The whole story overlay, plus its keys: F full screen, T talk / launch, P photo. */
 export function StoryHud() {
   useEffect(() => storyStore.load(), []);
 

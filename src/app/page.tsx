@@ -7,38 +7,19 @@ import Experience from "@/components/experience";
 import PhotoGallery from "@/components/photo-gallery";
 import FallHole from "@/components/fall-hole";
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  ArrowUpRight,
-  ArrowDown,
-  ArrowRight,
-  Plus,
-  X,
-  Headphones,
-  Pause,
-  Play,
-  Camera,
-  Fingerprint,
-  BookOpen,
-  Hammer,
-  Activity,
-} from "lucide-react";
-import {
-  SERENA_AXIOMS,
-  quotes,
-  projects,
-  photos,
-  type Photo,
-} from "@/content/serena";
+import { ArrowUpRight, ArrowDown, ArrowRight, X, Headphones, Pause, Play } from "lucide-react";
+import { quotes, projects, type Photo } from "@/content/serena";
+import { clamp, pad2 } from "@/lib/format";
+
+// The 3D lens only loads in the browser (it needs WebGL).
 const GlassScene = dynamic(() => import("@/components/glass-scene"), {
   ssr: false,
 });
+
+/** The page's sections, in order. Each label's lowercase form is its element id. */
 const sections = ["Home", "Work", "Values", "Photos", "Listening", "About"];
-const icons = {
-  hammer: Hammer,
-  "book-open": BookOpen,
-  fingerprint: Fingerprint,
-  activity: Activity,
-};
+
+/** If the 3D lens crashes, show the flat CSS lens instead of breaking the page. */
 class SceneBoundary extends Component<
   { children: ReactNode },
   { failed: boolean }
@@ -59,6 +40,7 @@ class SceneBoundary extends Component<
     );
   }
 }
+/** The illustrated cover for each project card, drawn with CSS (one per project slug). */
 function ProjectArt({ kind }: { kind: string }) {
   return (
     <div className={`project-art ${kind}`} aria-hidden="true">
@@ -119,11 +101,55 @@ function ProjectArt({ kind }: { kind: string }) {
     </div>
   );
 }
+/**
+ * Where the lens sits for a given scroll. It starts beside the hero text,
+ * grows to fill the screen as you scroll into it (the glass "opens" via
+ * --aperture), then jumps to a small dock in the bottom-right corner.
+ * Everything is a transform on one fixed 600px box, so it stays smooth.
+ */
+function placeLens(el: HTMLElement, travel: number, still: boolean) {
+  const mobile = innerWidth <= 700;
+  const startSize = mobile
+    ? Math.min(innerWidth * 0.9, innerHeight * 0.4)
+    : Math.min(innerWidth * 0.47, innerHeight * 0.64, 620);
+  const dockSize = mobile ? 86 : 116;
+  const fullSize = Math.max(innerWidth, innerHeight) * 1.6;
+  // ease over the first half of the scroll (smoothstep)
+  const t = clamp(travel / 0.5);
+  const mix = t * t * (3 - 2 * t);
+  const startX = innerWidth * (mobile ? 0.56 : 0.72) - startSize / 2;
+  const startY = innerHeight * (mobile ? 0.69 : 0.47) - startSize / 2;
+  const entering = travel < 0.94;
+  const size = entering ? startSize + (fullSize - startSize) * mix : dockSize;
+  const x = entering ? startX + ((innerWidth - fullSize) / 2 - startX) * mix : innerWidth - dockSize - 20;
+  const y = entering ? startY + ((innerHeight - fullSize) / 2 - startY) * mix : innerHeight - dockSize - 48;
+  // fade out while it fills the screen, then fade back in once docked
+  const opacity = still ? 1 : entering ? 1 - clamp((travel - 0.76) / 0.18) : Math.min(1, (travel - 0.94) / 0.06);
+  el.style.transform = `translate3d(${x}px,${y}px,0) scale(${size / 600})`;
+  el.style.opacity = String(opacity);
+  // no clicking the lens while it's zooming past
+  el.style.pointerEvents = travel > 0.15 && travel < 1 ? "none" : "";
+  const aperture = still || !entering ? 0 : Math.min(45, clamp((travel - 0.4) / 0.5) * 45);
+  el.style.setProperty("--aperture", `${aperture}%`);
+  el.style.setProperty("--aperture-edge", `${aperture ? aperture + 1.5 : 0}%`);
+  return entering;
+}
+
+/** Arrow keys nudge the camera around the lens, a step at a time. */
+const ARROW_NUDGE: Record<string, [number, number]> = {
+  ArrowLeft: [-0.3, 0],
+  ArrowRight: [0.3, 0],
+  ArrowUp: [0, -0.3],
+  ArrowDown: [0, 0.3],
+};
+
 export default function Home() {
   const hero = useRef<HTMLElement>(null);
+  // how far you've scrolled through the hero (0..1), and down the page; read by the 3D lens
   const progress = useRef(0);
   const depth = useRef(0);
   const lensPosition = useRef<HTMLElement>(null);
+  // where the mouse is over the lens (-1..1), so the camera can tilt toward it
   const cameraPointer = useRef({ x: 0, y: 0 });
   const [lensOpen, setLensOpen] = useState(false);
   const [active, setActive] = useState("home");
@@ -139,10 +165,12 @@ export default function Home() {
   const dialog = useRef<HTMLDialogElement>(null);
   const photoDialog = useRef<HTMLDialogElement>(null);
   const lensDialog = useRef<HTMLDialogElement>(null);
+  // open and close the native dialogs to match state
   useEffect(() => {
     if (lensOpen) lensDialog.current?.showModal();
     else lensDialog.current?.close();
   }, [lensOpen]);
+  // follow the system's reduced-motion setting, and check WebGL works before loading the 3D lens
   useEffect(() => {
     const media = matchMedia("(prefers-reduced-motion: reduce)");
     setStill(media.matches);
@@ -154,73 +182,20 @@ export default function Home() {
     gl?.getExtension("WEBGL_lose_context")?.loseContext();
     return () => media.removeEventListener("change", change);
   }, []);
+  // the scroll-driven hero: fade the text, move the lens, dock it (at most once a frame)
   useEffect(() => {
     document.documentElement.dataset.motion = still ? "still" : "full";
     let frame = 0;
     const update = () => {
-      const el = hero.current;
-      if (el) {
-        progress.current = Math.min(
-          1,
-          Math.max(
-            0,
-            -el.getBoundingClientRect().top /
-              Math.max(1, el.offsetHeight - innerHeight),
-          ),
-        );
-        el.style.setProperty("--entry", String(still ? 0 : progress.current));
-        depth.current = scrollY / Math.max(1, innerHeight * 5);
-        const mobile = innerWidth <= 700;
-        const startSize = mobile
-          ? Math.min(innerWidth * 0.9, innerHeight * 0.4)
-          : Math.min(innerWidth * 0.47, innerHeight * 0.64, 620);
-        const dockSize = mobile ? 86 : 116;
-        const travel = still
-          ? scrollY > innerHeight * 0.45
-            ? 1
-            : 0
-          : Math.min(1, Math.max(0, progress.current));
-        const center = Math.min(1, travel / 0.5);
-        const mix = center * center * (3 - 2 * center);
-        const startX = innerWidth * (mobile ? 0.56 : 0.72) - startSize / 2;
-        const startY = innerHeight * (mobile ? 0.69 : 0.47) - startSize / 2;
-        const fullSize = Math.max(innerWidth, innerHeight) * 1.6;
-        const entering = travel < 0.94;
-        const size = entering
-          ? startSize + (fullSize - startSize) * mix
-          : dockSize;
-        const x = entering
-          ? startX + ((innerWidth - fullSize) / 2 - startX) * mix
-          : innerWidth - dockSize - 20;
-        const y = entering
-          ? startY + ((innerHeight - fullSize) / 2 - startY) * mix
-          : innerHeight - dockSize - 48;
-        const opacity = still
-          ? 1
-          : entering
-            ? 1 - Math.min(1, Math.max(0, (travel - 0.76) / 0.18))
-            : Math.min(1, (travel - 0.94) / 0.06);
-        lensPosition.current?.style.setProperty(
-          "transform",
-          `translate3d(${x}px,${y}px,0) scale(${size / 600})`,
-        );
-        lensPosition.current?.style.setProperty("opacity", String(opacity));
-        lensPosition.current?.style.setProperty(
-          "pointer-events",
-          travel > 0.15 && travel < 1 ? "none" : "",
-        );
-        const aperture =
-          still || !entering
-            ? 0
-            : Math.min(45, Math.max(0, ((travel - 0.4) / 0.5) * 45));
-        lensPosition.current?.style.setProperty("--aperture", `${aperture}%`);
-        lensPosition.current?.style.setProperty(
-          "--aperture-edge",
-          `${aperture ? aperture + 1.5 : 0}%`,
-        );
-        setInHero(entering);
-      }
       frame = 0;
+      const el = hero.current;
+      if (!el) return;
+      progress.current = clamp(-el.getBoundingClientRect().top / Math.max(1, el.offsetHeight - innerHeight));
+      el.style.setProperty("--entry", String(still ? 0 : progress.current));
+      depth.current = scrollY / Math.max(1, innerHeight * 5);
+      // with motion off, the lens just jumps to the dock once you scroll a little
+      const travel = still ? (scrollY > innerHeight * 0.45 ? 1 : 0) : progress.current;
+      if (lensPosition.current) setInHero(placeLens(lensPosition.current, travel, still));
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
@@ -234,7 +209,9 @@ export default function Home() {
       cancelAnimationFrame(frame);
     };
   }, [still]);
+  // highlight the section you're reading in the navigation
   useEffect(() => {
+    // the values section used to be called "writing": keep old links working
     if (location.hash === "#writing") {
       history.replaceState(null, "", "#values");
       document
@@ -260,11 +237,7 @@ export default function Home() {
   useEffect(() => {
     if (photo) photoDialog.current?.showModal();
   }, [photo]);
-  const visibleProjects = projects.filter(
-    (p) =>
-      filter === "All" ||
-      (filter === "Research" ? p.slug === "hydrology" : p.slug !== "hydrology"),
-  );
+  const visibleProjects = projects.filter((p) => filter === "All" || p.kind === filter);
   return (
     <>
       <a className="skip-link" href="#work">
@@ -337,43 +310,12 @@ export default function Home() {
             cameraPointer.current = { x: 0, y: 0 };
           }}
           onKeyDown={(event) => {
-            if (still || !inHero) return;
-            if (
-              ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(
-                event.key,
-              )
-            ) {
-              event.preventDefault();
-              const p = cameraPointer.current;
-              cameraPointer.current = {
-                x: Math.max(
-                  -1,
-                  Math.min(
-                    1,
-                    p.x +
-                      (event.key === "ArrowLeft"
-                        ? -0.3
-                        : event.key === "ArrowRight"
-                          ? 0.3
-                          : 0),
-                  ),
-                ),
-                y: Math.max(
-                  -1,
-                  Math.min(
-                    1,
-                    p.y +
-                      (event.key === "ArrowUp"
-                        ? -0.3
-                        : event.key === "ArrowDown"
-                          ? 0.3
-                          : 0),
-                  ),
-                ),
-              };
-            }
+            const nudge = ARROW_NUDGE[event.key];
+            if (still || !inHero || !nudge) return;
+            event.preventDefault();
+            const p = cameraPointer.current;
+            cameraPointer.current = { x: clamp(p.x + nudge[0], -1, 1), y: clamp(p.y + nudge[1], -1, 1) };
           }}
-
           data-cursor-label="Explore"
           aria-label="Explore through the lens"
           aria-expanded={lensOpen}
@@ -383,12 +325,7 @@ export default function Home() {
           <span>
             {inHero
               ? "CHOOSE A PERSPECTIVE"
-              : `${String(
-                  Math.max(
-                    0,
-                    sections.findIndex((s) => s.toLowerCase() === active),
-                  ),
-                ).padStart(2, "0")} / ${active.toUpperCase()}`}
+              : `${pad2(Math.max(0, sections.findIndex((s) => s.toLowerCase() === active)))} / ${active.toUpperCase()}`}
           </span>
         </button>
       </aside>
@@ -421,7 +358,7 @@ export default function Home() {
                 active === label.toLowerCase() ? "location" : undefined
               }
             >
-              <span>{String(i).padStart(2, "0")}</span>
+              <span>{pad2(i)}</span>
               {label}
               <ArrowUpRight size={16} />
             </a>
@@ -461,9 +398,6 @@ export default function Home() {
                 SCROLL TO EXPLORE <ArrowDown size={13} />
               </a>
             </div>
-            {/* <span className="hero-margin">
-              A PERSONAL COLLECTION / ALWAYS EVOLVING
-            </span> */}
           </div>
         </section>
         <section className="work section-pad" id="work">

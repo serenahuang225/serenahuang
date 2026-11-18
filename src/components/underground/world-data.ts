@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { createNoise2D } from "simplex-noise";
+import { POTION_COLORS } from "./story-data";
 
 /**
  * Everything about the cave's layout lives here. All randomness is seeded, so
@@ -13,8 +14,10 @@ export const WORLD = {
   segments: 220,
   /** Radius of the walkable cave floor before the walls rise. */
   radius: 200,
+  /** Bob's size, normally and while ducking (to fit through hollow logs). */
   ballRadius: 0.35,
   duckRadius: 0.2,
+  /** Where Bob lands after the fall (y is filled in from the ground). */
   spawn: new THREE.Vector3(0, 0, 58),
   // a touch floaty, so bounces carry you further up
   gravity: -18,
@@ -22,6 +25,7 @@ export const WORLD = {
   fogDensity: 0.0165,
 };
 
+/** A tiny seeded random number generator: the same seed always gives the same numbers. */
 export function mulberry32(seed: number) {
   let a = seed >>> 0;
   return () => {
@@ -33,6 +37,7 @@ export function mulberry32(seed: number) {
   };
 }
 
+/** 0 below a, 1 above b, and a smooth S-curve in between. */
 export const smoothstep = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
@@ -47,11 +52,9 @@ const noiseD = createNoise2D(mulberry32(44));
 
 export const LAKE = { x: -70, z: 62, r: 30 };
 
+/** Rolling hills, rising into steep cave walls near the edge. */
 function rawHeight(x: number, z: number) {
-  let h =
-    noiseA(x * 0.0065, z * 0.0065) * 4.2 +
-    noiseA(x * 0.021 + 7, z * 0.021 - 3) * 1.1 +
-    noiseB(x * 0.07, z * 0.07) * 0.22;
+  let h = rawBase(x, z) + noiseB(x * 0.07, z * 0.07) * 0.22;
   const r = Math.hypot(x, z);
   const edge = smoothstep(150, 212, r);
   h += edge * edge * 52 + noiseB(x * 0.03, z * 0.03) * edge * 7;
@@ -60,6 +63,7 @@ function rawHeight(x: number, z: number) {
   h = THREE.MathUtils.lerp(h, rawBase(WORLD.spawn.x, WORLD.spawn.z), spawnFlat * 0.7);
   return h;
 }
+/** Just the big, smooth hills (no small bumps): used to place lakes and the cave level with the land. */
 function rawBase(x: number, z: number) {
   return noiseA(x * 0.0065, z * 0.0065) * 4.2 + noiseA(x * 0.021 + 7, z * 0.021 - 3) * 1.1;
 }
@@ -74,7 +78,7 @@ const LAKE_FLOOR = lakeRim - 3.4;
 export const DEEP = { x: 60, z: 75, r: 22 };
 const deepRim = rawBase(DEEP.x, DEEP.z);
 export const DEEP_LEVEL = deepRim - 0.7;
-export const DEEP_FLOOR = deepRim - 11;
+const DEEP_FLOOR = deepRim - 11;
 
 /** A rock dome with a doorway; the tunnel comes up through its floor. */
 export const CAVE = { x: 110, z: 75, r: 15, height: 9, doorYaw: -Math.PI / 2 };
@@ -88,7 +92,8 @@ export const FALLS_TOP = deepRim + FALLS.height;
 /** A rope bridge across the deep lake, north to south. */
 export const BRIDGE = { x: DEEP.x, z0: DEEP.z - 28, z1: DEEP.z + 28, width: 2.6 };
 
-export function analyticHeight(x: number, z: number) {
+/** The ground height anywhere, with the lake bowls and the cave's flat floor carved in. */
+function analyticHeight(x: number, z: number) {
   let h = rawHeight(x, z);
   const d = Math.hypot(x - LAKE.x, z - LAKE.z);
   const bowl = 1 - smoothstep(LAKE.r * 0.35, LAKE.r * 1.2, d);
@@ -180,7 +185,10 @@ export const TUNNEL_GATES: TunnelGate[] = (
   return { t, kind, center, tangent, blocked, axis, gap: center.clone().addScaledVector(blocked, -1.45) };
 });
 
-/** Distance from a point to the tunnel's centre line. */
+/**
+ * Distance from a point to the tunnel's centre line. Checks every other
+ * sample (it's called every frame); use tunnelNearest when you need the exact spot.
+ */
 export function tunnelDistance(x: number, y: number, z: number) {
   let best = Infinity;
   for (let i = 0; i < TUNNEL_SAMPLES.length; i += 2) {
@@ -228,7 +236,8 @@ export function terrainHeight(x: number, z: number) {
 
 // ---------------------------------------------------------------- palette
 
-export const HUES = {
+/** The cave's glow colours. */
+const HUES = {
   cyan: new THREE.Color("#33eeff"),
   teal: new THREE.Color("#22ffc4"),
   violet: new THREE.Color("#9a68ff"),
@@ -240,7 +249,7 @@ export const HUES = {
 const regionHues = [HUES.cyan, HUES.teal, HUES.violet, HUES.magenta, HUES.lime, HUES.blue, HUES.cyan, HUES.teal];
 
 /** Mushrooms in the same part of the cave share a colour family. */
-export function regionHue(x: number, z: number, rng: () => number) {
+function regionHue(x: number, z: number, rng: () => number) {
   const n = (noiseD(x * 0.006, z * 0.006) + 1) / 2;
   const idx = Math.min(regionHues.length - 1, Math.floor(n * regionHues.length));
   const c = regionHues[idx].clone();
@@ -317,6 +326,7 @@ export function capProfile(shape: CapShape, steps = 14) {
   return pts;
 }
 
+/** Where a mushroom's stem meets its cap, and which way the (slightly leaning) mushroom points. */
 export function capTop(m: Mushroom) {
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(m.leanX, 0, m.leanZ));
   const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
@@ -324,16 +334,29 @@ export function capTop(m: Mushroom) {
   return { top, q, up };
 }
 
+/** The cap's base centre: the cap mesh sits a little above the stem top. */
+export function capCenter(m: Mushroom) {
+  const { top, up } = capTop(m);
+  return top.addScaledVector(up, 0.08 * m.capR);
+}
+
+/** Centre of the top surface of a mushroom's cap, in world space (bells and witch-hats have a flat crown). */
+function capSurface(m: Mushroom) {
+  const center = capCenter(m);
+  return new THREE.Vector3(center.x, center.y + capProfile(m.shape, 6)[0].y * m.capR, center.z);
+}
+
 const rng = mulberry32(20261117);
 
-const giantSpecs: Array<Omit<Mushroom, "y" | "leanX" | "leanZ" | "bounce" | "kind"> & { hueKey: keyof typeof HUES }> = [
-  { x: 0, z: 0, height: 30, stemR: 2.6, capR: 17, shape: 0, hueKey: "cyan", hue: HUES.cyan },
-  { x: -95, z: -70, height: 36, stemR: 2.2, capR: 12, shape: 1, hueKey: "violet", hue: HUES.violet },
-  { x: -76, z: -92, height: 24, stemR: 1.7, capR: 9, shape: 1, hueKey: "violet", hue: HUES.violet },
-  { x: 112, z: -28, height: 40, stemR: 2.8, capR: 19, shape: 2, hueKey: "magenta", hue: HUES.magenta },
-  { x: 72, z: 116, height: 28, stemR: 2.0, capR: 10, shape: 3, hueKey: "lime", hue: HUES.lime },
-  { x: -142, z: 34, height: 33, stemR: 2.4, capR: 14, shape: 0, hueKey: "blue", hue: HUES.blue },
-  { x: 32, z: -142, height: 38, stemR: 2.5, capR: 15, shape: 2, hueKey: "teal", hue: HUES.teal },
+/** The seven giant mushrooms. The first, at the centre, is the Great Cap. */
+const giantSpecs: Array<Omit<Mushroom, "y" | "leanX" | "leanZ" | "bounce" | "kind" | "hue"> & { hueKey: keyof typeof HUES }> = [
+  { x: 0, z: 0, height: 30, stemR: 2.6, capR: 17, shape: 0, hueKey: "cyan" },
+  { x: -95, z: -70, height: 36, stemR: 2.2, capR: 12, shape: 1, hueKey: "violet" },
+  { x: -76, z: -92, height: 24, stemR: 1.7, capR: 9, shape: 1, hueKey: "violet" },
+  { x: 112, z: -28, height: 40, stemR: 2.8, capR: 19, shape: 2, hueKey: "magenta" },
+  { x: 72, z: 116, height: 28, stemR: 2.0, capR: 10, shape: 3, hueKey: "lime" },
+  { x: -142, z: 34, height: 33, stemR: 2.4, capR: 14, shape: 0, hueKey: "blue" },
+  { x: 32, z: -142, height: 38, stemR: 2.5, capR: 15, shape: 2, hueKey: "teal" },
 ];
 
 export const giants: Mushroom[] = giantSpecs.map((g) => ({
@@ -358,11 +381,11 @@ export const steps: Mushroom[] = [];
   // (about 1.7 m higher and 1–2 m apart) until you're level with the Great Cap.
   const count = 19;
   const capR = 2.6;
+  const ring = 21.5; // distance from the Great Cap's stem
   const a0 = Math.PI / 2 + 0.36;
-  const ground0 = terrainHeight(Math.cos(a0) * 21.5, Math.sin(a0) * 21.5);
+  const ground0 = terrainHeight(Math.cos(a0) * ring, Math.sin(a0) * ring);
   for (let i = 0; i < count; i++) {
-    const a = Math.PI / 2 + 0.36 + i * 0.3;
-    const ring = 21.5;
+    const a = a0 + i * 0.3;
     const x = Math.cos(a) * ring;
     const z = Math.sin(a) * ring;
     const y = terrainHeight(x, z) - 0.2;
@@ -387,10 +410,13 @@ export const steps: Mushroom[] = [];
   }
 }
 
+/** Hollow logs you can duck through. The first three sit near the start. */
 export const HOLLOW_LOGS: Array<{ x: number; z: number; yaw: number; length: number; y: number; pitch: number }> = [];
+// the hollow inside, and the outside of the bark
 const LOG_INNER = 0.33;
 const LOG_OUTER = 0.56;
 export const LOG_RADII = { inner: LOG_INNER, outer: LOG_OUTER };
+export const LOG_LENGTH = 7;
 {
   const sites: Array<[number, number, number]> = [
     [6, 46, 0.3],
@@ -404,7 +430,7 @@ export const LOG_RADII = { inner: LOG_INNER, outer: LOG_OUTER };
     sites.push([Math.cos(a) * d, Math.sin(a) * d, r() * Math.PI]);
   }
   for (const [x, z, yaw] of sites) {
-    const length = 7;
+    const length = LOG_LENGTH;
     const dx = Math.cos(yaw) * length * 0.5;
     const dz = -Math.sin(yaw) * length * 0.5;
     const h1 = terrainHeight(x - dx, z - dz);
@@ -431,6 +457,7 @@ export function nearNewLandmarks(x: number, z: number, pad: number) {
   return false;
 }
 
+/** Is this spot taken (by a landmark, a giant, the lake, the logs…)? Used to place grove mushrooms. */
 function blocked(x: number, z: number, pad: number) {
   if (nearNewLandmarks(x, z, pad)) return true;
   for (const g of giants) if (Math.hypot(x - g.x, z - g.z) < g.capR * 0.75 + pad) return true;
@@ -442,8 +469,10 @@ function blocked(x: number, z: number, pad: number) {
   return false;
 }
 
+/** The crystal garden, where Quartz lives. */
 export const CRYSTALS = { x: -32, z: -96 };
 
+/** The ordinary big mushrooms, scattered in clumps (where the grove noise is high). */
 export const groves: Mushroom[] = [];
 {
   let tries = 0;
@@ -504,7 +533,7 @@ export type Pad = {
   apex: number;
 };
 
-export const PAD_RADIUS = 0.75;
+const PAD_RADIUS = 0.75;
 export const PAD_HEIGHT = 0.24;
 
 /**
@@ -522,8 +551,7 @@ export const pads: Pad[] = [];
     for (const l of HOLLOW_LOGS) if (Math.hypot(x - l.x, z - l.z) < l.length * 0.6 + 1) return false;
     for (const o of solidMushrooms) {
       if (o === self) continue;
-      const { top, up } = capTop(o);
-      const c = top.clone().addScaledVector(up, 0.08 * o.capR);
+      const c = capCenter(o);
       // nothing overhead on the way up, and not inside another stem
       if (Math.hypot(x - c.x, z - c.z) < o.capR + 1.2) return false;
       if (Math.hypot(x - o.x, z - o.z) < o.stemR * 1.5 + 1.2) return false;
@@ -532,10 +560,7 @@ export const pads: Pad[] = [];
   };
   for (const m of [...giants, ...groves]) {
     if (m === giants[0]) continue; // the Great Cap has its staircase
-    const { top, up } = capTop(m);
-    const center = top.clone().addScaledVector(up, 0.08 * m.capR);
-    // the real top surface (bells and witch-hats have a flattened crown)
-    const capTopY = center.y + capProfile(m.shape, 6)[0].y * m.capR;
+    const center = capSurface(m);
     const start = r() * Math.PI * 2;
     for (let k = 0; k < 16; k++) {
       const a = start + (k / 16) * Math.PI * 2;
@@ -554,12 +579,25 @@ export const pads: Pad[] = [];
         top: y + PAD_HEIGHT,
         r: PAD_RADIUS,
         hue: m.hue.clone(),
-        target: new THREE.Vector3(center.x, capTopY, center.z),
+        target: center,
         apex,
       });
       break;
     }
   }
+  // and one beside the waterfall rock, up onto its top
+  const fx = FALLS.x - FALLS.r - 1.7;
+  const fy = terrainHeight(fx, FALLS.z);
+  pads.push({
+    x: fx,
+    z: FALLS.z,
+    y: fy,
+    top: fy + PAD_HEIGHT,
+    r: PAD_RADIUS,
+    hue: HUES.teal.clone(),
+    target: new THREE.Vector3(FALLS.x, FALLS_TOP, FALLS.z),
+    apex: 2.6,
+  });
 }
 
 // ---------------------------------------------------------------- small mushrooms
@@ -660,7 +698,21 @@ export const smallMushrooms: SmallMushroom[] = [];
 
 // ---------------------------------------------------------------- crystals
 
+/** A six-sided crystal: base position, radius r, height h, tilt (rx, rz). */
 export type Crystal = { x: number; y: number; z: number; r: number; h: number; rx: number; rz: number; hue: THREE.Color };
+
+/** A crystal's physics shape: an upright cylinder through its lower part, tilted with it. */
+export function crystalCollider(c: Crystal) {
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(c.rx, 0, c.rz));
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+  const center = new THREE.Vector3(c.x, c.y, c.z).addScaledVector(up, c.h * 0.45);
+  return {
+    q,
+    pos: center.toArray() as [number, number, number],
+    rot: [c.rx, 0, c.rz] as [number, number, number],
+    args: [c.h * 0.45, c.r * 0.9] as [number, number],
+  };
+}
 export const crystals: Crystal[] = [];
 {
   const r = mulberry32(5);
@@ -745,15 +797,6 @@ export function buildFoliageMap() {
 
 export const MAP_INFO = new THREE.Vector3(-HALF, STEP, GRID_N);
 
-// ---------------------------------------------------------------- cap surface helper
-
-/** Centre of the top surface of a mushroom's cap, in world space. */
-export function capSurface(m: Mushroom) {
-  const { top, up } = capTop(m);
-  const center = top.clone().addScaledVector(up, 0.08 * m.capR);
-  return new THREE.Vector3(center.x, center.y + capProfile(m.shape, 6)[0].y * m.capR, center.z);
-}
-
 // ---------------------------------------------------------------- hanging strands
 
 export type Strand = { x: number; y: number; z: number; len: number; seed: number; hue: THREE.Color };
@@ -764,8 +807,8 @@ export const strands: Strand[] = [];
   const r = mulberry32(919);
   for (const m of [...giants, ...groves]) {
     if (m.capR < 2.6) continue;
-    const { top, up } = capTop(m);
-    const under = top.clone().addScaledVector(up, 0.08 * m.capR - 0.09 * m.capR);
+    // just under the cap's rim
+    const under = capCenter(m).addScaledVector(capTop(m).up, -0.09 * m.capR);
     const clearance = under.y - terrainHeight(under.x, under.z);
     const n = Math.round(m.capR * (m.kind === "giant" ? 4 : 2.2));
     for (let i = 0; i < n; i++) {
@@ -784,7 +827,7 @@ export const strands: Strand[] = [];
 
 export type Orb = { id: string; pos: THREE.Vector3; hint: string };
 
-/** Twenty-four lights hidden around the cave, many on top of things. */
+/** The 27 energy orbs hidden around the cave, many on top of things. Their ids are saved, so don't rename them. */
 export const ORBS: Orb[] = [];
 {
   const add = (id: string, p: THREE.Vector3, hint: string) => ORBS.push({ id, pos: p, hint });
@@ -826,6 +869,10 @@ export const ORBS: Orb[] = [];
     const z = Math.sin(a) * 163;
     add(`edge-${a}`, new THREE.Vector3(x, terrainHeight(x, z) + 0.9, z), "by the cave wall");
   }
+  const mid = TUNNEL.getPointAt(0.5);
+  add("cave", new THREE.Vector3(CAVE.x + 6, CAVE_FLOOR + 0.9, CAVE.z + 5), "inside the cave");
+  add("tunnel", new THREE.Vector3(mid.x, mid.y - 1.0, mid.z), "deep in the crystal tunnel");
+  add("falls", new THREE.Vector3(FALLS.x, FALLS_TOP + 1.1, FALLS.z), "on top of the waterfall");
 }
 
 // ---------------------------------------------------------------- bridge deck
@@ -839,42 +886,12 @@ export function bridgeDeckY(z: number) {
   return THREE.MathUtils.lerp(y0, y1, t) + arch * Math.sin(Math.PI * t);
 }
 
-// ---------------------------------------------------------------- falls puffball + extra orbs
-
-pads.push({
-  x: FALLS.x - FALLS.r - 1.7,
-  z: FALLS.z,
-  y: terrainHeight(FALLS.x - FALLS.r - 1.7, FALLS.z),
-  top: terrainHeight(FALLS.x - FALLS.r - 1.7, FALLS.z) + PAD_HEIGHT,
-  r: PAD_RADIUS,
-  hue: HUES.teal.clone(),
-  target: new THREE.Vector3(FALLS.x, FALLS_TOP, FALLS.z),
-  apex: 2.6,
-});
-
-{
-  const mid = TUNNEL.getPointAt(0.5);
-  ORBS.push(
-    { id: "cave", pos: new THREE.Vector3(CAVE.x + 6, CAVE_FLOOR + 0.9, CAVE.z + 5), hint: "inside the cave" },
-    { id: "tunnel", pos: new THREE.Vector3(mid.x, mid.y - 1.0, mid.z), hint: "deep in the crystal tunnel" },
-    { id: "falls", pos: new THREE.Vector3(FALLS.x, FALLS_TOP + 1.1, FALLS.z), hint: "on top of the waterfall" },
-  );
-}
-
 // ---------------------------------------------------------------- potions
 
 export type PotionKind = "color" | "fluff" | "glow" | "bounce" | "fly";
 export type Potion = { id: string; kind: PotionKind; color: THREE.Color; name: string; pos: THREE.Vector3 };
 
-export const POTION_COLORS = {
-  bubblegum: { color: "#ff7ac8", name: "Bubblegum" },
-  sky: { color: "#6fc3ff", name: "Sky blue" },
-  mint: { color: "#5fffbe", name: "Mint" },
-  sunny: { color: "#ffd45c", name: "Sunshine" },
-  lilac: { color: "#b48cff", name: "Lilac" },
-  panda: { color: "#d4532e", name: "Red panda" },
-} as const;
-
+/** Every potion bottle, placed by hand near landmarks. Ids are saved, so don't rename them. */
 export const POTIONS: Potion[] = [];
 {
   const ground = (x: number, z: number, lift = 0.55) => new THREE.Vector3(x, terrainHeight(x, z) + lift, z);
@@ -915,6 +932,7 @@ export const POTIONS: Potion[] = [];
 
 // ---------------------------------------------------------------- inside the cave
 
+/** Crystals around the cave walls, plus clumps of little mushrooms on its floor. */
 export const caveCrystals: Crystal[] = [];
 {
   const r = mulberry32(4242);
@@ -968,6 +986,7 @@ export const caveCrystals: Crystal[] = [];
 
 // ---------------------------------------------------------------- tunnel helpers
 
+/** Distance between neighbouring tunnel samples, in metres. */
 export const TUNNEL_STEP = TUNNEL.getLength() / (TUNNEL_SAMPLES.length - 1);
 
 /** Nearest point on the tunnel's centre line, with its index and direction (toward the cave). */

@@ -1,36 +1,38 @@
 "use client";
 import { useState } from "react";
-import {
-  Hammer,
-  BookOpen,
-  Fingerprint,
-  Activity,
-  RotateCw,
-} from "lucide-react";
-import { SERENA_AXIOMS } from "@/content/serena";
-const icons = [Hammer, BookOpen, Fingerprint, Activity];
-const prompts = [
-  "Think. Make. Understand.",
-  "Stay curious. Go deeper.",
-  "Show up as yourself.",
-  "Train body. Train mind.",
-];
+import { Hammer, BookOpen, Fingerprint, Activity, RotateCw } from "lucide-react";
+import { SERENA_AXIOMS, type Axiom } from "@/content/serena";
+
+/** The drawing on the front of each card. */
+const ICONS: Record<Axiom["icon"], typeof Hammer> = {
+  hammer: Hammer,
+  "book-open": BookOpen,
+  fingerprint: Fingerprint,
+  activity: Activity,
+};
+
+/**
+ * "Values to live by": four cards that flip over to show a reflection.
+ * A mouse flips a card while hovering; a click (or tap) pins it open until
+ * clicked again or Escape is pressed.
+ */
 export default function Values() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [pinned, setPinned] = useState<Record<string, boolean>>({});
+  const close = (id: string) => {
+    setHovered(null);
+    setPinned((p) => ({ ...p, [id]: false }));
+  };
   return (
     <div className="values-explorer">
-      <div
-        className="value-choices"
-        role="group"
-        aria-label="Explore my values"
-      >
+      <div className="value-choices" role="group" aria-label="Explore my values">
         {SERENA_AXIOMS.map((axiom, i) => {
-          const Icon = icons[i],
-            flipped = hovered === axiom.id || !!pinned[axiom.id];
+          const Icon = ICONS[axiom.icon];
+          const flipped = hovered === axiom.id || !!pinned[axiom.id];
           return (
             <button
               key={axiom.id}
+              // value-0..3 pick each card's own little animation in globals.css
               className={`value-flip value-${i} ${flipped ? "is-flipped" : ""}`}
               aria-label={`${flipped ? "Close" : "Read"} ${axiom.title}`}
               aria-expanded={flipped}
@@ -39,17 +41,9 @@ export default function Values() {
                 if (e.pointerType === "mouse") setHovered(axiom.id);
               }}
               onPointerLeave={() => setHovered(null)}
-              onClick={() => {
-                if (flipped) {
-                  setHovered(null);
-                  setPinned({ ...pinned, [axiom.id]: false });
-                } else setPinned({ ...pinned, [axiom.id]: true });
-              }}
+              onClick={() => (flipped ? close(axiom.id) : setPinned((p) => ({ ...p, [axiom.id]: true })))}
               onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setHovered(null);
-                  setPinned({ ...pinned, [axiom.id]: false });
-                }
+                if (e.key === "Escape") close(axiom.id);
               }}
             >
               <span className="value-flip-inner">
@@ -65,22 +59,16 @@ export default function Values() {
                     <Icon size={58} strokeWidth={1} />
                   </span>
                   <span className="value-title">{axiom.title}</span>
-                  <span className="value-prompt">{prompts[i]}</span>
+                  <span className="value-prompt">{axiom.prompt}</span>
                   <span className="flip-hint">TURN OVER A THOUGHT ↗</span>
                 </span>
-                <span
-                  id={`${axiom.id}-reflection`}
-                  className="value-face value-back"
-                  aria-hidden={!flipped}
-                >
+                <span id={`${axiom.id}-reflection`} className="value-face value-back" aria-hidden={!flipped}>
                   <span className="eyebrow">
                     AXIOM {axiom.number} / {axiom.title}
                   </span>
                   <span className="value-statement">{axiom.statement}</span>
                   <span className="value-elaboration">{axiom.elaboration}</span>
-                  <span className="flip-hint">
-                    A BELIEF TO PUT INTO PRACTICE
-                  </span>
+                  <span className="flip-hint">A BELIEF TO PUT INTO PRACTICE</span>
                 </span>
               </span>
             </button>

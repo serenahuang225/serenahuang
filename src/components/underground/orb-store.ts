@@ -1,38 +1,29 @@
 /**
- * Tiny store for the light orbs, shared by the 3D scene and the HUD. It
+ * Tiny store for the energy orbs, shared by the 3D scene and the HUD. It
  * remembers what this visitor found in localStorage (a per-viewer
  * convenience; the game works fine without it).
  */
+import { listenerSet, readSaved, writeSaved } from "./store-utils";
 
-type OrbState = { found: string[]; total: number; last: { id: string; at: number } | null };
+type OrbState = {
+  /** Ids of the orbs caught so far (see ORBS in world-data). */
+  found: string[];
+  total: number;
+  /** The most recent catch, for the HUD's little toast. */
+  last: { id: string; at: number } | null;
+};
 
 const KEY = "underground-orbs-v1";
 let state: OrbState = { found: [], total: 0, last: null };
-const listeners = new Set<() => void>();
+const { emit, subscribe } = listenerSet();
 
 function load(): string[] {
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-function save() {
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(state.found));
-  } catch {
-    // storage blocked: progress just won't survive a reload
-  }
-}
-
-function emit() {
-  for (const l of listeners) l();
+  const saved = readSaved(KEY);
+  return Array.isArray(saved) ? saved.filter((x): x is string => typeof x === "string") : [];
 }
 
 export const orbStore = {
+  /** Read what this browser found before (once the scene knows how many orbs there are). */
   init(total: number) {
     if (state.total === total) return;
     state = { found: load(), total, last: null };
@@ -41,12 +32,13 @@ export const orbStore = {
   collect(id: string) {
     if (state.found.includes(id)) return;
     state = { ...state, found: [...state.found, id], last: { id, at: Date.now() } };
-    save();
+    writeSaved(KEY, state.found);
     emit();
   },
+  /** Put every orb back (playing again to collect them faster). */
   reset() {
     state = { ...state, found: [], last: null };
-    save();
+    writeSaved(KEY, state.found);
     emit();
   },
   has(id: string) {
@@ -55,10 +47,5 @@ export const orbStore = {
   get() {
     return state;
   },
-  subscribe(fn: () => void) {
-    listeners.add(fn);
-    return () => {
-      listeners.delete(fn);
-    };
-  },
+  subscribe,
 };

@@ -1,56 +1,66 @@
+/**
+ * Everything the home page says, in one place. Edit text here rather than in
+ * the components.
+ */
+
+/** A value card in "Values to live by": the front shows title + prompt, the back the reflection. */
 export type Axiom = {
+  /** Also used for the card's element id, e.g. "axiom-2-reflection". */
   id: string;
   number: string;
   title: string;
+  /** The short line on the front of the card. */
+  prompt: string;
   statement: string;
   elaboration: string;
-  accentColor: string;
-  iconName: string;
+  /** Which drawing goes on the front (see the icon list in values.tsx). */
+  icon: "hammer" | "book-open" | "fingerprint" | "activity";
 };
 export const SERENA_AXIOMS: Axiom[] = [
   {
     id: "axiom-1",
     number: "01",
+    prompt: "Think. Make. Understand.",
     title: "Mens et manus",
     statement: "As a student at MIT, I think this is essential :)",
     elaboration:
       "Theories and axioms are only thoughts until applied in the real, physical life. I want to live out my axioms and beliefs and not just think about them. Also, truly learning/understanding something comes from actually building something yourself.",
-    accentColor: "from-cyan-400 to-blue-500",
-    iconName: "hammer",
+    icon: "hammer",
   },
   {
     id: "axiom-2",
     number: "02",
+    prompt: "Stay curious. Go deeper.",
     title: "Always learn",
     statement:
       "One of my greatest strengths is the ability to adapt and learn.",
     elaboration:
       "The tech industry moves and expands so fast which means I need to stay curious, be adaptable and be excited about learning and rethinking to stay up to date. Also, I will almost never be the expert when I walk into any room, but can soon become competent as long as I stay open, think freely, and dive deep.",
-    accentColor: "from-fuchsia-400 to-purple-600",
-    iconName: "book-open",
+    icon: "book-open",
   },
   {
     id: "axiom-3",
     number: "03",
+    prompt: "Show up as yourself.",
     title: "Authenticity",
     statement:
       "I want to present my most genuine self to my work, anyone I meet, and my reflections with myself.",
     elaboration:
       "I want to care deeply about the relationships I have and work I do and I don’t just want to do something for the performative aspect or because that’s what a preconceived notion tells me.",
-    accentColor: "from-emerald-400 to-teal-600",
-    iconName: "fingerprint",
+    icon: "fingerprint",
   },
   {
     id: "axiom-4",
     number: "04",
+    prompt: "Train body. Train mind.",
     title: "Healthy body, healthy mind",
     statement: "Stay active and eat delicious, healthy, balanced meals.",
     elaboration:
       "Garbage in, garbage out works for all things in life, including your personal health and training ML models. Furthermore, I believe that training the body builds a foundation for even better training for the mind.",
-    accentColor: "from-amber-400 to-orange-500",
-    iconName: "activity",
+    icon: "activity",
   },
 ];
+/** The rotating "thought to take with you" at the bottom of the page. */
 export const quotes = [
   "Optimize your life, which means taking into account time for sleep.",
   "Find people who will be your advocate and supporter, someone who you can be yourself for.",
@@ -60,9 +70,24 @@ export const quotes = [
   "Sometimes, to make the right decision, you have to make wrong decision(s).",
   "Everyone’s a beginner at some point. Don’t let it stop you from trying something new.",
 ];
-export const projects = [
+/** The project cards. `slug` picks the cover art in page.tsx; `kind` is what the filter buttons match. */
+export const projects: {
+  slug: string;
+  kind: "Research" | "Product";
+  number: string;
+  title: string;
+  name: string;
+  category: string;
+  description: string;
+  detail: string;
+  tags: string[];
+  href: string;
+  metric: string;
+  metricLabel: string;
+}[] = [
   {
     slug: "hydrology",
+    kind: "Research",
     number: "01",
     title: "Learning the language of water.",
     name: "AI Hydrological Modeling",
@@ -78,6 +103,7 @@ export const projects = [
   },
   {
     slug: "tunas",
+    kind: "Product",
     number: "02",
     title: "A little more than a personal best.",
     name: "Tunas Swim Meet Dashboard",
@@ -93,6 +119,7 @@ export const projects = [
   },
   {
     slug: "lively",
+    kind: "Product",
     number: "03",
     title: "Make room for a fuller life.",
     name: "Lively",
@@ -107,7 +134,7 @@ export const projects = [
     metricLabel: "downloads. a thousand different days.",
   },
 ];
-// Add personal photos here. Store files in public/photos and use /photos/file.jpg.
+/** The photo ribbons. Put the image in public/photos/optimized/ (WebP, about 1600px wide) and add an entry. */
 export type Photo = {
   src: string;
   alt: string;
@@ -266,33 +293,28 @@ export const photos: Photo[] = [
     caption: "Reptiles at rest",
   },
 ];
-// A manually curated listening list; no live activity is implied.
+/** The record collection. Put the MP3 in public/music/ and point `audio` at it. */
 export type Track = {
   title: string;
   artist: string;
-  href: string;
-  artwork?: string;
-  audio?: string;
+  audio: string;
 };
 export const listening: Track[] = [
   {
     title:
       "Return to the Eternal Wind (feat. Hong Wang & Vanessa Freebairn-Smith)",
     artist: "Jeremy Zuckerman, Hong Wang, Vanessa Freebairn-Smith",
-    href: "/music/Jeremy Zuckerman, Hong Wang, Vanessa Freebairn-Smith - Return to the Eternal Wind (feat. Hong Wang & Vanessa Freebairn-Smith).mp3",
     audio:
       "/music/Jeremy Zuckerman, Hong Wang, Vanessa Freebairn-Smith - Return to the Eternal Wind (feat. Hong Wang & Vanessa Freebairn-Smith).mp3",
   },
   {
     title: "Odysseus",
     artist: "Ludwig Göransson",
-    href: "/music/Ludwig Göransson - Odysseus.mp3",
     audio: "/music/Ludwig Göransson - Odysseus.mp3",
   },
   {
     title: "Sirens",
     artist: "Ludwig Göransson",
-    href: "/music/Ludwig Göransson - Sirens.mp3",
     audio: "/music/Ludwig Göransson - Sirens.mp3",
   },
 ];

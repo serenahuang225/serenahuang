@@ -6,11 +6,17 @@
 import { BOB_INTRO, NPCS, PARTS, type Effect, type Line, type NpcId, type PartId } from "./story-data";
 import { redirectLine, type Goal } from "./quest";
 import { orbStore } from "./orb-store";
+import { asRecord, listenerSet, readSaved, writeSaved } from "./store-utils";
 
+/**
+ * Where the story is: the title card, falling in, Bob's opening lines, playing,
+ * the launch cutscene, the ending card, and free play after flying home.
+ */
 export type Phase = "card" | "falling" | "intro" | "play" | "launch" | "ended" | "free";
 
 export type Photo = { id: string; x: number; z: number; yaw: number; thumb: string; at: number };
 
+/** What T (or the Talk button) would do right now. */
 export type Action = { kind: "talk"; npc: NpcId; name: string } | { kind: "launch" } | null;
 
 type State = {
@@ -18,19 +24,25 @@ type State = {
   carried: PartId[];
   delivered: PartId[];
   photos: Photo[];
+  /** Areas of the map friends have told Bob about. */
   reveals: Array<{ x: number; z: number; r: number }>;
   met: NpcId[];
   /** Conversation on screen: who (or "bob") and which line (or a line made up on the spot). */
   talk: { who: NpcId | "bob"; node: string; line?: Line } | null;
   action: Action;
+  /** The hint under Bob ("T — talk to Pip", "Swimming — …"). */
   prompt: string | null;
+  /** A short message that fades out ("Found the nose cone!"). */
   note: { text: string; at: number } | null;
   /** A puzzle on screen (Quartz's crystal song). */
   puzzle: "song" | null;
   /** A one-time control tip, shown when that control first becomes useful. */
   tip: { id: string; text: string; at: number } | null;
+  /** When the last photo was taken (the screen flashes white). */
   flash: number;
+  /** Goes up by one each time P is pressed; the scene watches it to take a photo. */
   photoRequest: number;
+  /** The run's start and end times, for the ending card's clock. */
   startedAt: number;
   endedAt: number;
 };
@@ -40,15 +52,11 @@ const TIPS_KEY = "underground-tips-v1";
 const TIP_MS = 7000;
 let tipsSeen: Set<string> | null = null;
 
+/** The control tips this browser has already shown (read once). */
 function seenTips() {
   if (tipsSeen) return tipsSeen;
-  tipsSeen = new Set();
-  try {
-    const raw = window.localStorage.getItem(TIPS_KEY);
-    if (raw) for (const id of JSON.parse(raw)) tipsSeen.add(String(id));
-  } catch {
-    // storage blocked: tips just show again next visit
-  }
+  const saved = readSaved(TIPS_KEY);
+  tipsSeen = new Set(Array.isArray(saved) ? saved.map(String) : []);
   return tipsSeen;
 }
 const MAX_PHOTOS = 16;
@@ -72,34 +80,30 @@ let state: State = {
   endedAt: 0,
 };
 let loaded = false;
-const listeners = new Set<() => void>();
+const { emit, subscribe } = listenerSet();
 
-function emit() {
-  for (const l of listeners) l();
+/** The phase to come back to after a reload: mid-story resumes play, a finished game resumes free play. */
+function savedPhase(phase: Phase): Phase {
+  if (phase === "play" || phase === "free") return phase;
+  if (phase === "launch" || phase === "ended") return "free";
+  return "card";
 }
 
 function save() {
   // never write before the saved game has been read, or a blank state could overwrite it
   if (!loaded) return;
-  try {
-    const keep = state.phase === "play" || state.phase === "free" || state.phase === "launch" || state.phase === "ended";
-    window.localStorage.setItem(
-      KEY,
-      JSON.stringify({
-        phase: keep ? (state.phase === "launch" || state.phase === "ended" ? "free" : state.phase) : "card",
-        carried: state.carried,
-        delivered: state.delivered,
-        photos: state.photos,
-        reveals: state.reveals,
-        met: state.met,
-        startedAt: state.startedAt,
-      }),
-    );
-  } catch {
-    // storage blocked or full: progress just won't survive a reload
-  }
+  writeSaved(KEY, {
+    phase: savedPhase(state.phase),
+    carried: state.carried,
+    delivered: state.delivered,
+    photos: state.photos,
+    reveals: state.reveals,
+    met: state.met,
+    startedAt: state.startedAt,
+  });
 }
 
+/** Change the state and tell the HUD; `persist` also saves the game. */
 function set(patch: Partial<State>, persist = false) {
   state = { ...state, ...patch };
   if (persist) save();
@@ -108,6 +112,7 @@ function set(patch: Partial<State>, persist = false) {
 
 const partName = (id: PartId) => PARTS.find((p) => p.id === id)?.name ?? id;
 
+/** The line of dialogue a conversation is on. */
 export function lineFor(talk: State["talk"]): Line | null {
   if (!talk) return null;
   if (talk.line) return talk.line;
@@ -131,35 +136,24 @@ export const storyStore = {
   load() {
     if (loaded) return;
     loaded = true;
-    try {
-      const raw = window.localStorage.getItem(KEY);
-      if (raw) {
-        const p = JSON.parse(raw);
-        state = {
-          ...state,
-          phase: p.phase === "play" || p.phase === "free" ? p.phase : "card",
-          carried: Array.isArray(p.carried) ? p.carried : [],
-          delivered: Array.isArray(p.delivered) ? p.delivered : [],
-          photos: Array.isArray(p.photos) ? p.photos.slice(0, MAX_PHOTOS) : [],
-          reveals: Array.isArray(p.reveals) ? p.reveals : [],
-          met: Array.isArray(p.met) ? p.met : [],
-          startedAt: typeof p.startedAt === "number" ? p.startedAt : 0,
-        };
-      }
-    } catch {
-      // ignore
-    }
+    const p = asRecord(readSaved(KEY));
+    const list = <T,>(v: unknown) => (Array.isArray(v) ? (v as T[]) : []);
+    state = {
+      ...state,
+      phase: p.phase === "play" || p.phase === "free" ? p.phase : "card",
+      carried: list<PartId>(p.carried),
+      delivered: list<PartId>(p.delivered),
+      photos: list<Photo>(p.photos).slice(0, MAX_PHOTOS),
+      reveals: list<State["reveals"][number]>(p.reveals),
+      met: list<NpcId>(p.met),
+      startedAt: typeof p.startedAt === "number" ? p.startedAt : 0,
+    };
     emit();
   },
   get() {
     return state;
   },
-  subscribe(fn: () => void) {
-    listeners.add(fn);
-    return () => {
-      listeners.delete(fn);
-    };
-  },
+  subscribe,
 
   /** True while the game shouldn't take movement keys. */
   inputBlocked() {
@@ -278,11 +272,7 @@ export const storyStore = {
     if (seen.has(id)) return true;
     if (state.tip && Date.now() - state.tip.at < TIP_MS) return false;
     seen.add(id);
-    try {
-      window.localStorage.setItem(TIPS_KEY, JSON.stringify([...seen]));
-    } catch {
-      // ignore
-    }
+    writeSaved(TIPS_KEY, [...seen]);
     set({ tip: { id, text, at: Date.now() } });
     return true;
   },

@@ -1,5 +1,11 @@
 "use client";
-import { useFrame, useThree } from "@react-three/fiber";
+/**
+ * The story's things in the 3D world: the Sky Eye (the hole Bob fell
+ * through), the rocket and its parts, the five friends, photos, and the
+ * director that runs the intro fall, conversation cameras, prompts, the
+ * compass target and one-time control tips.
+ */
+import { useFrame } from "@react-three/fiber";
 import { CylinderCollider, RigidBody } from "@react-three/rapier";
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as THREE from "three";
@@ -10,16 +16,19 @@ import { sound } from "./audio";
 import { orbStore } from "./orb-store";
 import { isTouchDevice } from "./touch";
 import { lineFor, storyStore } from "./story-store";
-import { ENERGY_NEEDED, NPCS, PARTS, ROCKET, type Npc, type PartId } from "./story-data";
+import { ENERGY_NEEDED, NPCS, PARTS, ROCKET, type PartId } from "./story-data";
 
-const GROUND = () => terrainHeight(ROCKET.x, ROCKET.z);
-export const HOLE_Y = 131;
+/** Ground height at the rocket. */
+const rocketGround = () => terrainHeight(ROCKET.x, ROCKET.z);
+/** Height of the Sky Eye, the bright hole in the ceiling. */
+const HOLE_Y = 131;
 
 // ---------------------------------------------------------------- the Sky Eye (the hole Bob fell through)
 
+/** The Sky Eye: a bright hole in the ceiling, a soft beam of light down to the rocket, and dust drifting in it. */
 export function SkyEye() {
   const built = useMemo(() => {
-    const ground = GROUND();
+    const ground = rocketGround();
     const height = HOLE_Y - ground;
     const beamGeo = new THREE.CylinderGeometry(6.5, 9.5, height, 48, 1, true);
     beamGeo.translate(0, height / 2, 0);
@@ -135,8 +144,10 @@ export function SkyEye() {
 
 // ---------------------------------------------------------------- rocket
 
+/** The rocket's parts, bottom to top. */
 const PART_ORDER: PartId[] = ["hull", "nozzle", "fins", "spring", "wire", "lens", "cone"];
 
+/** A coil of tube (the spring legs, and the copper wire). */
 function helix(radius: number, height: number, turns: number, tube: number) {
   const pts: THREE.Vector3[] = [];
   for (let i = 0; i <= turns * 24; i++) {
@@ -147,6 +158,7 @@ function helix(radius: number, height: number, turns: number, tube: number) {
   return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), turns * 40, tube, 6, false);
 }
 
+/** One 3D object per rocket part, all built around the rocket's base. */
 function rocketParts() {
   const white = new THREE.MeshStandardMaterial({ color: "#efe8dc", roughness: 0.45, metalness: 0.25 });
   const red = new THREE.MeshStandardMaterial({ color: "#d4532e", roughness: 0.5, metalness: 0.2 });
@@ -239,6 +251,7 @@ function rocketParts() {
   return parts;
 }
 
+/** A faint wireframe copy of a part, shown on the rocket until the real part is fitted. */
 function ghostOf(obj: THREE.Object3D) {
   const ghost = obj.clone(true);
   const mat = new THREE.MeshBasicMaterial({ color: "#7fe8ff", wireframe: true, transparent: true, opacity: 0.16, depthWrite: false });
@@ -248,10 +261,14 @@ function ghostOf(obj: THREE.Object3D) {
   return ghost;
 }
 
+/**
+ * Bob's rocket on its launch pad: parts appear as they're delivered, a ring of
+ * lights shows the energy collected, and the launch cutscene flies it out
+ * through the Sky Eye.
+ */
 export function Rocket() {
   const s = useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
   const orbs = useSyncExternalStore(orbStore.subscribe, orbStore.get, orbStore.get);
-  const camera = useThree((st) => st.camera);
   const built = useMemo(() => {
     const parts = rocketParts();
     const ghosts = Object.fromEntries(PART_ORDER.map((id) => [id, ghostOf(parts[id])])) as Record<PartId, THREE.Object3D>;
@@ -278,20 +295,17 @@ export function Rocket() {
   const rocket = useRef<THREE.Group>(null);
   const fireLight = useRef<THREE.PointLight>(null);
   const anim = useRef({ launchT: -1, pop: {} as Record<string, number> });
-  const ground = useMemo(() => GROUND(), []);
+  const ground = useMemo(() => rocketGround(), []);
 
-  // which parts are on the rocket
-  const done = new Set(s.delivered);
-  const complete = PART_ORDER.every((id) => done.has(id));
+  // show the parts that are on the rocket (all of them once you've flown home)
   const showAll = s.phase === "free" || s.phase === "ended";
-
   useEffect(() => {
     PART_ORDER.forEach((id) => {
-      const on = done.has(id) || showAll;
+      const on = showAll || s.delivered.includes(id);
       built.parts[id].visible = on;
       built.ghosts[id].visible = !on;
     });
-  });
+  }, [s.delivered, showAll, built]);
 
   useEffect(() => {
     const lit = Math.min(orbs.found.length, ENERGY_NEEDED);
@@ -301,7 +315,7 @@ export function Rocket() {
     if (built.lights.instanceColor) built.lights.instanceColor.needsUpdate = true;
   }, [orbs.found.length, built]);
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     const st = storyStore.get();
     const p = player.position;
@@ -360,9 +374,6 @@ export function Rocket() {
       }
       g.position.set(ROCKET.x, ground + 0.25, ROCKET.z);
     }
-    void state;
-    void camera;
-    void complete;
   });
 
   return (
@@ -389,6 +400,7 @@ export function Rocket() {
 
 // ---------------------------------------------------------------- parts lying around the world
 
+/** A small stand-in shape for a part lying in the world, waiting to be picked up. */
 function partIcon(id: PartId) {
   const mat = new THREE.MeshStandardMaterial({ color: "#e8e2d6", roughness: 0.35, metalness: 0.6, emissive: "#4fd8ff", emissiveIntensity: 0.25 });
   switch (id) {
@@ -413,6 +425,7 @@ function partIcon(id: PartId) {
   }
 }
 
+/** Rocket parts lying around the world, each with a cyan beacon; roll into one to pick it up. */
 export function PartPickups() {
   const s = useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
   const items = useMemo(
@@ -453,7 +466,7 @@ export function PartPickups() {
   return (
     <>
       {items.map((it, i) =>
-        storyStore.has(it.id) && s ? null : (
+        s.carried.includes(it.id) || s.delivered.includes(it.id) ? null : (
           <group
             key={it.id}
             ref={(el) => {
@@ -478,10 +491,7 @@ export function PartPickups() {
 
 // ---------------------------------------------------------------- friends
 
-function npcY(n: Npc) {
-  return n.y ?? terrainHeight(n.x, n.z);
-}
-
+/** A pair of big eyes on a round face of radius r. */
 function Eyes({ r, y = 0.2, spread = 0.36, look = 0.88 }: { r: number; y?: number; spread?: number; look?: number }) {
   return (
     <>
@@ -504,6 +514,7 @@ function Eyes({ r, y = 0.2, spread = 0.36, look = 0.88 }: { r: number; y?: numbe
   );
 }
 
+/** Pip, or (with `elder`) Elder Puff with spectacles and brows. */
 function Puffkin({ r, color, elder }: { r: number; color: string; elder?: boolean }) {
   return (
     <group>
@@ -555,6 +566,7 @@ function Puffkin({ r, color, elder }: { r: number; color: string; elder?: boolea
   );
 }
 
+/** Old Moss, the glow-snail. */
 function Snail({ size }: { size: number }) {
   return (
     <group scale={size}>
@@ -587,6 +599,7 @@ function Snail({ size }: { size: number }) {
   );
 }
 
+/** Finn, the lantern fish. */
 function Fish({ size }: { size: number }) {
   return (
     <group scale={size}>
@@ -614,6 +627,7 @@ function Fish({ size }: { size: number }) {
   );
 }
 
+/** Quartz, the crystal sprite, with three little crystals around her. */
 function Sprite() {
   return (
     <group>
@@ -634,6 +648,7 @@ function Sprite() {
   );
 }
 
+/** A speech bubble with "…" in it. */
 function talkBubbleTexture() {
   const c = document.createElement("canvas");
   c.width = 128;
@@ -657,101 +672,52 @@ function talkBubbleTexture() {
   return new THREE.CanvasTexture(c);
 }
 
-/** Where each friend is right now (they wander after Bob once you've met them). */
+/** Where each friend stands (their home spot; the director measures talking distance from here). */
 export const friendPos: Record<string, THREE.Vector3> = Object.fromEntries(
   NPCS.map((n) => [n.id, new THREE.Vector3(n.x, n.y ?? terrainHeight(n.x, n.z), n.z)]),
 );
 
-/** Each friend's spot in the little parade behind Bob: [angle offset, distance]. */
-const SLOTS: Record<string, [number, number]> = {
-  pip: [0.55, 2.4],
-  elder: [-0.55, 2.6],
-  moss: [0.0, 3.4],
-  quartz: [1.1, 2.0],
-  finn: [-1.1, 2.4],
-};
+/** Each friend's speech bubble sits this far above them. */
+const BUBBLE_HEIGHT: Record<string, number> = { moss: 1.6, elder: 1.5, finn: 1.6 };
 
+/**
+ * The five friends at home: they idle gently, turn to face Bob when he's
+ * close, and show a "…" bubble when he's near enough (and still) to talk.
+ */
 export function Friends() {
   const bubbleTex = useMemo(() => talkBubbleTexture(), []);
   const groups = useRef<Array<THREE.Group | null>>([]);
   const bubbles = useRef<Array<THREE.Sprite | null>>([]);
-  const home = useMemo(() => NPCS.map((n) => new THREE.Vector3(n.x, n.y ?? terrainHeight(n.x, n.z), n.z)), []);
-  const motion = useRef(NPCS.map(() => ({ speed: 0, heading: new THREE.Vector3(0, 0, -1) })));
   useFrame((state, delta) => {
     const t = state.clock.elapsedTime;
     const dt = Math.min(delta, 0.05);
     const p = player.position;
-    const v = player.velocity;
+    const still = Math.hypot(player.velocity.x, player.velocity.z) < 1.2;
     const st = storyStore.get();
-    const bobGround = terrainHeight(p.x, p.z);
-    const bobInWater = inDeepWater(p.x, p.y, p.z);
-    // "behind Bob" follows the way he's rolling (or keeps the last direction)
-    const hv = Math.hypot(v.x, v.z);
     NPCS.forEach((n, i) => {
       const g = groups.current[i];
       if (!g) return;
-      const m = motion.current[i];
-      if (hv > 0.6) m.heading.set(v.x / hv, 0, v.z / hv);
       const pos = friendPos[n.id];
-      // friends stay at home (they used to follow Bob around)
-      const following = false;
-      let moving = false;
-      if (following && (n.id !== "finn" || bobInWater)) {
-        const [ang, dist] = SLOTS[n.id];
-        const back = m.heading.clone().multiplyScalar(-1).applyAxisAngle(new THREE.Vector3(0, 1, 0), ang);
-        const target = new THREE.Vector3(p.x + back.x * dist, 0, p.z + back.z * dist);
-        if (n.id === "finn") target.y = Math.min(p.y, DEEP_LEVEL - 0.4);
-        else if (n.id === "quartz") target.y = p.y + 1.1;
-        else target.y = terrainHeight(target.x, target.z);
-        const far = pos.distanceTo(target);
-        // too far behind (a puffball launch, a long fall): pop over to Bob, on land only
-        const bobOnLand = !bobInWater && Math.abs(p.y - bobGround) < 3;
-        if (far > 40 && (bobOnLand || n.id === "quartz" || n.id === "finn")) {
-          pos.copy(target);
-        } else {
-          // walkers don't wade into deep water; Finn doesn't leave it
-          const blocked = n.id !== "quartz" && n.id !== "finn" && inDeepWater(target.x, target.y + 0.3, target.z);
-          if (!blocked && far > 0.25) {
-            const maxSpeed = n.id === "moss" ? 7 : 10;
-            m.speed = THREE.MathUtils.damp(m.speed, Math.min(maxSpeed, far * 2.2), 4, dt);
-            const step = Math.min(far, m.speed * dt);
-            pos.addScaledVector(target.clone().sub(pos).normalize(), step);
-            if (n.id !== "quartz" && n.id !== "finn") pos.y = terrainHeight(pos.x, pos.z);
-            moving = step > 0.01;
-          } else {
-            m.speed = THREE.MathUtils.damp(m.speed, 0, 6, dt);
-          }
-        }
-      } else {
-        // drift back home
-        const b = home[i];
-        const far = pos.distanceTo(b);
-        if (far > 0.2) {
-          pos.addScaledVector(b.clone().sub(pos).normalize(), Math.min(far, 4 * dt));
-          if (n.id !== "quartz" && n.id !== "finn") pos.y = terrainHeight(pos.x, pos.z);
-        }
-      }
-      // little hops while they hurry after Bob
-      const hop = moving && (n.id === "pip" || n.id === "elder") ? Math.abs(Math.sin(t * 11 + i)) * 0.28 : 0;
-      const bob =
+      // idle motion: Quartz floats (higher until you've met her), Finn bobs in the water, the rest breathe
+      const idle =
         n.id === "quartz"
           ? (st.met.includes(n.id) ? 0 : 1.4) + Math.sin(t * 1.2) * 0.15
           : n.id === "finn"
             ? Math.sin(t * 1.4) * 0.12
-            : hop + Math.abs(Math.sin(t * 2.2 + i)) * 0.04;
-      g.position.set(pos.x, pos.y + bob, pos.z);
-      // face Bob when close, otherwise face where they're going
+            : Math.abs(Math.sin(t * 2.2 + i)) * 0.04;
+      g.position.set(pos.x, pos.y + idle, pos.z);
+      // turn to face Bob when he's nearby
       const dx = p.x - pos.x;
       const dz = p.z - pos.z;
-      const want = Math.hypot(dx, dz) < 9 && !moving ? Math.atan2(dx, dz) : Math.atan2(m.heading.x, m.heading.z);
-      let d = want - g.rotation.y;
-      d = Math.atan2(Math.sin(d), Math.cos(d));
-      g.rotation.y += d * Math.min(1, dt * 5);
+      if (Math.hypot(dx, dz) < 9) {
+        let d = Math.atan2(dx, dz) - g.rotation.y;
+        d = Math.atan2(Math.sin(d), Math.cos(d));
+        g.rotation.y += d * Math.min(1, dt * 5);
+      }
       const bubble = bubbles.current[i];
       if (bubble) {
-        const inRange = pos.distanceTo(p) < n.talkRange + 1 && !st.talk && hv < 1.2;
-        bubble.visible = inRange;
-        bubble.position.set(pos.x, pos.y + bob + (n.id === "moss" ? 1.6 : n.id === "elder" ? 1.5 : n.id === "finn" ? 1.6 : 1.3), pos.z);
+        bubble.visible = pos.distanceTo(p) < n.talkRange + 1 && !st.talk && still;
+        bubble.position.set(pos.x, pos.y + idle + (BUBBLE_HEIGHT[n.id] ?? 1.3), pos.z);
         bubble.scale.set(0.9, 0.68, 1).multiplyScalar(1 + Math.sin(t * 3) * 0.04);
       }
     });
@@ -818,6 +784,11 @@ export function PhotoCapture() {
 
 const compassDir = new THREE.Vector3();
 
+/**
+ * Runs the story each frame: the fall into the cave, the camera during
+ * conversations, what T would do and the hint under Bob, the compass target,
+ * and the one-time control tips.
+ */
 export function StoryDirector() {
   const clock = useRef({ t: 0, fellAt: 0, airborne: false, startX: NaN, startZ: NaN, moved: false, movedAt: 0, metAt: 0 });
   useEffect(() => {
@@ -890,7 +861,7 @@ export function StoryDirector() {
       if (!c.fellAt) {
         c.fellAt = c.t;
         c.airborne = false;
-        control.teleport = { pos: new THREE.Vector3(ROCKET.x + 3.5, GROUND() + 48, ROCKET.z + 5.5) };
+        control.teleport = { pos: new THREE.Vector3(ROCKET.x + 3.5, rocketGround() + 48, ROCKET.z + 5.5) };
       } else if (!player.grounded) {
         c.airborne = true;
       } else if (c.airborne && c.t - c.fellAt > 0.8) {
@@ -912,7 +883,6 @@ export function StoryDirector() {
     for (const n of NPCS) {
       const fp = friendPos[n.id];
       const d = Math.hypot(p.x - fp.x, p.y - fp.y - 0.3, p.z - fp.z);
-      // friends who follow you are always close by: only offer a chat when you stop
       if (d < n.talkRange && d < nearest) {
         nearest = d;
         action = { kind: "talk", npc: n.id, name: n.name };
@@ -924,7 +894,7 @@ export function StoryDirector() {
     const energy = orbStore.get().found.length;
     if (rocketDist < 7 && st.phase === "play") {
       if (partsDone && energy >= ENERGY_NEEDED) {
-        // launching beats chatting with whoever tagged along
+        // launching beats chatting
         action = { kind: "launch" };
         prompt = "T — launch the rocket!";
       } else if (!action) {

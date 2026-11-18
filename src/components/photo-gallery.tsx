@@ -2,16 +2,27 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { photos, type Photo } from "@/content/serena";
+import { pad2 } from "@/lib/format";
+
+/** Photos per ribbon (row), and how many show before "Explore all". */
+const PER_ROW = 4;
+const FIRST_SHOWN = 8;
+
+/**
+ * "Through my eyes": rows of photos. With a mouse, hovering one makes its row
+ * taller and that photo wider. Clicking opens it full size (onOpen).
+ */
 export default function PhotoGallery({
   onOpen,
 }: {
   onOpen: (photo: Photo) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  // the photo being hovered (by its src), which the CSS enlarges
   const [active, setActive] = useState<string | null>(null);
-  const visible = expanded ? photos : photos.slice(0, 8);
-  const rows = Array.from({ length: Math.ceil(visible.length / 4) }, (_, i) =>
-    visible.slice(i * 4, i * 4 + 4),
+  const visible = expanded ? photos : photos.slice(0, FIRST_SHOWN);
+  const rows = Array.from({ length: Math.ceil(visible.length / PER_ROW) }, (_, i) =>
+    visible.slice(i * PER_ROW, (i + 1) * PER_ROW),
   );
   return (
     <>
@@ -42,7 +53,7 @@ export default function PhotoGallery({
               >
                 <img src={photo.src} alt={photo.alt} loading="lazy" />
                 <span>
-                  <small>{String(r * 4 + i + 1).padStart(2, "0")}</small>
+                  <small>{pad2(r * PER_ROW + i + 1)}</small>
                   {photo.caption}
                 </span>
               </button>
@@ -50,7 +61,7 @@ export default function PhotoGallery({
           </div>
         ))}
       </div>
-      {photos.length > 8 && (
+      {photos.length > FIRST_SHOWN && (
         <button
           className="gallery-toggle"
           onClick={() => {

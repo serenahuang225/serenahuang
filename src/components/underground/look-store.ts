@@ -1,95 +1,73 @@
 /**
  * What the potions have done to the ball. Colour and fluff are remembered in
- * this browser (a per-viewer convenience); glow and bounce wear off.
+ * this browser (a per-viewer convenience); glow, bounce and wings wear off.
  */
+import { isTouchDevice } from "./touch";
+import { asRecord, listenerSet, readSaved, writeSaved } from "./store-utils";
 
 export type Look = {
   /** Fur colour as a hex string, or null for the red panda default. */
   tint: string | null;
   /** 0 = normal, up to 3 = maximum fluff. */
   fluff: number;
+  /** When each timed potion wears off (Date.now() milliseconds). */
   glowUntil: number;
   bounceUntil: number;
   flyUntil: number;
+  /** What just changed, for the HUD's little note. */
   last: { text: string; at: number } | null;
 };
 
 const KEY = "underground-look-v1";
+const GLOW_SECONDS = 60;
+const BOUNCE_SECONDS = 45;
+const FLY_SECONDS = 40;
+
 let state: Look = { tint: null, fluff: 0, glowUntil: 0, bounceUntil: 0, flyUntil: 0, last: null };
 let loaded = false;
-const listeners = new Set<() => void>();
+const { emit, subscribe } = listenerSet();
 
-function emit() {
-  for (const l of listeners) l();
+/** Change the look; `remember` saves colour and fluff for next time. */
+function set(patch: Partial<Look>, text: string, remember = false) {
+  state = { ...state, ...patch, last: { text, at: Date.now() } };
+  if (remember) writeSaved(KEY, { tint: state.tint, fluff: state.fluff });
+  emit();
 }
-
-function save() {
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify({ tint: state.tint, fluff: state.fluff }));
-  } catch {
-    // storage blocked: the look just won't survive a reload
-  }
-}
-
-export const GLOW_SECONDS = 60;
-export const BOUNCE_SECONDS = 45;
-export const FLY_SECONDS = 40;
 
 export const lookStore = {
   load() {
     if (loaded) return;
     loaded = true;
-    try {
-      const raw = window.localStorage.getItem(KEY);
-      if (raw) {
-        const p = JSON.parse(raw);
-        state = {
-          ...state,
-          tint: typeof p.tint === "string" ? p.tint : null,
-          fluff: typeof p.fluff === "number" ? Math.max(0, Math.min(3, Math.round(p.fluff))) : 0,
-        };
-      }
-    } catch {
-      // ignore
-    }
+    const p = asRecord(readSaved(KEY));
+    state = {
+      ...state,
+      tint: typeof p.tint === "string" ? p.tint : null,
+      fluff: typeof p.fluff === "number" ? Math.max(0, Math.min(3, Math.round(p.fluff))) : 0,
+    };
     emit();
   },
   get() {
     return state;
   },
-  subscribe(fn: () => void) {
-    listeners.add(fn);
-    return () => {
-      listeners.delete(fn);
-    };
-  },
+  subscribe,
   setTint(tint: string | null, name: string) {
-    state = { ...state, tint, last: { text: tint ? `${name} fur!` : "Back to red panda", at: Date.now() } };
-    save();
-    emit();
+    set({ tint }, tint ? `${name} fur!` : "Back to red panda", true);
   },
+  /** Each fluff potion adds a level; after the maximum it trims back to normal. */
   addFluff() {
     const fluff = (state.fluff + 1) % 4;
-    const text = fluff === 0 ? "Fluff trimmed back to normal" : ["", "Fluffier!", "Even fluffier!", "Maximum fluff!"][fluff];
-    state = { ...state, fluff, last: { text, at: Date.now() } };
-    save();
-    emit();
+    set({ fluff }, ["Fluff trimmed back to normal", "Fluffier!", "Even fluffier!", "Maximum fluff!"][fluff], true);
   },
   glow() {
-    state = { ...state, glowUntil: Date.now() + GLOW_SECONDS * 1000, last: { text: "Glowing brighter", at: Date.now() } };
-    emit();
+    set({ glowUntil: Date.now() + GLOW_SECONDS * 1000 }, "Glowing brighter");
   },
   bounce() {
-    state = { ...state, bounceUntil: Date.now() + BOUNCE_SECONDS * 1000, last: { text: "Extra bouncy!", at: Date.now() } };
-    emit();
+    set({ bounceUntil: Date.now() + BOUNCE_SECONDS * 1000 }, "Extra bouncy!");
   },
   fly() {
-    state = { ...state, flyUntil: Date.now() + FLY_SECONDS * 1000, last: { text: "You can fly! Tap Space to flap", at: Date.now() } };
-    emit();
+    set({ flyUntil: Date.now() + FLY_SECONDS * 1000 }, `You can fly! ${isTouchDevice() ? "Tap Flap" : "Tap Space"} to flap`);
   },
   reset() {
-    state = { tint: null, fluff: 0, glowUntil: 0, bounceUntil: 0, flyUntil: 0, last: { text: "Back to red panda", at: Date.now() } };
-    save();
-    emit();
+    set({ tint: null, fluff: 0, glowUntil: 0, bounceUntil: 0, flyUntil: 0 }, "Back to red panda", true);
   },
 };

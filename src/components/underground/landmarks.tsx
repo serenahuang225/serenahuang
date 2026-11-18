@@ -1,4 +1,8 @@
 "use client";
+/**
+ * The big set pieces: the flooded crystal tunnel (with its gates), the cave
+ * dome, the waterfall rock, the rope bridge, and the fog / underwater look.
+ */
 import { useFrame, useThree } from "@react-three/fiber";
 import {
   CoefficientCombineRule,
@@ -29,6 +33,7 @@ import {
   WORLD,
   bridgeDeckY,
   caveCrystals,
+  crystalCollider,
   inDeepWater,
   mulberry32,
   smoothstep,
@@ -42,6 +47,7 @@ export const environment = { underwater: false, fog: 0 };
 
 // ---------------------------------------------------------------- shared bits
 
+/** A six-sided crystal 1 unit tall, with a pointed tip. */
 function crystalGeometry() {
   const pts = [
     new THREE.Vector2(0.0001, 0),
@@ -94,6 +100,7 @@ function crystalMaterial() {
 
 // ---------------------------------------------------------------- crystal tunnel
 
+/** The tube's radius at t (0 = lake end, 1 = cave end): slightly wider in the middle. */
 function tunnelRadius(t: number) {
   // the shaft stays round right up to the ends; the mouths are built separately
   return TUNNEL_RADIUS * (1 + 0.07 * smoothstep(0.0, 0.05, t) * smoothstep(1.0, 0.95, t));
@@ -109,16 +116,18 @@ function buildMouth(cx: number, cz: number, tEnd: number) {
   const eps = 0.05;
   const R = TUNNEL_RADIUS;
   const F = TUNNEL_FILLET;
-  const rows: Array<{ r: number; off: (g: number) => number; s: number }> = [];
-  rows.push({ r: R, off: () => -F - 1.0 + eps, s: 0 });
-  rows.push({ r: R, off: () => -F + eps, s: 0.1 });
+  // rings of the surface, from deep in the shaft out to the collar's edge:
+  // r = radius, off = height relative to the ground there, s = how far along (for the veins)
+  const rows: Array<{ r: number; off: number; s: number }> = [];
+  rows.push({ r: R, off: -F - 1.0 + eps, s: 0 });
+  rows.push({ r: R, off: -F + eps, s: 0.1 });
   for (let i = 1; i <= 14; i++) {
     const th = (i / 14) * (Math.PI / 2);
-    rows.push({ r: R + F * (1 - Math.cos(th)), off: () => eps - F * (1 - Math.sin(th)), s: 0.1 + (i / 14) * 0.5 });
+    rows.push({ r: R + F * (1 - Math.cos(th)), off: eps - F * (1 - Math.sin(th)), s: 0.1 + (i / 14) * 0.5 });
   }
   for (let i = 1; i <= 10; i++) {
     const u = i / 10;
-    rows.push({ r: TUNNEL_MOUTH + u * (TUNNEL_APRON - TUNNEL_MOUTH), off: () => eps - (eps + 0.1) * smoothstep(0.7, 1.0, u), s: 0.6 + u * 0.4 });
+    rows.push({ r: TUNNEL_MOUTH + u * (TUNNEL_APRON - TUNNEL_MOUTH), off: eps - (eps + 0.1) * smoothstep(0.7, 1.0, u), s: 0.6 + u * 0.4 });
   }
   const pos: number[] = [];
   const vein: number[] = [];
@@ -129,8 +138,7 @@ function buildMouth(cx: number, cz: number, tEnd: number) {
       const a = (j / radial) * Math.PI * 2;
       const x = cx + Math.cos(a) * row.r;
       const z = cz + Math.sin(a) * row.r;
-      const g = terrainHeight(x, z);
-      pos.push(x, g + row.off(g), z);
+      pos.push(x, terrainHeight(x, z) + row.off, z);
       vein.push(tEnd + sign * row.s * 0.04, j / radial);
     }
   }
@@ -149,6 +157,7 @@ function buildMouth(cx: number, cz: number, tEnd: number) {
   return geo;
 }
 
+/** The tube itself (with veins to glow along), and the crystals growing from its walls. */
 function buildTunnel() {
   const tubular = 220;
   const radial = 22;
@@ -317,6 +326,7 @@ function buildGates() {
   return { mesh, boxes, ringGeo, ringMat, rings };
 }
 
+/** The flooded crystal tunnel from the deep lake's floor up into the cave, with its gates and exit pool. */
 export function CrystalTunnel() {
   const built = useMemo(() => {
     const { geo, crystals, colors } = buildTunnel();
@@ -420,6 +430,7 @@ export function CrystalTunnel() {
 
 // ---------------------------------------------------------------- the cave
 
+/** The cave: a lumpy half-dome with an arched doorway cut out of it. */
 function buildCave() {
   const R = CAVE.r - 1;
   const noise = createNoise2D(mulberry32(515));
@@ -468,6 +479,7 @@ function buildCave() {
   return { geo, R };
 }
 
+/** The cave dome (solid), glowworms inside it and crystals around its walls. */
 export function Cave() {
   const built = useMemo(() => {
     const { geo, R } = buildCave();
@@ -481,14 +493,12 @@ export function Cave() {
     const n = 260;
     const wp = new Float32Array(n * 3);
     const seed = new Float32Array(n);
-    let k = 0;
-    while (k < n) {
+    for (let k = 0; k < n; k++) {
       const a = r() * Math.PI * 2;
       const y = 0.35 + r() * 0.62;
       const rr = Math.sqrt(1 - y * y) * R * 0.95;
       wp.set([Math.cos(a) * rr, y * CAVE.height * 0.95, Math.sin(a) * rr], k * 3);
       seed[k] = r();
-      k++;
     }
     const wormGeo = new THREE.BufferGeometry();
     wormGeo.setAttribute("position", new THREE.BufferAttribute(wp, 3));
@@ -521,12 +531,10 @@ export function Cave() {
 
     const crystals = new THREE.InstancedMesh(crystalGeometry(), crystalMaterial(), caveCrystals.length);
     const colliders = caveCrystals.map((c, i) => {
-      const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(c.rx, 0, c.rz));
-      crystals.setMatrixAt(i, new THREE.Matrix4().compose(new THREE.Vector3(c.x, c.y, c.z), q, new THREE.Vector3(c.r, c.h, c.r)));
+      const col = crystalCollider(c);
+      crystals.setMatrixAt(i, new THREE.Matrix4().compose(new THREE.Vector3(c.x, c.y, c.z), col.q, new THREE.Vector3(c.r, c.h, c.r)));
       crystals.setColorAt(i, c.hue.clone().multiplyScalar(1.1));
-      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
-      const center = new THREE.Vector3(c.x, c.y, c.z).addScaledVector(up, c.h * 0.45);
-      return { pos: center.toArray() as [number, number, number], rot: [c.rx, 0, c.rz] as [number, number, number], args: [c.h * 0.45, c.r * 0.9] as [number, number] };
+      return col;
     });
     crystals.computeBoundingSphere();
     return { geo, mat, positions, indices, wormGeo, wormMat, crystals, colliders };
@@ -554,6 +562,7 @@ export function Cave() {
 
 // ---------------------------------------------------------------- falls rock + waterfall
 
+/** The rock spire on the lake shore, its waterfall (ropes of water, droplets, splash, mist, foam) and the spring on top. */
 export function Waterfall() {
   const built = useMemo(() => {
     const ground = terrainHeight(FALLS.x, FALLS.z) - 1.2;
@@ -905,6 +914,7 @@ export function Waterfall() {
 
 // ---------------------------------------------------------------- rope bridge
 
+/** The rope bridge over the deep lake: planks, posts with lanterns, ropes, and invisible rails. */
 export function Bridge() {
   const built = useMemo(() => {
     const r = mulberry32(64);
@@ -1005,6 +1015,10 @@ export function Bridge() {
 const FOG_AIR = new THREE.Color(WORLD.fogColor);
 const FOG_WATER = new THREE.Color("#03303c");
 
+/**
+ * The fog: it slowly thickens and clears (a 2½ minute cycle) and turns thick
+ * and teal underwater. Also keeps uProj (pixels per metre) up to date.
+ */
 export function Atmosphere() {
   const scene = useThree((s) => s.scene);
   const fog = useMemo(() => new THREE.FogExp2(WORLD.fogColor, WORLD.fogDensity), []);

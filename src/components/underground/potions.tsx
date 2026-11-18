@@ -10,12 +10,14 @@ import { guideStore } from "./guide-store";
 
 /**
  * Little glowing bottles to roll into. Round flasks change your fur colour,
- * squat jars make you fluffier, tall vials make you glow or bounce higher.
- * Each one comes back a while after you drink it.
+ * squat jars make you fluffier, tall vials make you glow or bounce higher,
+ * and teardrops give you wings. Each one comes back a while after you drink it.
  */
 
 const RESPAWN_MS = 40000;
+const HALO_LIFT = new THREE.Vector3(0, 0.2, 0);
 
+/** A round bottle from its outline (radius, height pairs), spun around the y axis. */
 function lathe(points: Array<[number, number]>) {
   return new THREE.LatheGeometry(points.map(([x, y]) => new THREE.Vector2(Math.max(x, 0.0001), y)), 24);
 }
@@ -30,10 +32,14 @@ const SHAPES: Record<Shape, Array<[number, number]>> = {
   drop: [[0, 0], [0.32, 0.04], [0.52, 0.22], [0.56, 0.42], [0.46, 0.66], [0.26, 0.9], [0.16, 1.02], [0.18, 1.12], [0, 1.12]],
 };
 
+/** How full each bottle is: the liquid is the bottle shape squeezed in (x) and cut off (y). */
+const LIQUID: Record<Shape, [number, number]> = { flask: [0.86, 0.62], jar: [0.88, 0.6], vial: [0.8, 0.85], drop: [0.85, 0.6] };
+
 function shapeFor(kind: PotionKind): Shape {
   return kind === "color" ? "flask" : kind === "fluff" ? "jar" : kind === "fly" ? "drop" : "vial";
 }
 
+/** A soft white glow, tinted per potion. */
 function haloTexture() {
   const c = document.createElement("canvas");
   c.width = c.height = 128;
@@ -47,7 +53,9 @@ function haloTexture() {
   return new THREE.CanvasTexture(c);
 }
 
+/** Rolling into a potion: apply its effect. */
 function drink(p: Potion) {
+  // "Red panda" is Bob's own colour, so it clears the tint
   if (p.kind === "color") lookStore.setTint(p.name === "Red panda" ? null : `#${p.color.getHexString()}`, p.name);
   else if (p.kind === "fluff") lookStore.addFluff();
   else if (p.kind === "glow") lookStore.glow();
@@ -58,20 +66,17 @@ function drink(p: Potion) {
   if (p.kind === "color") guideStore.tryColor(p.name);
 }
 
+/** Every potion bottle: glass, liquid, cork and a glowing halo. Rolling close enough drinks it. */
 export function Potions() {
   const built = useMemo(() => {
-    const geos = {
-      flask: lathe(SHAPES.flask),
-      jar: lathe(SHAPES.jar),
-      vial: lathe(SHAPES.vial),
-      drop: lathe(SHAPES.drop),
-    };
-    const liquidGeos = {
-      flask: lathe(SHAPES.flask.map(([x, y]) => [x * 0.86, Math.min(y, 0.62)] as [number, number])),
-      jar: lathe(SHAPES.jar.map(([x, y]) => [x * 0.88, Math.min(y, 0.6)] as [number, number])),
-      vial: lathe(SHAPES.vial.map(([x, y]) => [x * 0.8, Math.min(y, 0.85)] as [number, number])),
-      drop: lathe(SHAPES.drop.map(([x, y]) => [x * 0.85, Math.min(y, 0.6)] as [number, number])),
-    };
+    const shapes = Object.keys(SHAPES) as Shape[];
+    const geos = Object.fromEntries(shapes.map((sh) => [sh, lathe(SHAPES[sh])])) as Record<Shape, THREE.LatheGeometry>;
+    const liquidGeos = Object.fromEntries(
+      shapes.map((sh) => {
+        const [squeeze, fill] = LIQUID[sh];
+        return [sh, lathe(SHAPES[sh].map(([x, y]) => [x * squeeze, Math.min(y, fill)]))];
+      }),
+    ) as Record<Shape, THREE.LatheGeometry>;
     const glass = new THREE.MeshStandardMaterial({
       color: "#e6f6ff",
       transparent: true,
@@ -94,13 +99,16 @@ export function Potions() {
         blending: THREE.AdditiveBlending,
         opacity: 0.55,
       });
-      return { p, shape, liquid, spriteMat, corkY: SHAPES[shape][SHAPES[shape].length - 1][1] };
+      // in the narrow tunnel a potion can be reached from anywhere across it
+      const reach = tunnelDistance(p.pos.x, p.pos.y, p.pos.z) < TUNNEL_RADIUS + 0.5 ? 3 : 0.85;
+      return { p, shape, liquid, spriteMat, reach, corkY: SHAPES[shape][SHAPES[shape].length - 1][1] };
     });
     return { geos, liquidGeos, glass, cork, corkGeo, items };
   }, []);
 
   const groups = useRef<Array<THREE.Group | null>>([]);
   const sprites = useRef<Array<THREE.Sprite | null>>([]);
+  // per potion: when it reappears after being drunk, and its burst animation (seconds, -1 = none)
   const state = useRef(POTIONS.map(() => ({ hiddenUntil: 0, burst: -1 })));
 
   useFrame((s, delta) => {
@@ -126,12 +134,11 @@ export function Potions() {
         sp.scale.setScalar(visible ? 1.1 + Math.sin(t * 0.8 + i) * 0.08 : 0);
         sp.material.opacity = 0.5;
       }
-      sp.position.copy(g.position).add(new THREE.Vector3(0, 0.2, 0));
+      sp.position.copy(g.position).add(HALO_LIFT);
       g.visible = visible;
       if (!visible) return;
       const d = Math.hypot(ball.x - pos.x, ball.y - (pos.y + 0.15), ball.z - pos.z);
-      const reach = tunnelDistance(pos.x, pos.y, pos.z) < TUNNEL_RADIUS + 0.5 ? 3 : 0.85;
-      if (d < reach) {
+      if (d < item.reach) {
         drink(item.p);
         st.hiddenUntil = now + RESPAWN_MS;
         st.burst = 0;

@@ -1,4 +1,9 @@
 "use client";
+/**
+ * Everything mushroom-shaped: the big solid mushrooms (with jiggly caps you
+ * bounce on), the spring puffballs, thousands of little mushrooms, the hollow
+ * logs and the crystal garden. All drawn as instanced meshes.
+ */
 import { useFrame } from "@react-three/fiber";
 import {
   ConvexHullCollider,
@@ -12,13 +17,16 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import {
   CAP_HEIGHT,
   HOLLOW_LOGS,
+  LOG_LENGTH,
   LOG_RADII,
   PAD_HEIGHT,
   pads,
   type CapShape,
   type Mushroom,
+  capCenter,
   capProfile,
   capTop,
+  crystalCollider,
   crystals,
   mulberry32,
   smallMushrooms,
@@ -28,6 +36,14 @@ import { GLSL_COMMON, shared } from "./shared";
 
 // ---------------------------------------------------------------- material
 
+/**
+ * The glowing mushroom material, shared by stems, caps, puffballs and crystals.
+ * Meshes need aGlow (how much each vertex glows) and aCap (1 on caps, 0 on stems).
+ *  - push: little plants bend away from Bob (needs aBase: root xyz + height)
+ *  - squash: caps can squish when landed on (needs aSquash per instance)
+ *  - flat: faceted shading, for crystals
+ *  - glow: overall glow strength
+ */
 function makeMushroomMaterial(opts: { push?: boolean; squash?: boolean; flat?: boolean; glow?: number }) {
   const mat = new THREE.MeshStandardMaterial({
     roughness: 0.5,
@@ -150,6 +166,7 @@ function makeMushroomMaterial(opts: { push?: boolean; squash?: boolean; flat?: b
 
 // ---------------------------------------------------------------- geometry
 
+/** A stem 1 unit tall and about 1 wide, flaring at the foot; scaled per mushroom. */
 function stemGeometry(radial: number, detail: number) {
   const pts: THREE.Vector2[] = [new THREE.Vector2(0.0001, 0)];
   const prof = [
@@ -176,6 +193,7 @@ function stemGeometry(radial: number, detail: number) {
   return geo;
 }
 
+/** A cap of radius 1 (glowing gills underneath and a glowing rim). */
 function capGeometry(shape: CapShape, radial: number, steps: number) {
   const pts = capProfile(shape, steps).reverse();
   const geo = new THREE.LatheGeometry(pts, radial);
@@ -194,6 +212,7 @@ function capGeometry(shape: CapShape, radial: number, steps: number) {
   return geo;
 }
 
+/** Points around a cap's outline, for its physics shape (a convex hull). */
 function hullPoints(shape: CapShape, capR: number) {
   const prof = capProfile(shape, 6);
   const out: number[] = [];
@@ -221,6 +240,7 @@ type CapInfo = {
 export const caps: CapInfo[] = [];
 const jiggles = new Map<number, { t: number; amp: number }>();
 
+/** Which cap (index into caps) is Bob on or just above? -1 if none. Picks the highest. */
 export function findCap(pos: THREE.Vector3, radius: number) {
   let best = -1;
   let bestY = -Infinity;
@@ -240,10 +260,12 @@ export function findCap(pos: THREE.Vector3, radius: number) {
   return best;
 }
 
+/** Make a cap wobble (when Bob lands on it). */
 export function jiggleCap(i: number, strength: number) {
   jiggles.set(i, { t: 0, amp: Math.min(0.32, strength) });
 }
 
+/** The giants, the Great Cap's staircase and the groves: solid, with bouncy caps. */
 export function SolidMushrooms() {
   const built = useMemo(() => {
     const stemMat = makeMushroomMaterial({});
@@ -264,11 +286,11 @@ export function SolidMushrooms() {
     const slots = [0, 0, 0, 0];
     caps.length = 0;
     solidMushrooms.forEach((m, i) => {
-      const { top, q, up } = capTop(m);
+      const { q } = capTop(m);
       mat.compose(new THREE.Vector3(m.x, m.y, m.z), q, scale.set(m.stemR, m.height, m.stemR));
       stems.setMatrixAt(i, mat);
       stems.setColorAt(i, m.hue);
-      const center = top.clone().addScaledVector(up, 0.08 * m.capR);
+      const center = capCenter(m);
       const slot = slots[m.shape]++;
       const capMesh = capMeshes[m.shape];
       mat.compose(center, q, scale.setScalar(m.capR));
@@ -297,6 +319,7 @@ export function SolidMushrooms() {
     return { stems, capMeshes, colliders };
   }, []);
 
+  // play each cap's wobble: a quick squash that dies away
   useFrame((_, delta) => {
     if (!jiggles.size) return;
     const dt = Math.min(delta, 0.05);
@@ -335,11 +358,14 @@ export function SolidMushrooms() {
 
 // ---------------------------------------------------------------- spring puffballs
 
+/** Puffballs wobbling right now: pad index → seconds since the bounce. */
 const padJiggles = new Map<number, number>();
+/** Make a puffball squish (when it launches Bob). */
 export function jigglePad(i: number) {
   padJiggles.set(i, 0);
 }
 
+/** The glowing puffballs that launch Bob up onto mushroom caps, each with a bright ring. */
 export function SpringPads() {
   const built = useMemo(() => {
     const geo = new THREE.SphereGeometry(1, 36, 18);
@@ -402,6 +428,7 @@ export function SpringPads() {
 
 // ---------------------------------------------------------------- small mushrooms
 
+/** Thousands of little mushrooms that bend as Bob rolls through (no physics). */
 export function SmallMushrooms() {
   const meshes = useMemo(() => {
     const mat = makeMushroomMaterial({ push: true, glow: 1.15 });
@@ -468,6 +495,7 @@ export function SmallMushrooms() {
 
 // ---------------------------------------------------------------- hollow logs
 
+/** Wood-grain bark with spots of glowing moss; the inside of a log glows faintly orange. */
 function barkMaterial(inner: boolean) {
   const mat = new THREE.MeshStandardMaterial({
     color: inner ? "#2a1a1e" : "#241a24",
@@ -510,10 +538,14 @@ function barkMaterial(inner: boolean) {
   return mat;
 }
 
+/**
+ * Hollow logs. The physics is a ring of 12 boxes around the hole, so Bob can
+ * duck and roll straight through.
+ */
 export function HollowLogs() {
   const built = useMemo(() => {
     const { inner, outer } = LOG_RADII;
-    const length = 7;
+    const length = LOG_LENGTH;
     const r = mulberry32(12);
     const shell = new THREE.CylinderGeometry(outer, outer, length, 22, 10, true);
     const sp = shell.attributes.position;
@@ -591,6 +623,7 @@ export function HollowLogs() {
 
 // ---------------------------------------------------------------- crystals
 
+/** The crystal garden: six-sided glowing crystals, each with a cylinder to bump into. */
 export function Crystals() {
   const built = useMemo(() => {
     const pts = [
@@ -608,17 +641,11 @@ export function Crystals() {
     const mesh = new THREE.InstancedMesh(geo, makeMushroomMaterial({ flat: true, glow: 1.2 }), crystals.length);
     const mtx = new THREE.Matrix4();
     const colliders = crystals.map((c, i) => {
-      const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(c.rx, 0, c.rz));
-      mtx.compose(new THREE.Vector3(c.x, c.y, c.z), q, new THREE.Vector3(c.r, c.h, c.r));
+      const col = crystalCollider(c);
+      mtx.compose(new THREE.Vector3(c.x, c.y, c.z), col.q, new THREE.Vector3(c.r, c.h, c.r));
       mesh.setMatrixAt(i, mtx);
       mesh.setColorAt(i, c.hue);
-      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
-      const center = new THREE.Vector3(c.x, c.y, c.z).addScaledVector(up, c.h * 0.45);
-      return {
-        pos: center.toArray() as [number, number, number],
-        rot: [c.rx, 0, c.rz] as [number, number, number],
-        args: [c.h * 0.45, c.r * 0.9] as [number, number],
-      };
+      return col;
     });
     mesh.computeBoundingSphere();
     return { mesh, colliders };

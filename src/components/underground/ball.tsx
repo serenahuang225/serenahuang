@@ -1,4 +1,10 @@
 "use client";
+/**
+ * Bob, the fluffy ball you play as: keyboard / touch / mouse input, the
+ * physics (rolling, jumping, ducking, swimming, flying, puffball launches,
+ * bouncing on caps), how he looks (fur, squash and stretch, wings, glow) and
+ * the camera that follows him.
+ */
 import { useFrame, useThree } from "@react-three/fiber";
 import {
   BallCollider,
@@ -40,13 +46,26 @@ import { lookStore } from "./look-store";
 import { guideStore } from "./guide-store";
 import { storyStore } from "./story-store";
 import { bobState, stick } from "./touch";
+import { POTION_COLORS } from "./story-data";
 
+/** Fur length for each level of the fluff potion (0 = normal). */
 const FLUFF_LENGTH = [0.085, 0.13, 0.18, 0.24];
+/** Bob's natural colour (also what the "Red panda" potion sets back). */
+const FUR_RED = POTION_COLORS.panda.color;
+/** How hard gravity pulls (a positive number, m/s²). */
+const GRAVITY = -WORLD.gravity;
+/** How far behind Bob the camera starts. */
+const CAM_DIST = 4.6;
 
 // ---------------------------------------------------------------- input
 
 type Keys = Record<string, boolean>;
 
+/**
+ * Which keys are held right now (by KeyboardEvent.code). Game keys don't
+ * scroll the page, and everything is let go while a dialogue, puzzle or the
+ * field guide is open, or the window loses focus.
+ */
 function useKeys() {
   const keys = useRef<Keys>({});
   useEffect(() => {
@@ -87,10 +106,15 @@ function useKeys() {
   return keys;
 }
 
+/** Where the camera looks from: angles around Bob, distance, and when the player last turned it. */
 type Look = { yaw: number; pitch: number; dist: number; lastManual: number };
 
+/**
+ * Looking around: a mouse click locks the pointer and moving turns the
+ * camera; a finger dragging on the scene does the same; the wheel zooms.
+ */
 function useLook() {
-  const look = useRef<Look>({ yaw: 0, pitch: 0.3, dist: 4.6, lastManual: -10 });
+  const look = useRef<Look>({ yaw: 0, pitch: 0.3, dist: CAM_DIST, lastManual: -10 });
   const gl = useThree((s) => s.gl);
   useEffect(() => {
     const el = gl.domElement;
@@ -154,24 +178,23 @@ function useLook() {
 
 // ---------------------------------------------------------------- fur
 
+/**
+ * Bob's fur colour as a texture: one even colour with thousands of faint
+ * lighter and darker strands drawn over it. tint null = his natural red.
+ */
 function furTexture(tint: string | null) {
+  const rgba = (col: THREE.Color, a: number) => `rgba(${Math.round(col.r * 255)},${Math.round(col.g * 255)},${Math.round(col.b * 255)},${a})`;
   const pal = tint
     ? (() => {
         const c = new THREE.Color(tint);
-        const hex = (col: THREE.Color) => `#${col.getHexString()}`;
-        const rgba = (col: THREE.Color, a: number) => `rgba(${Math.round(col.r * 255)},${Math.round(col.g * 255)},${Math.round(col.b * 255)},${a})`;
         return {
-          top: hex(c),
-          mid: hex(c),
-          bottom: hex(c),
+          base: `#${c.getHexString()}`,
           light: (a: number) => rgba(c.clone().lerp(new THREE.Color("#ffffff"), 0.35), a),
           dark: (a: number) => rgba(c.clone().offsetHSL(0, 0, -0.18), a),
         };
       })()
     : {
-        top: "#d4532e",
-        mid: "#d4532e",
-        bottom: "#d4532e",
+        base: FUR_RED,
         light: (a: number) => `rgba(255,150,110,${a})`,
         dark: (a: number) => `rgba(170,55,35,${a})`,
       };
@@ -181,13 +204,9 @@ function furTexture(tint: string | null) {
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d")!;
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, pal.top);
-  grad.addColorStop(0.5, pal.mid);
-  grad.addColorStop(1, pal.bottom);
-  ctx.fillStyle = grad;
+  ctx.fillStyle = pal.base;
   ctx.fillRect(0, 0, w, h);
-  // strands
+  // strands (a fixed seed, so the pattern is the same every time)
   let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   for (let i = 0; i < 26000; i++) {
@@ -215,7 +234,6 @@ function furTexture(tint: string | null) {
  * and trail behind the ball when it moves, so it looks soft and fluffy.
  */
 const FUR_SHELLS = 18;
-const FUR_LENGTH = 0.085;
 
 function furShellGeometry() {
   const base = new THREE.SphereGeometry(WORLD.ballRadius * 0.98, 72, 48);
@@ -231,6 +249,7 @@ function furShellGeometry() {
   return geo;
 }
 
+/** uVel bends the strands back as Bob moves; uLen / uDensity follow the fluff potion; uGlow the glow potion. */
 function furShellMaterial(fur: THREE.Texture) {
   return new THREE.ShaderMaterial({
     fog: true,
@@ -238,7 +257,7 @@ function furShellMaterial(fur: THREE.Texture) {
       ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),
       uFur: { value: fur },
       uVel: { value: new THREE.Vector3() },
-      uLen: { value: FUR_LENGTH },
+      uLen: { value: FLUFF_LENGTH[0] },
       uDensity: { value: 230 },
       uGlow: { value: 0 },
     },
@@ -319,9 +338,16 @@ function wingGeometry() {
 
 // ---------------------------------------------------------------- the ball
 
-const UP = new THREE.Vector3(0, 1, 0);
+// scratch objects, reused every frame instead of allocating new ones
 const tmpV = new THREE.Vector3();
 const tmpV2 = new THREE.Vector3();
+const tmpOffset = new THREE.Vector3();
+const tmpDesired = new THREE.Vector3();
+const tmpLook = new THREE.Vector3();
+const tmpQuat = new THREE.Quaternion();
+const RAIL_LIFT = new THREE.Vector3(0, 0.45, 0);
+const RESPAWN_LIFT = new THREE.Vector3(0, 0.6, 0);
+const DOWN = { x: 0, y: -1, z: 0 };
 
 export function Ball() {
   const body = useRef<RapierRigidBody>(null);
@@ -344,6 +370,15 @@ export function Ball() {
   useEffect(() => lookStore.load(), []);
   const fur = useMemo(() => furTexture(ballLook.tint), [ballLook.tint]);
   const furShells = useMemo(() => ({ geometry: furShellGeometry(), material: furShellMaterial(fur) }), [fur]);
+  // a colour potion swaps in new fur: free the old one's GPU memory
+  useEffect(
+    () => () => {
+      fur.dispose();
+      furShells.geometry.dispose();
+      furShells.material.dispose();
+    },
+    [fur, furShells],
+  );
   const shadowTex = useMemo(() => {
     const c = document.createElement("canvas");
     c.width = c.height = 128;
@@ -378,7 +413,7 @@ export function Ball() {
     landKick: 0,
     trail: [] as Array<{ p: THREE.Vector3; t: number }>,
     trailClock: 0,
-    camDist: 4.6,
+    camDist: CAM_DIST,
     time: 0,
     lastBounce: -1,
     size: 1,
@@ -400,7 +435,11 @@ export function Ball() {
     safeClock: 0,
   });
 
-  // ---- physics-rate control
+  // the rays we cast every step / frame (origins are set before each cast)
+  const groundRay = useMemo(() => new rapier.Ray({ x: 0, y: 0, z: 0 }, DOWN), [rapier]);
+  const camRay = useMemo(() => new rapier.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 1 }), [rapier]);
+
+  // ---- physics-rate control: runs before every physics step (60 times a second)
   useBeforePhysicsStep(() => {
     const b = body.current;
     const c = collider.current;
@@ -436,8 +475,8 @@ export function Ball() {
     if (!st.swimming && wasSwimming && vel.y > 2) sound.splash(3);
 
     // ground probe
-    const ray = new rapier.Ray({ x: pos.x, y: pos.y, z: pos.z }, { x: 0, y: -1, z: 0 });
-    const hit = world.castRayAndGetNormal(ray, st.radius + 0.14, true, undefined, undefined, undefined, b);
+    groundRay.origin = { x: pos.x, y: pos.y, z: pos.z };
+    const hit = world.castRayAndGetNormal(groundRay, st.radius + 0.14, true, undefined, undefined, undefined, b);
     const wasGrounded = st.grounded;
     st.grounded = !!hit;
     st.coyote = st.grounded ? 0.12 : Math.max(0, st.coyote - dt);
@@ -492,7 +531,9 @@ export function Ball() {
     const hasInput = dir.lengthSq() > 0 && !st.padFlight;
     if (hasInput) dir.normalize();
     const sprint = !!(k.ShiftLeft || k.ShiftRight);
-    const flyingNow = Date.now() < look0.flyUntil && !st.swimming && !st.grounded;
+    // the wing potion is working (in the air, not swimming)
+    const flying = Date.now() < look0.flyUntil && !st.swimming;
+    const flyingNow = flying && !st.grounded;
     const analog = stickOn && !(k.KeyW || k.KeyA || k.KeyS || k.KeyD) ? THREE.MathUtils.clamp((stick.mag - 0.12) / 0.75, 0.3, 1) : 1;
     const maxSpeed = (st.swimming ? (sprint ? 9 : 6.5) : st.ducking ? 4.4 : sprint ? 13 : flyingNow ? 10 : 7.6) * analog;
     const accel = st.swimming ? 24 : st.grounded ? (sprint ? 40 : 32) : flyingNow ? 26 : 16;
@@ -526,7 +567,6 @@ export function Ball() {
     if (jumpDown && !st.jumpHeld) st.jumpBuffer = 0.14;
     st.jumpHeld = jumpDown;
     st.jumpBuffer = Math.max(0, st.jumpBuffer - dt);
-    const flying = Date.now() < look0.flyUntil && !st.swimming;
     if (flying && st.jumpBuffer > 0 && !st.grounded && st.coyote <= 0) {
       // wing potion: every tap of Space is a flap
       b.setLinvel({ x: vel.x, y: Math.min(Math.max(vel.y, 0) + 7.2, 11), z: vel.z }, true);
@@ -561,13 +601,13 @@ export function Ball() {
     // with wings, holding Space while falling turns it into a gentle glide
     if (flying && !st.grounded && k.Space && vel.y < 0) {
       const v = b.linvel();
-      b.applyImpulse({ x: 0, y: (-WORLD.gravity * 0.75 + Math.max(0, -2.4 - v.y) * 8) * m * dt, z: 0 }, true);
+      b.applyImpulse({ x: 0, y: (GRAVITY * 0.75 + Math.max(0, -2.4 - v.y) * 8) * m * dt, z: 0 }, true);
     }
 
     // swimming: nearly weightless, a little drag, Space rises and C dives
     if (st.swimming) {
       const v = b.linvel();
-      let up = -WORLD.gravity * 0.95;
+      let up = GRAVITY * 0.95;
       if (k.Space && pos.y < DEEP_LEVEL - 0.6) up += 17;
       if (k.KeyC) up -= 16;
       // gently bob at the surface when idle
@@ -613,8 +653,7 @@ export function Ball() {
       if (speed < 1.6 && st.jumpBuffer <= 0) {
         // cancel the downhill part of gravity, then bleed off what's left
         const n = hit.normal;
-        const g = -WORLD.gravity;
-        const k = g * m * dt;
+        const k = GRAVITY * m * dt;
         b.applyImpulse({ x: -k * n.y * n.x, y: -k * (n.y * n.y - 1), z: -k * n.y * n.z }, true);
         const v2 = b.linvel();
         const settle = speed < 0.35 ? 0 : 0.8;
@@ -635,9 +674,8 @@ export function Ball() {
         if (dx * dx + dz * dz > (p.r + 0.05) * (p.r + 0.05)) continue;
         const bottom = pos.y - st.radius;
         if (bottom > p.top + 0.15 || bottom < p.top - 0.2) continue;
-        const g = -WORLD.gravity;
         const rise = p.target.y + p.apex - pos.y;
-        const vy = Math.sqrt(2 * g * Math.max(rise, 1));
+        const vy = Math.sqrt(2 * GRAVITY * Math.max(rise, 1));
         b.setLinvel({ x: vel.x * 0.15, y: vy, z: vel.z * 0.15 }, true);
         st.padFlight = { target: p.target, steering: false, t: 0 };
         st.padCooldown = 0.8;
@@ -658,9 +696,8 @@ export function Ball() {
       const v = b.linvel();
       if (!pf.steering && pos.y > T.y + 0.4) {
         // glide in so we come down right on the middle of the cap
-        const g = -WORLD.gravity;
         const h = pos.y - (T.y + st.radius);
-        const tLand = (v.y + Math.sqrt(v.y * v.y + 2 * g * h)) / g;
+        const tLand = (v.y + Math.sqrt(v.y * v.y + 2 * GRAVITY * h)) / GRAVITY;
         b.setLinvel({ x: (T.x - pos.x) / tLand, y: v.y, z: (T.z - pos.z) / tLand }, true);
         pf.steering = true;
       }
@@ -702,7 +739,7 @@ export function Ball() {
     // H takes Bob home; if he ever slips under the world, put him back where he last stood
     const underground = pos.y < ground - 6 && tunnelDistance(pos.x, pos.y, pos.z) > 7;
     if (k.KeyH || underground || pos.y < -80) {
-      const back = !k.KeyH && st.safe.length ? st.safe[0].clone().add(new THREE.Vector3(0, 0.6, 0)) : spawn;
+      const back = !k.KeyH && st.safe.length ? st.safe[0].clone().add(RESPAWN_LIFT) : spawn;
       if (!k.KeyH) st.safe = st.safe.slice(0, 1);
       b.setTranslation(back, true);
       b.setLinvel({ x: 0, y: 0, z: 0 }, true);
@@ -711,7 +748,7 @@ export function Ball() {
     }
   });
 
-  // ---- bouncy mushroom caps
+  // ---- bouncy mushroom caps: landing hard on one springs Bob back up
   const onCollisionEnter = () => {
     const b = body.current;
     if (!b) return;
@@ -763,7 +800,7 @@ export function Ball() {
     jiggleCap(idx, 0.06 + Math.min(impact, 20) * 0.012);
   };
 
-  // ---- visuals, trail and camera (after physics)
+  // ---- visuals, trail and camera: every rendered frame, after physics
   useFrame((_, delta) => {
     const b = body.current;
     const a = anchor.current;
@@ -820,7 +857,7 @@ export function Ball() {
     player.grounded = st.grounded;
     bobState.grounded = st.grounded;
     bobState.swimming = st.swimming;
-    bobState.flying = Date.now() < lookStore.get().flyUntil;
+    bobState.flying = hasWings;
     bobState.nearLog = HOLLOW_LOGS.some((l) => Math.hypot(center.x - l.x, center.z - l.z) < l.length * 0.5 + 3);
 
     // squash & stretch spring
@@ -841,7 +878,7 @@ export function Ball() {
     // keep the bottom of the ball on the ground while squashed
     const bottomOffset = (st.grounded ? -st.radius + visR * sy * st.size : 0) + fluffLift;
     g.position.set(center.x, center.y + bottomOffset, center.z);
-    if (roller.current) roller.current.quaternion.copy(a.getWorldQuaternion(new THREE.Quaternion()));
+    if (roller.current) roller.current.quaternion.copy(a.getWorldQuaternion(tmpQuat));
 
     if (light.current) {
       // the light sits inside the ball, so it lights the world around it
@@ -855,10 +892,9 @@ export function Ball() {
 
     // blob shadow
     if (shadow.current) {
-      const ground = terrainHeight(center.x, center.z);
-      const ray = new rapier.Ray({ x: center.x, y: center.y, z: center.z }, { x: 0, y: -1, z: 0 });
-      const hit = world.castRay(ray, 40, true, undefined, undefined, undefined, b);
-      const gy = hit ? center.y - hit.timeOfImpact : ground;
+      groundRay.origin = { x: center.x, y: center.y, z: center.z };
+      const hit = world.castRay(groundRay, 40, true, undefined, undefined, undefined, b);
+      const gy = hit ? center.y - hit.timeOfImpact : terrainHeight(center.x, center.z);
       const hgt = center.y - gy;
       shadow.current.position.set(center.x, gy + 0.03, center.z);
       const sc = (st.radius * 2.6) * (1 + hgt * 0.08);
@@ -906,6 +942,7 @@ export function Ball() {
     if (k.KeyE) l.yaw -= 2.2 * dt;
     const now = performance.now() / 1000;
     const hSpeed = Math.hypot(vel.x, vel.z);
+    // swing round behind Bob as he rolls, unless the player turned the camera recently
     if (now - l.lastManual > 1.8 && hSpeed > 2.5 && !st.padFlight && !k.KeyS && !k.ArrowDown) {
       // yaw that would put the camera straight behind the direction of travel
       const behind = Math.atan2(-vel.x, -vel.z);
@@ -936,24 +973,19 @@ export function Ball() {
     st.tunnelBlend = THREE.MathUtils.damp(st.tunnelBlend, inTunnel ? 1 : 0, 3, dt);
     const pitch = THREE.MathUtils.lerp(l.pitch, Math.min(l.pitch, 0.08), st.tunnelBlend);
     const wantDist = THREE.MathUtils.lerp(l.dist, Math.min(l.dist, 2.6), st.tunnelBlend);
-    const offset = new THREE.Vector3(
-      Math.sin(l.yaw) * Math.cos(pitch),
-      Math.sin(pitch),
-      Math.cos(l.yaw) * Math.cos(pitch),
-    );
-    const camRay = new rapier.Ray(
-      { x: targetPos.x, y: targetPos.y, z: targetPos.z },
-      { x: offset.x, y: offset.y, z: offset.z },
-    );
+    // which way the camera sits from Bob; pull in if something is in the way
+    const offset = tmpOffset.set(Math.sin(l.yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(l.yaw) * Math.cos(pitch));
+    camRay.origin = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
+    camRay.dir = { x: offset.x, y: offset.y, z: offset.z };
     const camHit = world.castRay(camRay, wantDist, true, undefined, undefined, undefined, b);
     const allowed = camHit ? Math.max(0.7, camHit.timeOfImpact - 0.35) : wantDist;
     st.camDist = allowed < st.camDist ? allowed : THREE.MathUtils.damp(st.camDist, allowed, 3, dt);
-    const desired = targetPos.clone().addScaledVector(offset, st.camDist);
+    const desired = tmpDesired.copy(targetPos).addScaledVector(offset, st.camDist);
     if (st.tunnelBlend > 0.01) {
+      // 2.6 m back along the tunnel's centre line
       const back = Math.round(2.6 / TUNNEL_STEP);
       const ci = THREE.MathUtils.clamp(tnear.index - back * st.tunnelDir, 0, TUNNEL_SAMPLES.length - 1);
-      const railCam = TUNNEL_SAMPLES[ci].clone().add(new THREE.Vector3(0, 0.45, 0));
-      desired.lerp(railCam, st.tunnelBlend);
+      desired.lerp(tmpLook.copy(TUNNEL_SAMPLES[ci]).add(RAIL_LIFT), st.tunnelBlend);
     }
     // in the tunnel the ground is overhead, so don't push the camera up to it
     let lifted = 0;
@@ -966,27 +998,26 @@ export function Ball() {
     }
 
     // sound: rolling, brushing through plants, the waterfall, underwater
-    const hs = Math.hypot(vel.x, vel.z);
     const fol = sampleFoliage(center.x, center.z);
     const low = center.y - terrainHeight(center.x, center.z) < 1.2 ? 1 : 0;
-    const brush = (fol.leaves * 1.1 + fol.grass * 0.3 + fol.flowers * 0.35) * Math.min(hs / 5, 1.3) * low;
+    const brush = (fol.leaves * 1.1 + fol.grass * 0.3 + fol.flowers * 0.35) * Math.min(hSpeed / 5, 1.3) * low;
     sound.update({
       speed: Math.hypot(vel.x, vel.y, vel.z),
       grounded: st.grounded,
       brush,
       underwater: environment.underwater,
       swimming: st.swimming,
-      flying: Date.now() < lk.flyUntil,
+      flying: hasWings,
       fallsDistance: Math.hypot(center.x - FALLS.x, center.z - FALLS.z),
     });
     camera.position.lerp(desired, 1 - Math.exp(-(st.tunnelBlend > 0.5 ? 22 : 14) * dt));
     // when looking up, the ground stops the camera going lower; keep the view
     // tilting up anyway by aiming along the look direction instead of at Bob
     const tilt = THREE.MathUtils.smoothstep(lifted, 0, 1.2);
-    const lookAt = targetPos.clone().lerp(camera.position.clone().addScaledVector(offset, -6), tilt);
+    const lookAt = tmpLook.copy(camera.position).addScaledVector(offset, -6).lerp(targetPos, 1 - tilt);
     camera.lookAt(lookAt);
-    const speed = Math.hypot(vel.x, vel.z);
-    const fov = 62 + THREE.MathUtils.clamp((speed - 7) * 1.1, 0, 9);
+    // widen the view a little at speed
+    const fov = 62 + THREE.MathUtils.clamp((hSpeed - 7) * 1.1, 0, 9);
     if (Math.abs(camera.fov - fov) > 0.01) {
       camera.fov = THREE.MathUtils.damp(camera.fov, fov, 4, dt);
       camera.updateProjectionMatrix();
