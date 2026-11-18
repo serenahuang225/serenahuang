@@ -5,6 +5,7 @@ import MusicPlayer from "@/components/music-player";
 import Values from "@/components/values";
 import Experience from "@/components/experience";
 import PhotoGallery from "@/components/photo-gallery";
+import FallHole from "@/components/fall-hole";
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUpRight,
@@ -668,6 +669,7 @@ export default function Home() {
               TOP <ArrowUpRight size={13} />
             </a>
           </footer>
+          <FallHole />
         </section>
       </main>
       <button
