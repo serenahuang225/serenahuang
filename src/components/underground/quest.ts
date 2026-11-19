@@ -14,6 +14,7 @@ import {
   ROCKET,
   ROCKET_VIEW,
   TUNNEL_MOUTH_VIEW,
+  type BobbyStage,
   type Line,
   type NpcId,
   type PartId,
@@ -26,6 +27,7 @@ type QuestState = {
   delivered: PartId[];
   photos: unknown[];
   met: NpcId[];
+  bobby: BobbyStage;
 };
 
 /** Where the compass points: a spot in the world, or the nearest energy orb. */
@@ -152,6 +154,21 @@ export function questSteps(s: QuestState, energy: number): Step[] {
       hint: `Your rocket is ready! Roll over to it and ${touch ? "tap Launch" : "press T"} to fly home!`,
       focus: ROCKET_VIEW,
     },
+    // Bob wants Bobby along, but it's optional (and only once they've met)
+    ...(s.bobby === "unmet"
+      ? []
+      : [
+          {
+            text:
+              s.bobby === "thinking" || s.bobby === "coming"
+                ? "Bobby is thinking it over…"
+                : s.bobby === "met"
+                  ? "Ask Bobby to come along (it's in the Hollow)"
+                  : "Bobby is coming along!",
+            done: s.bobby !== "met" && s.bobby !== "thinking" && s.bobby !== "coming",
+            optional: true,
+          },
+        ]),
     {
       text: `Take photos with ${touch ? "the camera button" : "P"} to fill in your map (${s.photos.length})`,
       done: s.photos.length >= 5,
@@ -189,6 +206,7 @@ const AGAIN: Record<NpcId, string> = {
   finn: "Blub! Bob-bob-bob! Back again?",
   elder: "Ah, young Bob. Back so soon?",
   quartz: "Hmmm… (the crystals hum hello)… Bob.",
+  bobby: "Hi, Bob.",
 };
 
 /**

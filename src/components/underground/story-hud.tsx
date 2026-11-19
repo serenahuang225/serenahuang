@@ -35,7 +35,19 @@ export function Portrait({ who }: { who: NpcId | "bob" }) {
           <stop offset="1" stopColor="#fff" stopOpacity="0" />
         </radialGradient>
       </defs>
-      {who === "moss" ? (
+      {who === "bobby" ? (
+        <>
+          {/* flat as a pancake, eyes on top, a droopy little antenna */}
+          <path d="M46 34 C 50 24 58 22 62 26" stroke="#3a2f45" strokeWidth="2.5" fill="none" />
+          <circle cx="63" cy="27" r="3.5" fill={color} />
+          <ellipse cx="40" cy="54" rx="34" ry="17" fill={color} />
+          <ellipse cx="33" cy="46" rx="4" ry="4.5" fill="#fbf8ff" />
+          <ellipse cx="47" cy="46" rx="4" ry="4.5" fill="#fbf8ff" />
+          <circle cx="33.7" cy="46.8" r="2.4" fill="#1a0f24" />
+          <circle cx="47.7" cy="46.8" r="2.4" fill="#1a0f24" />
+          <path d="M37 57 Q 40 59.5 43 57" stroke="#1a0f24" strokeWidth="2" fill="none" strokeLinecap="round" />
+        </>
+      ) : who === "moss" ? (
         <>
           <ellipse cx="44" cy="58" rx="26" ry="9" fill="#b9a6c9" />
           <circle cx="36" cy="40" r="20" fill={color} />
@@ -103,7 +115,7 @@ export function Portrait({ who }: { who: NpcId | "bob" }) {
 // ---------------------------------------------------------------- conversation bubble
 
 /** How high each character's "voice" blips are. */
-const PITCH: Record<string, number> = { bob: 0.9, pip: 1.5, moss: 0.65, finn: 1.2, elder: 0.75, quartz: 1.8 };
+const PITCH: Record<string, number> = { bob: 0.9, pip: 1.5, moss: 0.65, finn: 1.2, elder: 0.75, quartz: 1.8, bobby: 1.25 };
 
 /** The conversation on screen: the line types out, then the choices appear. */
 function Dialogue() {
@@ -112,8 +124,16 @@ function Dialogue() {
   const [shown, setShown] = useState(0);
   const key = s.talk ? `${s.talk.who}:${s.talk.node}` : "";
   const typing = line ? shown < line.text.length : false;
+  // who's speaking this line: Bob, a friend joining in, or the friend Bob is talking to
+  const speaker = line?.bob ? "bob" : (line?.speaker ?? s.talk?.who);
   const choices = line
-    ? line.choices.filter((c) => (!c.unlessHas || !storyStore.has(c.unlessHas)) && (!c.ifHas || storyStore.has(c.ifHas)))
+    ? line.choices.filter(
+        (c) =>
+          (!c.unlessHas || !storyStore.has(c.unlessHas)) &&
+          (!c.ifHas || storyStore.has(c.ifHas)) &&
+          (!c.ifMet || s.met.includes(c.ifMet)) &&
+          (!c.unlessMet || !s.met.includes(c.unlessMet)),
+      )
     : [];
 
   // typewriter, with a soft blip every few letters
@@ -124,7 +144,7 @@ function Dialogue() {
     const t = window.setInterval(() => {
       i += 1;
       setShown(i);
-      if (i % 3 === 0 && s.talk) sound.blip(PITCH[s.talk.who] ?? 1);
+      if (i % 3 === 0 && speaker) sound.blip(PITCH[speaker] ?? 1);
       if (i >= line.text.length) window.clearInterval(t);
     }, 22);
     return () => window.clearInterval(t);
@@ -154,7 +174,7 @@ function Dialogue() {
   }, [line, typing, choices, s.talk]);
 
   if (!s.talk || !line) return null;
-  const who = line.bob ? "bob" : s.talk.who;
+  const who = speaker ?? s.talk.who;
   const name = who === "bob" ? "Bob" : NPCS.find((n) => n.id === who)?.name;
   return (
     <div className={styles.dialogue} role="dialog" aria-label={`Talking with ${name}`}>
@@ -594,6 +614,10 @@ function Ending() {
           The little rocket roared up through the Sky Eye and out into the sunshine. Bob will never forget the Glowdeep — or the
           friends who helped him.
         </p>
+        {s.bobby === "home" && <p>Bobby rode beside him, pressed flat against the window, seeing the sky for the very first time.</p>}
+        {s.bobby === "stayed" && (
+          <p>Back in the Hollow, a flat little puff told everyone the story of the ball from the sky. For once, every puff listened.</p>
+        )}
         {time && (
           <p className={styles.endTime}>
             <span>Your time</span>
@@ -880,7 +904,7 @@ export function StoryHud() {
           if (document.pointerLockElement) document.exitPointerLock();
           storyStore.talkTo(st.action.npc);
         } else if (st.action.kind === "launch") {
-          storyStore.launch();
+          storyStore.startLaunch();
         }
       } else if (e.code === "KeyP" && (st.phase === "play" || st.phase === "free")) {
         storyStore.requestPhoto();

@@ -11,6 +11,7 @@ import { storyStore } from "./story-store";
 import { MAP, NPCS, PARTS, PHOTO_REVEAL, POTION_COLORS, ROCKET } from "./story-data";
 import { Portrait } from "./story-hud";
 import { isTouchDevice } from "./touch";
+import { bobbyAlong } from "./bobby";
 import styles from "./field-guide.module.css";
 
 type Tab = "creatures" | "friends" | "potions" | "places" | "map" | "controls";
@@ -522,7 +523,9 @@ function FriendPage({ id }: { id: string }) {
                   ? "In the deep lake, near the rope bridge."
                   : n.id === "elder"
                     ? "Inside the Hollow, the rock cave past the deep lake."
-                    : "Among the crystals far to the north."}
+                    : n.id === "bobby"
+                      ? "Somewhere in the Hollow, keeping to itself."
+                      : "Among the crystals far to the north."}
           </dd>
         </dl>
       </>
@@ -548,7 +551,15 @@ function FriendPage({ id }: { id: string }) {
               ? "Knowing where everything is"
               : n.id === "finn"
                 ? "Directions to the fins and the copper wire"
-                : "Good company"}
+                : n.id === "bobby"
+                  ? s.bobby === "home"
+                    ? "Flying home with Bob"
+                    : bobbyAlong(s.bobby)
+                      ? "Coming along, as a friend"
+                      : s.bobby === "stayed"
+                        ? "Being brave, and telling the Hollow about the sky"
+                        : "Not decided yet…"
+                  : "Good company"}
         </dd>
         <dt>Tip</dt>
         <dd>{isTouchDevice() ? "Roll up close and tap Talk to chat again." : "Roll up close and press T to chat again."}</dd>
@@ -564,6 +575,7 @@ const NOTES_FRIENDS: Record<string, string> = {
   finn: "calls me a terrible fish",
   elder: "knows the old story",
   quartz: "I sang her song back! ♪",
+  bobby: "my best friend down here",
 };
 
 /**
@@ -657,7 +669,8 @@ function MapView() {
           </g>
         ))}
         {/* friends you've met */}
-        {NPCS.filter((n) => s.met.includes(n.id)).map((n) => (
+        {/* (Bobby isn't drawn at home once it's travelling with you) */}
+        {NPCS.filter((n) => s.met.includes(n.id) && !(n.id === "bobby" && (bobbyAlong(s.bobby) || s.bobby === "coming"))).map((n) => (
           <g key={n.id}>
             <circle cx={n.x} cy={n.z} r="5" fill={n.color} stroke={ink} strokeWidth="1" />
             <text x={n.x + 7} y={n.z + 3} fontSize="9" fontFamily="var(--serif)" fill={ink}>

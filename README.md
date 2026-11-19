@@ -82,6 +82,7 @@ parts, gather ten energy orbs and fly home. Everything is in
 | --- | --- |
 | `story-data.ts` | Parts, friends and everything they say; colour potions; the field-guide map |
 | `quest.ts` | The quest as steps (for the objectives, compass and friends' hints) |
+| `bobby.ts` | Bobby's story: which conversation opens at each stage, travelling chats, the Hollow's whispers |
 | `story-store.ts`, `orb-store.ts`, `look-store.ts`, `guide-store.ts` | Game state, each saved in the browser's localStorage |
 | `store-utils.ts` | What the stores share (listeners, saving) |
 | `story-hud.tsx` | Conversations, the crystal-song puzzle, objectives, compass, cards |

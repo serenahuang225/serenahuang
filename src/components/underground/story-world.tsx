@@ -9,7 +9,24 @@ import { useFrame } from "@react-three/fiber";
 import { CylinderCollider, RigidBody } from "@react-three/rapier";
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as THREE from "three";
-import { DEEP_LEVEL, HOLLOW_LOGS, TUNNEL_GATES, ORBS, POTIONS, TUNNEL_RADIUS, inDeepWater, pads, terrainHeight, tunnelDistance } from "./world-data";
+import {
+  CAVE,
+  CAVE_FLOOR,
+  DEEP,
+  DEEP_LEVEL,
+  HOLLOW_LOGS,
+  LAKE,
+  LAKE_LEVEL,
+  TUNNEL_GATES,
+  WORLD,
+  ORBS,
+  POTIONS,
+  TUNNEL_RADIUS,
+  inDeepWater,
+  pads,
+  terrainHeight,
+  tunnelDistance,
+} from "./world-data";
 import { GLSL_BILLBOARD, billboardGeometry, control, player, shared } from "./shared";
 import { makeRockMaterial } from "./terrain";
 import { sound } from "./audio";
@@ -17,6 +34,8 @@ import { orbStore } from "./orb-store";
 import { isTouchDevice } from "./touch";
 import { lineFor, storyStore } from "./story-store";
 import { ENERGY_NEEDED, NPCS, PARTS, ROCKET, type PartId } from "./story-data";
+import { WHISPERS, bobbyAlong } from "./bobby";
+import { furShellGeometry, furShellMaterial, furTexture } from "./ball";
 
 /** Ground height at the rocket. */
 const rocketGround = () => terrainHeight(ROCKET.x, ROCKET.z);
@@ -566,6 +585,57 @@ function Puffkin({ r, color, elder }: { r: number; color: string; elder?: boolea
   );
 }
 
+/**
+ * Bobby: a puffkin squashed flat, eyes on top, with a droopy little antenna.
+ * Fluffy like Bob: the same shell fur, in Bobby's peach (a little longer, as
+ * squashing the ball shortens the fur on top).
+ */
+function FlatPuff({ color }: { color: string }) {
+  const r = 0.34;
+  const fur = useMemo(() => {
+    const texture = furTexture(color);
+    const material = furShellMaterial(texture);
+    material.uniforms.uLen.value = 0.12;
+    return { texture, geometry: furShellGeometry(), material };
+  }, [color]);
+  // the fur's ball is Bob-sized: scale it to Bobby's size, then squash it flat
+  const k = r / (WORLD.ballRadius * 0.98);
+  return (
+    <group>
+      <group position={[0, r * 0.42, 0]} scale={[1.35 * k, 0.42 * k, 1.35 * k]}>
+        <mesh>
+          <sphereGeometry args={[WORLD.ballRadius * 0.98, 48, 32]} />
+          <meshPhysicalMaterial map={fur.texture} roughness={0.95} sheen={1} sheenRoughness={0.5} sheenColor="#ffe0c8" emissive={color} emissiveIntensity={0.18} emissiveMap={fur.texture} />
+        </mesh>
+        <mesh geometry={fur.geometry} material={fur.material} frustumCulled={false} />
+      </group>
+      {[-1, 1].map((s) => (
+        <group key={s} position={[s * 0.1, 0.31, 0.29]}>
+          <mesh scale={[0.05, 0.06, 0.044]}>
+            <sphereGeometry args={[1, 16, 12]} />
+            <meshStandardMaterial color="#fbf8ff" emissive="#fbf8ff" emissiveIntensity={0.2} roughness={0.3} />
+          </mesh>
+          <mesh position={[0, 0.004, 0.036]} scale={[0.03, 0.037, 0.022]}>
+            <sphereGeometry args={[1, 12, 10]} />
+            <meshBasicMaterial color="#1a0f24" />
+          </mesh>
+        </group>
+      ))}
+      {/* the antenna droops backwards */}
+      <group position={[0, 0.32, -0.04]} rotation={[-1.05, 0, 0.25]}>
+        <mesh position={[0, 0.09, 0]}>
+          <cylinderGeometry args={[0.012, 0.012, 0.18, 6]} />
+          <meshStandardMaterial color="#3a2f45" />
+        </mesh>
+        <mesh position={[0, 0.19, 0]}>
+          <sphereGeometry args={[0.04, 12, 10]} />
+          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.9} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 /** Old Moss, the glow-snail. */
 function Snail({ size }: { size: number }) {
   return (
@@ -678,11 +748,71 @@ export const friendPos: Record<string, THREE.Vector3> = Object.fromEntries(
 );
 
 /** Each friend's speech bubble sits this far above them. */
-const BUBBLE_HEIGHT: Record<string, number> = { moss: 1.6, elder: 1.5, finn: 1.6 };
+const BUBBLE_HEIGHT: Record<string, number> = { moss: 1.6, elder: 1.5, finn: 1.6, bobby: 0.9 };
+
+/** Bobby's spot in the Hollow, and which way it's trailing behind Bob. */
+const BOBBY_HOME = friendPos.bobby.clone();
+const bobbyTrail = { behind: new THREE.Vector3(0, 0, 1), moving: false };
+const tmpTarget = new THREE.Vector3();
+// just outside and just inside the Hollow's doorway: Bobby goes in and out through it, not the wall
+const DOOR_OUT = new THREE.Vector3(CAVE.x + Math.cos(CAVE.doorYaw) * (CAVE.r + 2), 0, CAVE.z + Math.sin(CAVE.doorYaw) * (CAVE.r + 2));
+const DOOR_IN = new THREE.Vector3(CAVE.x + Math.cos(CAVE.doorYaw) * (CAVE.r - 4), 0, CAVE.z + Math.sin(CAVE.doorYaw) * (CAVE.r - 4));
+const inHollowAt = (v: THREE.Vector3) => Math.hypot(v.x - CAVE.x, v.z - CAVE.z) < CAVE.r - 0.5;
+
+/** The water surface Bobby would float on here, if there's water. */
+function waterLevelAt(x: number, z: number, ground: number) {
+  if (ground < DEEP_LEVEL && Math.hypot(x - DEEP.x, z - DEEP.z) < DEEP.r * 1.3) return DEEP_LEVEL;
+  if (ground < LAKE_LEVEL && Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE.r * 1.3) return LAKE_LEVEL;
+  return null;
+}
 
 /**
- * The five friends at home: they idle gently, turn to face Bob when he's
- * close, and show a "…" bubble when he's near enough (and still) to talk.
+ * Move Bobby. Before it joins Bob (and after it chooses to stay) it waits in
+ * the Hollow. Travelling, it scoots along just behind Bob, floats flat on the
+ * water like a lily pad, and pops back beside him if it's left far behind.
+ */
+function moveBobby(pos: THREE.Vector3, dt: number, st: ReturnType<typeof storyStore.get>) {
+  const p = player.position;
+  const following = (bobbyAlong(st.bobby) || st.bobby === "coming") && (st.phase === "play" || st.phase === "free");
+  let target: THREE.Vector3;
+  if (following) {
+    const v = player.velocity;
+    const hv = Math.hypot(v.x, v.z);
+    if (hv > 0.6) bobbyTrail.behind.set(-v.x / hv, 0, -v.z / hv);
+    target = tmpTarget.copy(p).addScaledVector(bobbyTrail.behind, 1.9);
+    // left far behind (a long fall, a puffball launch, a reload): pop back nearby.
+    // Coming after Bob, it appears further back so you see it hurrying over.
+    if (Math.hypot(target.x - pos.x, target.z - pos.z) > 30) {
+      pos.copy(p).addScaledVector(bobbyTrail.behind, st.bobby === "coming" ? 10 : 3);
+      pos.y = terrainHeight(pos.x, pos.z);
+    }
+  } else {
+    target = BOBBY_HOME;
+    if (pos.distanceTo(BOBBY_HOME) > 25) pos.copy(BOBBY_HOME);
+  }
+  // crossing the Hollow's wall? head for the doorway first
+  if (inHollowAt(pos) && !inHollowAt(target)) target = DOOR_OUT;
+  else if (!inHollowAt(pos) && inHollowAt(target)) target = DOOR_IN;
+  const dx = target.x - pos.x;
+  const dz = target.z - pos.z;
+  const far = Math.hypot(dx, dz);
+  const step = far > 0.35 ? Math.min(far, Math.min(far * 2.4, following ? 9 : 2) * dt) : 0;
+  bobbyTrail.moving = step > 0.005;
+  if (step > 0) {
+    pos.x += (dx / far) * step;
+    pos.z += (dz / far) * step;
+  }
+  // on the ground, floating on water, or level with Bob when he's up on something nearby
+  const ground = terrainHeight(pos.x, pos.z);
+  const water = waterLevelAt(pos.x, pos.z, ground);
+  let y = water ?? ground;
+  if (following && water === null && player.grounded && Math.hypot(p.x - pos.x, p.z - pos.z) < 4) y = Math.max(ground, p.y - 0.35);
+  pos.y = THREE.MathUtils.damp(pos.y, y, 10, dt);
+}
+
+/**
+ * The friends: they idle gently, turn to face Bob when he's close, and show a
+ * "…" bubble when he's near enough (and still) to talk. Bobby can travel.
  */
 export function Friends() {
   const bubbleTex = useMemo(() => talkBubbleTexture(), []);
@@ -698,25 +828,37 @@ export function Friends() {
       const g = groups.current[i];
       if (!g) return;
       const pos = friendPos[n.id];
+      const isBobby = n.id === "bobby";
+      if (isBobby) {
+        // inside the rocket during the launch, if it's flying home with Bob
+        g.visible = !(st.bobby === "home" && (st.phase === "launch" || st.phase === "ended"));
+        moveBobby(pos, dt, st);
+        // a wobbly scoot when moving, a slow flat breath when still
+        const w = bobbyTrail.moving ? Math.sin(t * 15) * 0.09 : Math.sin(t * 2.2) * 0.03;
+        g.scale.set(1 + w, 1 - w * 1.2, 1 + w);
+      }
       // idle motion: Quartz floats (higher until you've met her), Finn bobs in the water, the rest breathe
       const idle =
         n.id === "quartz"
           ? (st.met.includes(n.id) ? 0 : 1.4) + Math.sin(t * 1.2) * 0.15
           : n.id === "finn"
             ? Math.sin(t * 1.4) * 0.12
-            : Math.abs(Math.sin(t * 2.2 + i)) * 0.04;
+            : isBobby
+              ? 0
+              : Math.abs(Math.sin(t * 2.2 + i)) * 0.04;
       g.position.set(pos.x, pos.y + idle, pos.z);
-      // turn to face Bob when he's nearby
+      // face where Bobby is scooting; otherwise turn to face Bob when he's nearby
       const dx = p.x - pos.x;
       const dz = p.z - pos.z;
-      if (Math.hypot(dx, dz) < 9) {
-        let d = Math.atan2(dx, dz) - g.rotation.y;
+      const want = isBobby && bobbyTrail.moving ? Math.atan2(-bobbyTrail.behind.x, -bobbyTrail.behind.z) : Math.hypot(dx, dz) < 9 ? Math.atan2(dx, dz) : null;
+      if (want !== null) {
+        let d = want - g.rotation.y;
         d = Math.atan2(Math.sin(d), Math.cos(d));
         g.rotation.y += d * Math.min(1, dt * 5);
       }
       const bubble = bubbles.current[i];
       if (bubble) {
-        bubble.visible = pos.distanceTo(p) < n.talkRange + 1 && !st.talk && still;
+        bubble.visible = pos.distanceTo(p) < n.talkRange + 1 && !st.talk && still && g.visible && !(isBobby && st.bobby === "coming");
         bubble.position.set(pos.x, pos.y + idle + (BUBBLE_HEIGHT[n.id] ?? 1.3), pos.z);
         bubble.scale.set(0.9, 0.68, 1).multiplyScalar(1 + Math.sin(t * 3) * 0.04);
       }
@@ -736,6 +878,7 @@ export function Friends() {
             {n.id === "moss" && <Snail size={3.2} />}
             {n.id === "finn" && <Fish size={0.6} />}
             {n.id === "quartz" && <Sprite />}
+            {n.id === "bobby" && <FlatPuff color={n.color} />}
           </group>
           <sprite
             ref={(el) => {
@@ -790,7 +933,19 @@ const compassDir = new THREE.Vector3();
  * and the one-time control tips.
  */
 export function StoryDirector() {
-  const clock = useRef({ t: 0, fellAt: 0, airborne: false, startX: NaN, startZ: NaN, moved: false, movedAt: 0, metAt: 0 });
+  const clock = useRef({
+    t: 0,
+    fellAt: 0,
+    airborne: false,
+    startX: NaN,
+    startZ: NaN,
+    moved: false,
+    movedAt: 0,
+    metAt: 0,
+    // Bob's visit to the Hollow, and when the puffs there last whispered
+    inHollow: false,
+    whisperAt: 0,
+  });
   useEffect(() => {
     storyStore.load();
     // already mid-adventure? start beside the rocket
@@ -875,12 +1030,16 @@ export function StoryDirector() {
       return;
     }
     if (st.talk) return;
+    if (followBobbysStory(c, p, st)) return;
 
     // who's close enough to talk to?
     let action: ReturnType<typeof storyStore.get>["action"] = null;
     let prompt: string | null = null;
     let nearest = Infinity;
+    const bobRolling = Math.hypot(player.velocity.x, player.velocity.z) > 1;
     for (const n of NPCS) {
+      // Bobby is always close by when travelling with Bob: only offer a chat when he stops
+      if (n.id === "bobby" && (st.bobby === "coming" || (bobbyAlong(st.bobby) && bobRolling))) continue;
       const fp = friendPos[n.id];
       const d = Math.hypot(p.x - fp.x, p.y - fp.y - 0.3, p.z - fp.z);
       if (d < n.talkRange && d < nearest) {
@@ -931,6 +1090,35 @@ export function StoryDirector() {
     if (c.moved) showTips(c, p, st.met.length > 0);
   });
   return null;
+}
+
+/**
+ * Bobby's story as Bob moves about. Leaving the Hollow without inviting
+ * Bobby, Bob wishes he had; leaving after inviting it, Bobby sets off after
+ * him and they talk once it catches up. Inside the Hollow, the other puffs
+ * whisper about Bobby now and then. Returns true if a conversation started.
+ */
+function followBobbysStory(c: { t: number; inHollow: boolean; whisperAt: number }, p: THREE.Vector3, st: ReturnType<typeof storyStore.get>) {
+  const fromCave = Math.hypot(p.x - CAVE.x, p.z - CAVE.z);
+  const inHollow = fromCave < CAVE.r - 1 && p.y > CAVE_FLOOR - 2;
+  if (inHollow && !c.inHollow) c.whisperAt = c.t + 4;
+  if (c.inHollow && fromCave > CAVE.r + 4 && st.bobby === "met") storyStore.wishForBobby();
+  c.inHollow = inHollow;
+  if (st.bobby === "thinking" && fromCave > CAVE.r + 6) storyStore.bobbyFollows();
+
+  // Bobby caught up: but not while Bob is deep underwater
+  const underwater = inDeepWater(p.x, p.y, p.z) && p.y < DEEP_LEVEL - 1;
+  if (st.bobby === "coming" && !underwater && friendPos.bobby.distanceTo(p) < 3) {
+    storyStore.talkTo("bobby");
+    return true;
+  }
+
+  if (inHollow && c.t > c.whisperAt) {
+    c.whisperAt = c.t + 10 + Math.random() * 6;
+    const list = st.bobby === "stayed" ? WHISPERS.after : bobbyAlong(st.bobby) ? WHISPERS.along : WHISPERS.before;
+    storyStore.notify(list[Math.floor(Math.random() * list.length)]);
+  }
+  return false;
 }
 
 /**
