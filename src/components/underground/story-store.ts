@@ -3,7 +3,8 @@
  * built into the rocket, photos for the map, and the conversation on screen.
  * Progress is kept in this browser (a per-viewer convenience).
  */
-import { BOB_INTRO, NPCS, PARTS, type Effect, type Line, type NpcId, type PartId } from "./story-data";
+import { BOB_INTRO, NPCS, PARTS, type BobbyStage, type Effect, type Line, type NpcId, type PartId } from "./story-data";
+import { bobbyOpening } from "./bobby";
 import { redirectLine, type Goal } from "./quest";
 import { orbStore } from "./orb-store";
 import { asRecord, listenerSet, readSaved, writeSaved } from "./store-utils";
@@ -45,7 +46,15 @@ type State = {
   /** The run's start and end times, for the ending card's clock. */
   startedAt: number;
   endedAt: number;
+  /** Bobby's story (see bobby.ts). */
+  bobby: BobbyStage;
+  /** The travelling chats Bobby has already had. */
+  bobbyHeard: string[];
+  /** Bob already wished he'd asked Bobby along (said once). */
+  wished: boolean;
 };
+
+const BOBBY_STAGES: BobbyStage[] = ["unmet", "met", "thinking", "coming", "with", "home", "stayed"];
 
 const KEY = "underground-story-v1";
 const TIPS_KEY = "underground-tips-v1";
@@ -78,6 +87,9 @@ let state: State = {
   photoRequest: 0,
   startedAt: 0,
   endedAt: 0,
+  bobby: "unmet",
+  bobbyHeard: [],
+  wished: false,
 };
 let loaded = false;
 const { emit, subscribe } = listenerSet();
@@ -100,6 +112,10 @@ function save() {
     reveals: state.reveals,
     met: state.met,
     startedAt: state.startedAt,
+    // Bobby only ever waits outside the Hollow for a moment: resume with it along
+    bobby: state.bobby === "coming" ? "with" : state.bobby,
+    bobbyHeard: state.bobbyHeard,
+    wished: state.wished,
   });
 }
 
@@ -147,6 +163,9 @@ export const storyStore = {
       reveals: list<State["reveals"][number]>(p.reveals),
       met: list<NpcId>(p.met),
       startedAt: typeof p.startedAt === "number" ? p.startedAt : 0,
+      bobby: BOBBY_STAGES.includes(p.bobby as BobbyStage) ? (p.bobby as BobbyStage) : "unmet",
+      bobbyHeard: list<string>(p.bobbyHeard),
+      wished: p.wished === true,
     };
     emit();
   },
@@ -174,6 +193,11 @@ export const storyStore = {
   launch() {
     set({ phase: "launch", action: null, prompt: null }, true);
   },
+  /** Bob presses Launch: if Bobby is along, they decide together first. */
+  startLaunch() {
+    if (state.bobby === "with") storyStore.talkTo("bobby", "launch");
+    else storyStore.launch();
+  },
   finish() {
     set({ phase: "ended", endedAt: Date.now() }, true);
   },
@@ -182,7 +206,21 @@ export const storyStore = {
   },
   restart() {
     set(
-      { phase: "card", carried: [], delivered: [], photos: [], reveals: [], met: [], talk: null, puzzle: null, startedAt: 0, endedAt: 0 },
+      {
+        phase: "card",
+        carried: [],
+        delivered: [],
+        photos: [],
+        reveals: [],
+        met: [],
+        talk: null,
+        puzzle: null,
+        startedAt: 0,
+        endedAt: 0,
+        bobby: "unmet",
+        bobbyHeard: [],
+        wished: false,
+      },
       true,
     );
   },
@@ -210,19 +248,33 @@ export const storyStore = {
       (action === state.action || (action && state.action && action.kind === state.action.kind && (action.kind !== "talk" || (state.action.kind === "talk" && action.npc === state.action.npc))));
     if (!same) set({ action, prompt });
   },
-  talkTo(npc: NpcId) {
-    // a friend whose part is done sends Bob on to whatever's next
-    const again = redirectLine(npc, state, orbStore.get().found.length);
+  /** Start a conversation (on a given line, or wherever that friend would begin). */
+  talkTo(npc: NpcId, node?: string) {
     const met = state.met.includes(npc) ? state.met : [...state.met, npc];
-    set({ talk: again ? { who: npc, node: "again", line: again } : { who: npc, node: "start" }, met }, true);
+    const energy = orbStore.get().found.length;
+    if (npc === "bobby") {
+      set({ talk: { who: npc, node: node ?? bobbyOpening(state, energy) }, met }, true);
+    } else {
+      // a friend whose part is done sends Bob on to whatever's next
+      const again = node ? null : redirectLine(npc, state, energy);
+      set({ talk: again ? { who: npc, node: "again", line: again } : { who: npc, node: node ?? "start" }, met }, true);
+    }
+    const line = lineFor(state.talk);
+    if (line?.effect) storyStore.apply(line.effect);
   },
-  choose(next: string | null, effect?: Effect) {
+  choose(choice: string | string[] | null, effect?: Effect) {
     if (effect) storyStore.apply(effect);
+    // handing over to another friend starts their conversation instead
+    if (effect && "switchTo" in effect) return;
     if (!state.talk) return;
-    if (next === null) {
+    if (choice === null) {
       set({ talk: null });
       return;
     }
+    // a list means "one of these at random" (but not the line we're on)
+    const current = state.talk.node;
+    const pool = Array.isArray(choice) ? choice.filter((n) => n !== current) : [choice];
+    const next = pool[Math.floor(Math.random() * pool.length)];
     const talk = { who: state.talk.who, node: next };
     set({ talk });
     const line = lineFor(talk);
@@ -233,6 +285,22 @@ export const storyStore = {
     else if ("reveal" in effect) set({ reveals: [...state.reveals, effect.reveal] }, true);
     else if ("startPlay" in effect) set({ phase: "play" }, true);
     else if ("puzzle" in effect) set({ puzzle: effect.puzzle, talk: null });
+    else if ("bobby" in effect) {
+      const met = effect.bobby === "met" && !state.met.includes("bobby") ? [...state.met, "bobby" as NpcId] : state.met;
+      set({ bobby: effect.bobby, met }, true);
+    } else if ("heard" in effect) {
+      if (!state.bobbyHeard.includes(effect.heard)) set({ bobbyHeard: [...state.bobbyHeard, effect.heard] }, true);
+    } else if ("switchTo" in effect) storyStore.talkTo(effect.switchTo);
+    else if ("launch" in effect) storyStore.launch();
+  },
+  /** Bob says (to himself) that he wishes Bobby had come: once. */
+  wishForBobby() {
+    if (state.wished) return;
+    set({ wished: true, note: { text: "Bob: \u201cI wish I'd asked Bobby to come along\u2026\u201d", at: Date.now() } }, true);
+  },
+  /** Bob left the Hollow after inviting Bobby: Bobby comes after him. */
+  bobbyFollows() {
+    if (state.bobby === "thinking") set({ bobby: "coming" });
   },
   closeTalk() {
     set({ talk: null });

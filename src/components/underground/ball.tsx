@@ -182,7 +182,7 @@ function useLook() {
  * Bob's fur colour as a texture: one even colour with thousands of faint
  * lighter and darker strands drawn over it. tint null = his natural red.
  */
-function furTexture(tint: string | null) {
+export function furTexture(tint: string | null) {
   const rgba = (col: THREE.Color, a: number) => `rgba(${Math.round(col.r * 255)},${Math.round(col.g * 255)},${Math.round(col.b * 255)},${a})`;
   const pal = tint
     ? (() => {
@@ -235,7 +235,7 @@ function furTexture(tint: string | null) {
  */
 const FUR_SHELLS = 18;
 
-function furShellGeometry() {
+export function furShellGeometry() {
   const base = new THREE.SphereGeometry(WORLD.ballRadius * 0.98, 72, 48);
   const geo = new THREE.InstancedBufferGeometry();
   geo.index = base.index;
@@ -250,7 +250,7 @@ function furShellGeometry() {
 }
 
 /** uVel bends the strands back as Bob moves; uLen / uDensity follow the fluff potion; uGlow the glow potion. */
-function furShellMaterial(fur: THREE.Texture) {
+export function furShellMaterial(fur: THREE.Texture) {
   return new THREE.ShaderMaterial({
     fog: true,
     uniforms: {
