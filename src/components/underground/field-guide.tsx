@@ -946,9 +946,18 @@ export function FieldGuide() {
 
   return (
     <>
-      <button type="button" className={styles.openButton} onClick={() => guideStore.toggle()} aria-expanded={g.open}>
+      <button
+        type="button"
+        className={styles.openButton}
+        onClick={() => guideStore.toggle()}
+        aria-expanded={g.open}
+        aria-label="Field guide"
+      >
         <span className={styles.bookIcon} aria-hidden="true" />
-        Field guide <kbd>I</kbd>
+        {/* phones show only the book icon (and the count) */}
+        <span className={styles.openWords}>
+          Field guide <kbd>I</kbd>
+        </span>
         {count > 0 && (
           <span className={styles.badge}>
             {count}/{total}
@@ -959,7 +968,7 @@ export function FieldGuide() {
       <div className={`${styles.toast} ${toast ? styles.toastShown : ""}`} role="status">
         {toast && (
           <>
-            New in your field guide: <strong>{toast}</strong> · {isTouchDevice() ? "tap Field guide" : <>press <kbd>I</kbd></>}
+            New in your field guide: <strong>{toast}</strong> · {isTouchDevice() ? "tap the book" : <>press <kbd>I</kbd></>}
           </>
         )}
       </div>

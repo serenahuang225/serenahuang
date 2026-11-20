@@ -5,7 +5,8 @@ import { guideStore } from "./guide-store";
 import { bobState, isTouchDevice, pressKey, stick, tapKey } from "./touch";
 import styles from "./touch-controls.module.css";
 
-const STICK_R = 46;
+/** How far the knob can travel, as a share of the stick base's width (46 px on the full-size stick). */
+const STICK_REACH = 0.35;
 const EMPTY_GUIDE = { open: false, found: [], colors: [], last: null, focus: null };
 
 type Context = { down: "Duck" | "Stomp" | "Dive" | null; jump: "Jump" | "Swim up" | "Flap" };
@@ -56,7 +57,7 @@ export function TouchControls() {
   const g = useSyncExternalStore(guideStore.subscribe, guideStore.get, () => EMPTY_GUIDE);
   const [ctx, setCtx] = useState<Context>({ down: null, jump: "Jump" });
   const knob = useRef<HTMLSpanElement>(null);
-  const finger = useRef<{ id: number; cx: number; cy: number } | null>(null);
+  const finger = useRef<{ id: number; cx: number; cy: number; reach: number } | null>(null);
 
   useEffect(() => setTouch(isTouchDevice()), []);
 
@@ -87,16 +88,17 @@ export function TouchControls() {
   const moveStick = (x: number, y: number) => {
     const f = finger.current;
     if (!f) return;
+    const reach = f.reach;
     let dx = x - f.cx;
     let dy = y - f.cy;
     const d = Math.hypot(dx, dy);
-    if (d > STICK_R) {
-      dx = (dx / d) * STICK_R;
-      dy = (dy / d) * STICK_R;
+    if (d > reach) {
+      dx = (dx / d) * reach;
+      dy = (dy / d) * reach;
     }
-    stick.x = dx / STICK_R;
-    stick.y = -dy / STICK_R;
-    stick.mag = Math.min(1, d / STICK_R);
+    stick.x = dx / reach;
+    stick.y = -dy / reach;
+    stick.mag = Math.min(1, d / reach);
     if (knob.current) knob.current.style.transform = `translate(${dx}px, ${dy}px)`;
   };
   const endStick = () => {
@@ -123,7 +125,13 @@ export function TouchControls() {
             // fine without capture
           }
           const base = e.currentTarget.querySelector(`.${styles.stickBase}`)!.getBoundingClientRect();
-          finger.current = { id: e.pointerId, cx: base.left + base.width / 2, cy: base.top + base.height / 2 };
+          // the stick is smaller on phones, so its reach is measured, not fixed
+          finger.current = {
+            id: e.pointerId,
+            cx: base.left + base.width / 2,
+            cy: base.top + base.height / 2,
+            reach: base.width * STICK_REACH,
+          };
           // follow the finger exactly while held; spring back when let go
           if (knob.current) knob.current.style.transition = "none";
           moveStick(e.clientX, e.clientY);

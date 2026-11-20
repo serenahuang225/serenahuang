@@ -11,7 +11,7 @@ import { nextStep, questSteps, type Step } from "./quest";
 import { orbStore } from "./orb-store";
 import { guideStore } from "./guide-store";
 import { sound } from "./audio";
-import { isTouchDevice } from "./touch";
+import { goLandscape, isPhone, isTouchDevice } from "./touch";
 import { readSaved, writeSaved } from "./store-utils";
 import styles from "./story-hud.module.css";
 
@@ -558,6 +558,7 @@ function IntroCard() {
           className={styles.begin}
           onClick={() => {
             sound.start();
+            goLandscape(); // phones: sideways and full screen, where the browser allows it
             storyStore.begin();
           }}
           autoFocus
@@ -706,7 +707,35 @@ function FullscreenButton() {
 
 function toggleFullscreen() {
   if (document.fullscreenElement) void document.exitFullscreen?.();
+  else if (isPhone()) goLandscape();
   else void document.documentElement.requestFullscreen?.().catch(() => {});
+}
+
+/** Phones held upright: ask for landscape (iPhones can't be turned for you). "Keep playing upright" hides it for this visit. */
+function RotateHint() {
+  const s = useStory();
+  const [phone, setPhone] = useState(false);
+  const [upright, setUpright] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    setPhone(isPhone());
+    const query = window.matchMedia("(orientation: portrait)");
+    const on = () => setUpright(query.matches);
+    on();
+    query.addEventListener("change", on);
+    return () => query.removeEventListener("change", on);
+  }, []);
+  if (!phone || !upright || dismissed || s.phase === "card") return null;
+  return (
+    <div className={styles.rotateWrap} role="dialog" aria-label="Turn your phone sideways">
+      <span className={styles.rotatePhone} aria-hidden="true" />
+      <p>Turn your phone sideways</p>
+      <small>The Underground is made for landscape.</small>
+      <button type="button" className={styles.rotateSkip} onClick={() => setDismissed(true)}>
+        Keep playing upright
+      </button>
+    </div>
+  );
 }
 
 /** Set once the player has looked around enough that they've clearly got it. */
@@ -928,6 +957,7 @@ export function StoryHud() {
       <SongPuzzle />
       <IntroCard />
       <Ending />
+      <RotateHint />
     </>
   );
 }
