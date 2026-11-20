@@ -379,3 +379,41 @@
     top: 156px;
   }
 }
+
+/*
+ * Phones (portrait or landscape; not tablets): smaller text everywhere.
+ * Almost every size in the game is in rem, so shrinking the root font
+ * shrinks the HUD, cards, field guide and dialogue together.
+ */
+@media (hover: none) and (pointer: coarse) and (max-width: 760px), (hover: none) and (pointer: coarse) and (max-height: 520px) {
+  :global(html):has(.root) {
+    font-size: 13px;
+  }
+  .root {
+    font-size: 12.5px;
+  }
+  .backWords {
+    display: none;
+  }
+  .back {
+    top: 12px;
+    left: 12px;
+    padding: 6px 11px;
+  }
+  .counter {
+    top: 12px;
+    gap: 7px;
+    padding: 5px 10px;
+  }
+  .soundButton {
+    top: 12px;
+    padding: 5px 11px;
+  }
+  .loader p {
+    font-size: 1.1rem;
+  }
+  .loaderOrb {
+    width: 40px;
+    height: 40px;
+  }
+}

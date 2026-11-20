@@ -33,3 +33,22 @@ export function tapKey(code: string) {
   pressKey(code, true);
   window.setTimeout(() => pressKey(code, false), 60);
 }
+
+/** A phone (not a tablet): a touch screen whose short side is under 600 px. */
+export function isPhone() {
+  return isTouchDevice() && Math.min(window.screen.width, window.screen.height) < 600;
+}
+
+/**
+ * Turn a phone sideways for play: full screen, then lock to landscape. Must
+ * run inside a tap. Android allows this; iPhones allow neither, so they get
+ * the "turn your phone" card instead (RotateHint in story-hud).
+ */
+export function goLandscape() {
+  if (!isPhone() || document.fullscreenElement || !document.fullscreenEnabled) return;
+  const orientation = screen.orientation as ScreenOrientation & { lock?: (o: "landscape") => Promise<void> };
+  document.documentElement
+    .requestFullscreen?.()
+    .then(() => orientation.lock?.("landscape"))
+    .catch(() => {}); // not allowed here: the rotate card covers it
+}
